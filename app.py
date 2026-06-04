@@ -2,35 +2,45 @@ import streamlit as st
 import random
 
 st.set_page_config(
-    page_title="AI Trading Signal",
+    page_title="AI Trading Assistant",
     page_icon="📈"
 )
 
-st.title("📈 AI Trading Signal App")
-st.write("Stock નું નામ નાખો અને AI Analysis મેળવો")
+st.title("📈 AI Trading Assistant")
 
 stock = st.text_input("Stock Name")
 
-if st.button("🚀 Analyze"):
+if st.button("Analyze"):
 
     if stock:
 
-        action = random.choice(["BUY", "SELL", "HOLD"])
+        signals = [
+            "Strong Buy",
+            "Buy",
+            "Hold",
+            "Sell"
+        ]
 
-        confidence = random.randint(70,95)
+        signal = random.choice(signals)
 
-        target = random.randint(1000,3000)
+        confidence = random.randint(75, 98)
 
-        stoploss = target - random.randint(50,150)
+        reasons = [
+            "Positive Momentum",
+            "Strong Volume",
+            "Bullish Trend",
+            "Support Zone Active",
+            "Breakout Possible"
+        ]
 
-        st.success(f"Signal : {action}")
+        reason = random.choice(reasons)
 
+        st.success(f"Signal: {signal}")
         st.metric("Confidence", f"{confidence}%")
 
-        st.metric("Target", target)
+        st.subheader("AI Reason")
 
-        st.metric("Stop Loss", stoploss)
+        st.write(reason)
 
-        st.info(f"{stock} માટે AI Analysis પૂર્ણ")
     else:
-        st.warning("પહેલા Stock Name દાખલ કરો")
+        st.warning("Please enter stock name")
