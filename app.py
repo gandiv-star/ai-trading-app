@@ -77,40 +77,43 @@ if st.button("🔍 Analyze"):
     if symbol:
 
         try:
-            stock = yf.Ticker(symbol)
+    stock = yf.Ticker(symbol)
 
-            info = stock.info
+    info = stock.info
 
-            current_price = info.get("currentPrice", "N/A")
-            market_cap = info.get("marketCap", "N/A")
-            pe_ratio = info.get("trailingPE", "N/A")
-hist = stock.history(period="1y")
+    current_price = info.get("currentPrice", "N/A")
+    market_cap = info.get("marketCap", "N/A")
+    pe_ratio = info.get("trailingPE", "N/A")
 
-close = hist["Close"]
+    hist = stock.history(period="1y")
 
-ma50 = round(close.rolling(50).mean().iloc[-1], 2)
-ma200 = round(close.rolling(200).mean().iloc[-1], 2)
+    close = hist["Close"]
 
-delta = close.diff()
+    ma50 = round(close.rolling(50).mean().iloc[-1], 2)
+    ma200 = round(close.rolling(200).mean().iloc[-1], 2)
 
-gain = delta.where(delta > 0, 0).rolling(14).mean()
-loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
+    delta = close.diff()
 
-rs = gain / loss
+    gain = delta.where(delta > 0, 0).rolling(14).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
 
-rsi = round((100 - (100 / (1 + rs))).iloc[-1], 2)
+    rs = gain / loss
 
-trend = "Bullish" if ma50 > ma200 else "Bearish"
-            st.subheader("📊 Live Market Data")
+    rsi = round((100 - (100 / (1 + rs))).iloc[-1], 2)
 
-            st.write(f"💰 Current Price: {current_price}")
-            st.write(f"🏢 Market Cap: {market_cap}")
-            st.write(f"📈 P/E Ratio: {pe_ratio}")
-st.write(f"📊 50 DMA: {ma50}")
-st.write(f"📊 200 DMA: {ma200}")
-st.write(f"⚡ RSI: {rsi}")
-st.write(f"📍 Trend: {trend}")
-            prompt = f"""
+    trend = "Bullish" if ma50 > ma200 else "Bearish"
+
+    st.subheader("📊 Live Market Data")
+
+    st.write(f"💰 Current Price: {current_price}")
+    st.write(f"🏢 Market Cap: {market_cap}")
+    st.write(f"📈 P/E Ratio: {pe_ratio}")
+    st.write(f"📊 50 DMA: {ma50}")
+    st.write(f"📊 200 DMA: {ma200}")
+    st.write(f"⚡ RSI: {rsi}")
+    st.write(f"📍 Trend: {trend}")
+
+    prompt = f"""
 તમે Professional Stock Market Analyst છો.
 
 Stock: {symbol}
@@ -118,6 +121,10 @@ Stock: {symbol}
 Current Price: {current_price}
 Market Cap: {market_cap}
 PE Ratio: {pe_ratio}
+50 DMA: {ma50}
+200 DMA: {ma200}
+RSI: {rsi}
+Trend: {trend}
 
 ગુજરાતીમાં જવાબ આપો.
 
@@ -127,21 +134,21 @@ PE Ratio: {pe_ratio}
 4. લાંબા ગાળાનો અભિપ્રાય
 5. Score /100
 6. BUY / HOLD / AVOID
-50 DMA: {ma50}
-200 DMA: {ma200}
-RSI: {rsi}
-Trend: {trend}
+7. RSI નું અર્થઘટન
+8. Trend Bullish છે કે Bearish?
+9. Technical Score /100
+
 છેલ્લે લખો:
 'આ નાણાકીય સલાહ નથી.'
 """
 
-            with st.spinner("AI Analysis કરી રહ્યું છે..."):
+    with st.spinner("AI Analysis કરી રહ્યું છે..."):
+        response = model.generate_content(prompt)
 
-                response = model.generate_content(prompt)
+    st.markdown(response.text)
 
-            st.markdown(response.text)
-
-        except Exception as e:
+except Exception as e:
+    st.error(f"Error: {e}")
 
             st.error(f"Error: {e}")
 
