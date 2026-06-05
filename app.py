@@ -1,47 +1,74 @@
 import streamlit as st
 import google.generativeai as genai
+import yfinance as yf
 
 st.set_page_config(
     page_title="Gandiv AI Stock Research",
     page_icon="📈"
 )
 
+# Gemini API
 genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 
 model = genai.GenerativeModel("gemini-2.5-flash")
 
-st.title("📈 Gandiv AI Stock Research Engine")
+st.title("📈 Gandiv AI Stock Research + Live Data")
 
-stock = st.text_input("શેર / કંપનીનું નામ લખો")
+symbol = st.text_input(
+    "Stock Symbol લખો (ઉદાહરણ: RELIANCE.NS)"
+)
 
-if st.button("🔍 Research"):
+if st.button("🔍 Analyze"):
 
-    if stock:
+    if symbol:
 
-        prompt = f"""
-તમે Professional Stock Market Research Analyst છો.
+        try:
+            stock = yf.Ticker(symbol)
 
-કંપની: {stock}
+            info = stock.info
+
+            current_price = info.get("currentPrice", "N/A")
+            market_cap = info.get("marketCap", "N/A")
+            pe_ratio = info.get("trailingPE", "N/A")
+
+            st.subheader("📊 Live Market Data")
+
+            st.write(f"💰 Current Price: {current_price}")
+            st.write(f"🏢 Market Cap: {market_cap}")
+            st.write(f"📈 P/E Ratio: {pe_ratio}")
+
+            prompt = f"""
+તમે Professional Stock Market Analyst છો.
+
+Stock: {symbol}
+
+Current Price: {current_price}
+Market Cap: {market_cap}
+PE Ratio: {pe_ratio}
 
 ગુજરાતીમાં જવાબ આપો.
 
-આ મુદ્દાઓ આપો:
-
-1. કંપની શું કરે છે?
-2. મુખ્ય તકો (Opportunities)
-3. મુખ્ય જોખમો (Risks)
+1. કંપનીનું વિશ્લેષણ
+2. મુખ્ય તકો
+3. મુખ્ય જોખમો
 4. લાંબા ગાળાનો અભિપ્રાય
-5. 100 માંથી Score
+5. Score /100
 6. BUY / HOLD / AVOID
 
-જવાબ સરળ ગુજરાતી ભાષામાં આપો.
-આ નાણાકીય સલાહ નથી તે પણ લખો.
+છેલ્લે લખો:
+'આ નાણાકીય સલાહ નથી.'
 """
 
-        with st.spinner("AI Research કરી રહ્યું છે..."):
-            response = model.generate_content(prompt)
+            with st.spinner("AI Analysis કરી રહ્યું છે..."):
 
-        st.markdown(response.text)
+                response = model.generate_content(prompt)
+
+            st.markdown(response.text)
+
+        except Exception as e:
+
+            st.error(f"Error: {e}")
 
     else:
-        st.warning("કંપનીનું નામ લખો")
+
+        st.warning("કૃપા કરીને Stock Symbol લખો")
