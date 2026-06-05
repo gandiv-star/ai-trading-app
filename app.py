@@ -76,8 +76,9 @@ if st.button("🔍 Analyze"):
 
     if symbol:
 
-        try:
+try:
     stock = yf.Ticker(symbol)
+
     info = stock.info
 
     current_price = info.get("currentPrice", "N/A")
