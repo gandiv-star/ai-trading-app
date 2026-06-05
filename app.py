@@ -125,3 +125,22 @@ PE Ratio: {pe_ratio}
     else:
 
         st.warning("કૃપા કરીને Stock Symbol લખો")
+
+st.divider()
+
+if st.button("💼 Create AI Portfolio"):
+
+    capital = 100000
+
+    portfolio = [
+        ("RELIANCE.NS", 40000),
+        ("TCS.NS", 35000),
+        ("HDFCBANK.NS", 25000)
+    ]
+
+    st.subheader("🤖 AI Portfolio")
+
+    for stock, amount in portfolio:
+        st.write(f"{stock} → ₹{amount:,}")
+
+    st.success(f"Total Capital Invested: ₹{capital:,}")
