@@ -2,25 +2,46 @@ import streamlit as st
 import google.generativeai as genai
 
 st.set_page_config(
-    page_title="Gandiv AI Assistant",
-    page_icon="🤖"
+    page_title="Gandiv AI Stock Research",
+    page_icon="📈"
 )
 
-api_key = st.secrets["GEMINI_API_KEY"]
-
-genai.configure(api_key=api_key)
+genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 
 model = genai.GenerativeModel("gemini-2.5-flash")
-st.title("🤖 Gandiv AI Assistant")
 
-question = st.text_area("તમારો પ્રશ્ન લખો")
+st.title("📈 Gandiv AI Stock Research Engine")
 
-if st.button("પૂછો"):
+stock = st.text_input("શેર / કંપનીનું નામ લખો")
 
-    if question:
+if st.button("🔍 Research"):
 
-        with st.spinner("AI વિચારી રહ્યું છે..."):
+    if stock:
 
-            response = model.generate_content(question)
+        prompt = f"""
+તમે Professional Stock Market Research Analyst છો.
 
-            st.write(response.text)
+કંપની: {stock}
+
+ગુજરાતીમાં જવાબ આપો.
+
+આ મુદ્દાઓ આપો:
+
+1. કંપની શું કરે છે?
+2. મુખ્ય તકો (Opportunities)
+3. મુખ્ય જોખમો (Risks)
+4. લાંબા ગાળાનો અભિપ્રાય
+5. 100 માંથી Score
+6. BUY / HOLD / AVOID
+
+જવાબ સરળ ગુજરાતી ભાષામાં આપો.
+આ નાણાકીય સલાહ નથી તે પણ લખો.
+"""
+
+        with st.spinner("AI Research કરી રહ્યું છે..."):
+            response = model.generate_content(prompt)
+
+        st.markdown(response.text)
+
+    else:
+        st.warning("કંપનીનું નામ લખો")
