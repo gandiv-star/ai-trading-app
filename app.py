@@ -1,6 +1,7 @@
 import streamlit as st
 import google.generativeai as genai
 import yfinance as yf
+import pandas as pd
 
 st.set_page_config(
     page_title="Gandiv AI Stock Research",
@@ -83,13 +84,32 @@ if st.button("🔍 Analyze"):
             current_price = info.get("currentPrice", "N/A")
             market_cap = info.get("marketCap", "N/A")
             pe_ratio = info.get("trailingPE", "N/A")
+hist = stock.history(period="1y")
 
+close = hist["Close"]
+
+ma50 = round(close.rolling(50).mean().iloc[-1], 2)
+ma200 = round(close.rolling(200).mean().iloc[-1], 2)
+
+delta = close.diff()
+
+gain = delta.where(delta > 0, 0).rolling(14).mean()
+loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
+
+rs = gain / loss
+
+rsi = round((100 - (100 / (1 + rs))).iloc[-1], 2)
+
+trend = "Bullish" if ma50 > ma200 else "Bearish"
             st.subheader("📊 Live Market Data")
 
             st.write(f"💰 Current Price: {current_price}")
             st.write(f"🏢 Market Cap: {market_cap}")
             st.write(f"📈 P/E Ratio: {pe_ratio}")
-
+st.write(f"📊 50 DMA: {ma50}")
+st.write(f"📊 200 DMA: {ma200}")
+st.write(f"⚡ RSI: {rsi}")
+st.write(f"📍 Trend: {trend}")
             prompt = f"""
 તમે Professional Stock Market Analyst છો.
 
@@ -107,7 +127,10 @@ PE Ratio: {pe_ratio}
 4. લાંબા ગાળાનો અભિપ્રાય
 5. Score /100
 6. BUY / HOLD / AVOID
-
+50 DMA: {ma50}
+200 DMA: {ma200}
+RSI: {rsi}
+Trend: {trend}
 છેલ્લે લખો:
 'આ નાણાકીય સલાહ નથી.'
 """
