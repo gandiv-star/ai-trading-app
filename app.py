@@ -69,51 +69,52 @@ if st.button("🔥 Best Stocks Scanner"):
 
         st.write(f"{rank}. {symbol} → {score}/100")
 symbol = st.text_input(
-    "Stock Symbol લખો (ઉદાહરણ: RELIANCE.NS)"
+"Stock Symbol લખો (ઉદાહરણ: RELIANCE.NS)"
 )
 
 if st.button("🔍 Analyze"):
 
-    if symbol:
+if symbol:
 
-try:
-    stock = yf.Ticker(symbol)
+    try:
+        stock = yf.Ticker(symbol)
 
-    info = stock.info
+        info = stock.info
 
-    current_price = info.get("currentPrice", "N/A")
-    market_cap = info.get("marketCap", "N/A")
-    pe_ratio = info.get("trailingPE", "N/A")
+        current_price = info.get("currentPrice", "N/A")
+        market_cap = info.get("marketCap", "N/A")
+        pe_ratio = info.get("trailingPE", "N/A")
 
-    hist = stock.history(period="1y")
+        hist = stock.history(period="1y")
 
-    close = hist["Close"]
+        close = hist["Close"]
 
-    ma50 = round(close.rolling(50).mean().iloc[-1], 2)
-    ma200 = round(close.rolling(200).mean().iloc[-1], 2)
+        ma50 = round(close.rolling(50).mean().iloc[-1], 2)
+        ma200 = round(close.rolling(200).mean().iloc[-1], 2)
 
-    delta = close.diff()
+        delta = close.diff()
 
-    gain = delta.where(delta > 0, 0).rolling(14).mean()
-    loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
+        gain = delta.where(delta > 0, 0).rolling(14).mean()
+        loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
 
-    rs = gain / loss
+        rs = gain / loss
 
-    rsi = round((100 - (100 / (1 + rs))).iloc[-1], 2)
+        rsi = round((100 - (100 / (1 + rs))).iloc[-1], 2)
 
-    trend = "Bullish" if ma50 > ma200 else "Bearish"
+        trend = "Bullish" if ma50 > ma200 else "Bearish"
 
-    st.subheader("📊 Live Market Data")
+        st.subheader("📊 Live Market Data")
 
-    st.write(f"💰 Current Price: {current_price}")
-    st.write(f"🏢 Market Cap: {market_cap}")
-    st.write(f"📈 P/E Ratio: {pe_ratio}")
-    st.write(f"📊 50 DMA: {ma50}")
-    st.write(f"📊 200 DMA: {ma200}")
-    st.write(f"⚡ RSI: {rsi}")
-    st.write(f"📍 Trend: {trend}")
+        st.write(f"💰 Current Price: {current_price}")
+        st.write(f"🏢 Market Cap: {market_cap}")
+        st.write(f"📈 P/E Ratio: {pe_ratio}")
+        st.write(f"📊 50 DMA: {ma50}")
+        st.write(f"📊 200 DMA: {ma200}")
+        st.write(f"⚡ RSI: {rsi}")
+        st.write(f"📍 Trend: {trend}")
 
-    prompt = f"""
+        prompt = f"""
+
 તમે Professional Stock Market Analyst છો.
 
 Stock: {symbol}
@@ -142,32 +143,16 @@ Trend: {trend}
 'આ નાણાકીય સલાહ નથી.'
 """
 
-    with st.spinner("AI Analysis કરી રહ્યું છે..."):
-        response = model.generate_content(prompt)
+        with st.spinner("AI Analysis કરી રહ્યું છે..."):
+            response = model.generate_content(prompt)
 
-    st.markdown(response.text)
+        st.markdown(response.text)
 
-except Exception as e:
-    st.error(f"Error: {e}")
+    except Exception as e:
+        st.error(f"Error: {e}")
 
-            st.error(f"Error: {e}")
-
-    else:
-
-        st.warning("કૃપા કરીને Stock Symbol લખો")
-
-st.divider()
-
-if st.button("💼 Create AI Portfolio"):
-
-    capital = 100000
-
-    portfolio = [
-        ("RELIANCE.NS", 40000),
-        ("TCS.NS", 35000),
-        ("HDFCBANK.NS", 25000)
-    ]
-
+else:
+    st.warning("કૃપા કરીને Stock Symbol લખો")
     st.subheader("🤖 AI Portfolio")
 
     for stock, amount in portfolio:
