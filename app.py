@@ -13,7 +13,60 @@ genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 model = genai.GenerativeModel("gemini-2.5-flash")
 
 st.title("📈 Gandiv AI Stock Research + Live Data")
+st.divider()
 
+if st.button("🔥 Best Stocks Scanner"):
+
+    stocks = [
+        "RELIANCE.NS",
+        "TCS.NS",
+        "INFY.NS",
+        "HDFCBANK.NS",
+        "ICICIBANK.NS",
+        "SBIN.NS",
+        "LT.NS",
+        "BHARTIARTL.NS"
+    ]
+
+    results = []
+
+    with st.spinner("Stocks Scan થઈ રહ્યા છે..."):
+
+        for symbol in stocks:
+
+            try:
+
+                stock = yf.Ticker(symbol)
+
+                info = stock.info
+
+                pe = info.get("trailingPE", 999)
+
+                market_cap = info.get("marketCap", 0)
+
+                score = 100
+
+                if pe and pe != 999:
+                    if pe > 40:
+                        score -= 20
+                    elif pe > 30:
+                        score -= 10
+
+                if market_cap < 100000000000:
+                    score -= 10
+
+                results.append((symbol, score))
+
+            except:
+                pass
+
+    results.sort(key=lambda x: x[1], reverse=True)
+
+    st.subheader("🏆 Top Stocks Today")
+
+    for rank, (symbol, score) in enumerate(results, start=1):
+
+        st.write(f"{rank}. {symbol} → {score}/100")
 symbol = st.text_input(
     "Stock Symbol લખો (ઉદાહરણ: RELIANCE.NS)"
 )
