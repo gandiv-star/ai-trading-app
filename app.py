@@ -1,49 +1,27 @@
 import streamlit as st
-import random
+import google.generativeai as genai
 
 st.set_page_config(
-    page_title="Gandiv AI Trading Assistant",
-    page_icon="📈",
-    layout="centered"
+    page_title="Gandiv AI Assistant",
+    page_icon="🤖"
 )
 
-st.title("📈 Gandiv AI Trading Assistant")
-st.write("સ્માર્ટ AI આધારિત ટ્રેડિંગ વિશ્લેષણ")
+api_key = st.secrets["GEMINI_API_KEY"]
 
-stock = st.text_input("શેરનું નામ લખો")
+genai.configure(api_key=api_key)
 
-if st.button("🚀 વિશ્લેષણ કરો"):
+model = genai.GenerativeModel("gemini-1.5-flash")
 
-    if stock:
+st.title("🤖 Gandiv AI Assistant")
 
-        signals = [
-            "🟢 Strong Buy",
-            "🟢 Buy",
-            "🟡 Hold",
-            "🔴 Sell"
-        ]
+question = st.text_area("તમારો પ્રશ્ન લખો")
 
-        reasons = [
-            "બુલિશ ટ્રેન્ડ જોવા મળે છે",
-            "મજબૂત વોલ્યુમ જોવા મળે છે",
-            "બ્રેકઆઉટની શક્યતા છે",
-            "સપોર્ટ લેવલ મજબૂત છે",
-            "પોઝિટિવ મોમેન્ટમ ચાલુ છે"
-        ]
+if st.button("પૂછો"):
 
-        signal = random.choice(signals)
-        confidence = random.randint(80, 99)
+    if question:
 
-        st.success(signal)
+        with st.spinner("AI વિચારી રહ્યું છે..."):
 
-        st.metric(
-            label="વિશ્વાસ સ્તર",
-            value=f"{confidence}%"
-        )
+            response = model.generate_content(question)
 
-        st.info(random.choice(reasons))
-
-        st.balloons()
-
-    else:
-        st.warning("કૃપા કરીને શેરનું નામ લખો")
+            st.write(response.text)
