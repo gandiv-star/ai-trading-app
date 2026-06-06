@@ -262,3 +262,30 @@ if st.button("🏦 Check Upstox Account"):
     except Exception as e:
 
         st.error(f"Connection Error: {e}")
+st.divider()
+
+if st.button("📂 My Holdings"):
+
+    token = st.secrets["UPSTOX_ACCESS_TOKEN"]
+
+    headers = {
+        "Accept": "application/json",
+        "Authorization": f"Bearer {token}"
+    }
+
+    try:
+
+        response = requests.get(
+            "https://api.upstox.com/v2/portfolio/long-term-holdings",
+            headers=headers
+        )
+
+        data = response.json()
+
+        st.subheader("📊 My Holdings")
+
+        st.json(data)
+
+    except Exception as e:
+
+        st.error(f"Error: {e}")
