@@ -234,7 +234,12 @@ if st.button("💼 Create AI Portfolio"):
 
     st.success(
         f"Total Capital Invested: ₹{capital:,}"
-)
+    )
+
+# =========================
+# UPSTOX ACCOUNT & HOLDINGS
+# =========================
+
 st.divider()
 
 if st.button("🏦 Check Upstox Account"):
@@ -262,6 +267,7 @@ if st.button("🏦 Check Upstox Account"):
     except Exception as e:
 
         st.error(f"Connection Error: {e}")
+
 st.divider()
 
 if st.button("📂 My Holdings"):
@@ -289,3 +295,4 @@ if st.button("📂 My Holdings"):
     except Exception as e:
 
         st.error(f"Error: {e}")
+                    
