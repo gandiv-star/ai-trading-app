@@ -235,3 +235,30 @@ if st.button("💼 Create AI Portfolio"):
     st.success(
         f"Total Capital Invested: ₹{capital:,}"
 )
+st.divider()
+
+if st.button("🏦 Check Upstox Account"):
+
+    token = st.secrets["UPSTOX_ACCESS_TOKEN"]
+
+    headers = {
+        "Accept": "application/json",
+        "Authorization": f"Bearer {token}"
+    }
+
+    try:
+
+        response = requests.get(
+            "https://api.upstox.com/v2/user/profile",
+            headers=headers
+        )
+
+        data = response.json()
+
+        st.success("✅ Upstox Connected Successfully")
+
+        st.json(data)
+
+    except Exception as e:
+
+        st.error(f"Connection Error: {e}")
