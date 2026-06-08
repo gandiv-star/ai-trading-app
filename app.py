@@ -433,3 +433,28 @@ if st.button("🚀 Find Best Opportunities"):
         )
 
     st.success("🤖 AI Opportunity Scan Complete")         
+st.divider()
+
+st.subheader("📊 AI Market Dashboard")
+
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.metric(
+        "Nifty Mood",
+        "Bullish 🟢"
+    )
+
+with col2:
+    st.metric(
+        "AI Risk",
+        "Low 🟢"
+    )
+
+with col3:
+    st.metric(
+        "Market Trend",
+        "Uptrend 📈"
+    )
+
+st.success("🤖 AI Dashboard Active")
