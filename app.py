@@ -305,7 +305,45 @@ if st.button("🏦 Check Upstox Account"):
         st.error(f"Connection Error: {e}")
 
 st.divider()
+st.divider()
 
+st.subheader("💼 AI Portfolio Allocator")
+
+capital = st.number_input(
+    "Investment Amount (₹)",
+    min_value=10000,
+    value=100000,
+    step=10000
+)
+
+if st.button("🚀 Generate AI Portfolio"):
+
+    allocation = {
+        "RELIANCE.NS": 0.25,
+        "TCS.NS": 0.20,
+        "HDFCBANK.NS": 0.20,
+        "ICICIBANK.NS": 0.15,
+        "INFY.NS": 0.10,
+        "ITC.NS": 0.10
+    }
+
+    st.subheader("📊 AI Recommended Portfolio")
+
+    total = 0
+
+    for stock, weight in allocation.items():
+
+        amount = round(capital * weight)
+
+        total += amount
+
+        st.write(
+            f"✅ {stock} → ₹{amount:,} ({weight*100:.0f}%)"
+        )
+
+    st.success(
+        f"💰 Total Allocated: ₹{total:,}"
+    )
 if st.button("📂 My Holdings"):
 
     token = st.secrets["UPSTOX_ACCESS_TOKEN"]
