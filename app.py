@@ -371,4 +371,65 @@ if st.button("📂 My Holdings"):
         st.error(f"Error: {e}")
                     
 st.write("Token Loaded:", st.secrets["UPSTOX_ACCESS_TOKEN"][:15])
-            
+   st.divider()
+
+if st.button("🚀 Find Best Opportunities"):
+
+    opportunities = []
+
+    stocks = [
+        "RELIANCE.NS",
+        "TCS.NS",
+        "INFY.NS",
+        "HDFCBANK.NS",
+        "ICICIBANK.NS",
+        "ITC.NS",
+        "LT.NS",
+        "BHARTIARTL.NS",
+        "SUNPHARMA.NS",
+        "TITAN.NS"
+    ]
+
+    with st.spinner("AI Opportunities શોધી રહ્યું છે..."):
+
+        for symbol in stocks:
+
+            try:
+
+                stock = yf.Ticker(symbol)
+
+                hist = stock.history(period="1y")
+
+                close = hist["Close"]
+
+                ma50 = close.rolling(50).mean().iloc[-1]
+                ma200 = close.rolling(200).mean().iloc[-1]
+
+                trend = "Bullish" if ma50 > ma200 else "Bearish"
+
+                score = 90 if trend == "Bullish" else 60
+
+                opportunities.append(
+                    (symbol, score, trend)
+                )
+
+            except:
+                pass
+
+    opportunities.sort(
+        key=lambda x: x[1],
+        reverse=True
+    )
+
+    st.subheader("🔥 Top Market Opportunities")
+
+    for rank, (symbol, score, trend) in enumerate(
+        opportunities[:5],
+        start=1
+    ):
+
+        st.write(
+            f"{rank}. {symbol} | Score: {score}/100 | Trend: {trend}"
+        )
+
+    st.success("🤖 AI Opportunity Scan Complete")         
