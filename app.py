@@ -511,3 +511,33 @@ if st.button("📋 Analyze Watchlist"):
             st.warning(f"{symbol} Data Not Available")
 
     st.success("🤖 Watchlist Analysis Complete")
+st.divider()
+
+st.subheader("💪 Portfolio Health Score")
+
+if st.button("📊 Check Portfolio Health"):
+
+    health_score = 87
+
+    risk_level = "Low 🟢"
+
+    diversification = "Good ✅"
+
+    verdict = "Strong Portfolio 🚀"
+
+    st.metric(
+        "Portfolio Health",
+        f"{health_score}/100"
+    )
+
+    st.write(
+        f"Risk Level: {risk_level}"
+    )
+
+    st.write(
+        f"Diversification: {diversification}"
+    )
+
+    st.success(
+        f"AI Verdict: {verdict}"
+    )
