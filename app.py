@@ -23,6 +23,7 @@ st.divider()
 
 if st.button("🔥 Best Stocks Scanner"):
 
+    # STEP 1: મોટી લિસ્ટ અપડેટ કરી છે
     stocks = [
         "RELIANCE.NS",
         "TCS.NS",
@@ -31,7 +32,29 @@ if st.button("🔥 Best Stocks Scanner"):
         "ICICIBANK.NS",
         "SBIN.NS",
         "LT.NS",
-        "BHARTIARTL.NS"
+        "BHARTIARTL.NS",
+        "ITC.NS",
+        "HINDUNILVR.NS",
+        "KOTAKBANK.NS",
+        "AXISBANK.NS",
+        "BAJFINANCE.NS",
+        "MARUTI.NS",
+        "ASIANPAINT.NS",
+        "SUNPHARMA.NS",
+        "TITAN.NS",
+        "ULTRACEMCO.NS",
+        "WIPRO.NS",
+        "NESTLEIND.NS",
+        "POWERGRID.NS",
+        "NTPC.NS",
+        "ONGC.NS",
+        "ADANIPORTS.NS",
+        "TATASTEEL.NS",
+        "JSWSTEEL.NS",
+        "HCLTECH.NS",
+        "TECHM.NS",
+        "INDUSINDBK.NS",
+        "COALINDIA.NS"
     ]
 
     results = []
@@ -108,9 +131,22 @@ if st.button("🔥 Best Stocks Scanner"):
 
     for rank, (symbol, score, rsi, trend) in enumerate(results, start=1):
 
+        # STEP 2: પ્રીમિયમ રેટિંગ લોજિક ઉમેર્યું છે
+        if score >= 100:
+            rating = "🔥 Strong Buy"
+        elif score >= 90:
+            rating = "✅ Buy"
+        elif score >= 75:
+            rating = "🟡 Hold"
+        else:
+            rating = "🔴 Avoid"
+
         st.write(
-            f"{rank}. {symbol} | Score: {score}/100 | RSI: {rsi} | Trend: {trend}"
+            f"{rank}. {symbol} | {rating} | Score: {score}/100 | RSI: {rsi} | Trend: {trend}"
         )
+        
+    # STEP 3: સ્કેનર કમ્પ્લીટ મેસેજ ઉમેર્યો છે
+    st.success("🤖 AI Premium Scanner Completed")
 
 # =========================
 # STOCK ANALYSIS
@@ -297,3 +333,4 @@ if st.button("📂 My Holdings"):
         st.error(f"Error: {e}")
                     
 st.write("Token Loaded:", st.secrets["UPSTOX_ACCESS_TOKEN"][:15])
+            
