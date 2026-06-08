@@ -458,3 +458,56 @@ with col3:
     )
 
 st.success("🤖 AI Dashboard Active")
+st.divider()
+
+st.subheader("⭐ AI Watchlist")
+
+watchlist = st.text_area(
+    "Stocks લખો (Comma Separated)",
+    "RELIANCE.NS,TCS.NS,HDFCBANK.NS"
+)
+
+if st.button("📋 Analyze Watchlist"):
+
+    symbols = watchlist.split(",")
+
+    for symbol in symbols:
+
+        try:
+
+            symbol = symbol.strip()
+
+            stock = yf.Ticker(symbol)
+
+            hist = stock.history(period="1y")
+
+            close = hist["Close"]
+
+            current_price = round(close.iloc[-1], 2)
+
+            ma50 = close.rolling(50).mean().iloc[-1]
+            ma200 = close.rolling(200).mean().iloc[-1]
+
+            trend = (
+                "Bullish 🟢"
+                if ma50 > ma200
+                else "Bearish 🔴"
+            )
+
+            score = 90 if ma50 > ma200 else 60
+
+            if score >= 85:
+                rating = "🔥 Strong Buy"
+            elif score >= 75:
+                rating = "✅ Buy"
+            else:
+                rating = "🟡 Hold"
+
+            st.write(
+                f"{symbol} | ₹{current_price} | {trend} | {rating}"
+            )
+
+        except:
+            st.warning(f"{symbol} Data Not Available")
+
+    st.success("🤖 Watchlist Analysis Complete")
