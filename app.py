@@ -371,7 +371,7 @@ if st.button("📂 My Holdings"):
         st.error(f"Error: {e}")
                     
 st.write("Token Loaded:", st.secrets["UPSTOX_ACCESS_TOKEN"][:15])
-   st.divider()
+st.divider()
 
 if st.button("🚀 Find Best Opportunities"):
 
