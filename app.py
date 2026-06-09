@@ -750,3 +750,107 @@ if st.button("🧪 Run Backtest"):
 
         st.error(f"Backtest Error: {e}")
             
+st.divider()
+
+st.subheader("🏆 Multi Stock Backtesting Dashboard")
+
+if st.button("🚀 Run Multi Stock Backtest"):
+
+    stocks = [
+        "RELIANCE.NS",
+        "TCS.NS",
+        "INFY.NS",
+        "HDFCBANK.NS",
+        "ICICIBANK.NS",
+        "ITC.NS",
+        "LT.NS",
+        "BHARTIARTL.NS",
+        "SUNPHARMA.NS",
+        "TITAN.NS"
+    ]
+
+    results = []
+
+    with st.spinner("Backtesting Running..."):
+
+        for symbol in stocks:
+
+            try:
+
+                stock = yf.Ticker(symbol)
+
+                hist = stock.history(period="3y")
+
+                close = hist["Close"]
+
+                ma50 = close.rolling(50).mean()
+                ma200 = close.rolling(200).mean()
+
+                trades = 0
+                wins = 0
+
+                position = False
+                entry_price = 0
+
+                for i in range(200, len(close)):
+
+                    if not position:
+
+                        if ma50.iloc[i] > ma200.iloc[i]:
+
+                            entry_price = close.iloc[i]
+                            position = True
+
+                    else:
+
+                        profit_pct = (
+                            (close.iloc[i] - entry_price)
+                            / entry_price
+                        ) * 100
+
+                        if profit_pct >= 5:
+
+                            wins += 1
+                            trades += 1
+                            position = False
+
+                        elif profit_pct <= -3:
+
+                            trades += 1
+                            position = False
+
+                if trades > 0:
+
+                    win_rate = round(
+                        (wins / trades) * 100,
+                        2
+                    )
+
+                    results.append(
+                        (
+                            symbol,
+                            win_rate,
+                            trades
+                        )
+                    )
+
+            except:
+                pass
+
+    results.sort(
+        key=lambda x: x[1],
+        reverse=True
+    )
+
+    st.subheader("🥇 Best Strategy Stocks")
+
+    for rank, (symbol, win_rate, trades) in enumerate(
+        results[:10],
+        start=1
+    ):
+
+        st.write(
+            f"{rank}. {symbol} | Win Rate: {win_rate}% | Trades: {trades}"
+        )
+
+    st.success("✅ Multi Stock Backtest Complete")
