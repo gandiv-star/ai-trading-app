@@ -619,6 +619,10 @@ Risk/Reward: {rr}
     st.success("🤖 Swing Trade Scan Complete")
 st.divider()
 
+# ========================================
+# 📊 STRATEGY BACKTESTING ENGINE (UPDATED v19)
+# ========================================
+
 st.subheader("📊 Strategy Backtesting Engine")
 
 if st.button("🧪 Run Backtest"):
@@ -636,6 +640,17 @@ if st.button("🧪 Run Backtest"):
         ma50 = close.rolling(50).mean()
         ma200 = close.rolling(200).mean()
 
+        # --- MULTI-FILTER INDICATORS (Backtest Loop પહેલાં ઉમેરેલ) ---
+        delta = close.diff()
+        gain = delta.where(delta > 0, 0).rolling(14).mean()
+        loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
+        rs = gain / loss
+        rsi_series = 100 - (100 / (1 + rs))
+
+        volume = hist["Volume"]
+        avg_volume = volume.rolling(20).mean()
+        # ------------------------------------------------------------
+
         position = False
 
         entry_price = 0
@@ -650,7 +665,13 @@ if st.button("🧪 Run Backtest"):
 
             if not position:
 
-                if ma50.iloc[i] > ma200.iloc[i]:
+                # --- NEW MULTI-FILTER ENTRY CONDITION ---
+                if (
+                    ma50.iloc[i] > ma200.iloc[i]
+                    and 45 <= rsi_series.iloc[i] <= 65
+                    and volume.iloc[i] > avg_volume.iloc[i]
+                    and close.iloc[i] > ma200.iloc[i]
+                ):
 
                     entry_price = close.iloc[i]
 
@@ -663,7 +684,8 @@ if st.button("🧪 Run Backtest"):
                     / entry_price
                 ) * 100
 
-                if profit_pct >= 5:
+                # --- NEW TARGET (8%) & STOP LOSS (-4%) ---
+                if profit_pct >= 8:
 
                     wins += 1
                     trades += 1
@@ -671,7 +693,7 @@ if st.button("🧪 Run Backtest"):
 
                     position = False
 
-                elif profit_pct <= -3:
+                elif profit_pct <= -4:
 
                     losses += 1
                     trades += 1
@@ -718,7 +740,13 @@ if st.button("🧪 Run Backtest"):
         st.success(
             f"AI Verdict: {verdict}"
         )
+        
+        # --- RESULT COMPARISON INFO MESSAGE ---
+        st.info(
+            "V19 Multi-Filter Strategy Active 🚀"
+        )
 
     except Exception as e:
 
         st.error(f"Backtest Error: {e}")
+            
