@@ -754,3 +754,103 @@ if st.button("🧪 Run Backtest"):
 
         st.error(f"Backtest Error: {e}")
                 
+st.divider()
+
+st.subheader("🚀 Momentum Breakout Backtest")
+
+if st.button("🔥 Run Momentum Backtest"):
+
+    symbol = "ITC.NS"
+
+    try:
+
+        stock = yf.Ticker(symbol)
+
+        hist = stock.history(period="3y")
+
+        close = hist["Close"]
+        volume = hist["Volume"]
+
+        ma50 = close.rolling(50).mean()
+        ma200 = close.rolling(200).mean()
+
+        avg_volume = volume.rolling(20).mean()
+
+        trades = 0
+        wins = 0
+        losses = 0
+
+        total_profit = 0
+
+        position = False
+        entry_price = 0
+
+        for i in range(200, len(close)):
+
+            breakout_high = close.iloc[i-20:i].max()
+
+            if not position:
+
+                if (
+                    close.iloc[i] > ma50.iloc[i]
+                    and close.iloc[i] > ma200.iloc[i]
+                    and close.iloc[i] > breakout_high
+                    and volume.iloc[i] > avg_volume.iloc[i]
+                ):
+
+                    entry_price = close.iloc[i]
+                    position = True
+
+            else:
+
+                profit_pct = (
+                    (close.iloc[i] - entry_price)
+                    / entry_price
+                ) * 100
+
+                if profit_pct >= 10:
+
+                    wins += 1
+                    trades += 1
+                    total_profit += profit_pct
+
+                    position = False
+
+                elif profit_pct <= -5:
+
+                    losses += 1
+                    trades += 1
+                    total_profit += profit_pct
+
+                    position = False
+
+        win_rate = (
+            round((wins / trades) * 100, 2)
+            if trades > 0
+            else 0
+        )
+
+        st.metric("Trades", trades)
+        st.metric("Win Rate", f"{win_rate}%")
+        st.metric(
+            "Total Return",
+            f"{round(total_profit,2)}%"
+        )
+
+        st.write(f"✅ Wins: {wins}")
+        st.write(f"❌ Losses: {losses}")
+
+        if win_rate >= 60:
+            verdict = "🔥 Excellent"
+        elif win_rate >= 50:
+            verdict = "✅ Good"
+        else:
+            verdict = "⚠️ Weak"
+
+        st.success(
+            f"Momentum Verdict: {verdict}"
+        )
+
+    except Exception as e:
+
+        st.error(f"Error: {e}")
