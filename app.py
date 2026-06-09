@@ -617,3 +617,108 @@ Risk/Reward: {rr}
         )
 
     st.success("🤖 Swing Trade Scan Complete")
+st.divider()
+
+st.subheader("📊 Strategy Backtesting Engine")
+
+if st.button("🧪 Run Backtest"):
+
+    symbol = "RELIANCE.NS"
+
+    try:
+
+        stock = yf.Ticker(symbol)
+
+        hist = stock.history(period="3y")
+
+        close = hist["Close"]
+
+        ma50 = close.rolling(50).mean()
+        ma200 = close.rolling(200).mean()
+
+        position = False
+
+        entry_price = 0
+
+        trades = 0
+        wins = 0
+        losses = 0
+
+        total_profit = 0
+
+        for i in range(200, len(close)):
+
+            if not position:
+
+                if ma50.iloc[i] > ma200.iloc[i]:
+
+                    entry_price = close.iloc[i]
+
+                    position = True
+
+            else:
+
+                profit_pct = (
+                    (close.iloc[i] - entry_price)
+                    / entry_price
+                ) * 100
+
+                if profit_pct >= 5:
+
+                    wins += 1
+                    trades += 1
+                    total_profit += profit_pct
+
+                    position = False
+
+                elif profit_pct <= -3:
+
+                    losses += 1
+                    trades += 1
+                    total_profit += profit_pct
+
+                    position = False
+
+        if trades > 0:
+
+            win_rate = round(
+                (wins / trades) * 100,
+                2
+            )
+
+        else:
+
+            win_rate = 0
+
+        st.metric(
+            "Total Trades",
+            trades
+        )
+
+        st.metric(
+            "Win Rate",
+            f"{win_rate}%"
+        )
+
+        st.metric(
+            "Total Return",
+            f"{round(total_profit,2)}%"
+        )
+
+        st.write(f"✅ Wins: {wins}")
+        st.write(f"❌ Losses: {losses}")
+
+        if win_rate >= 60:
+            verdict = "🔥 Excellent Strategy"
+        elif win_rate >= 50:
+            verdict = "✅ Good Strategy"
+        else:
+            verdict = "⚠️ Needs Improvement"
+
+        st.success(
+            f"AI Verdict: {verdict}"
+        )
+
+    except Exception as e:
+
+        st.error(f"Backtest Error: {e}")
