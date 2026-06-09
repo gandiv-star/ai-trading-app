@@ -541,3 +541,79 @@ if st.button("📊 Check Portfolio Health"):
     st.success(
         f"AI Verdict: {verdict}"
     )
+st.divider()
+
+st.subheader("📈 AI Swing Trade Finder")
+
+if st.button("🚀 Find Swing Trades"):
+
+    swing_trades = []
+
+    stocks = [
+        "RELIANCE.NS",
+        "TCS.NS",
+        "INFY.NS",
+        "HDFCBANK.NS",
+        "ICICIBANK.NS",
+        "ITC.NS"
+    ]
+
+    with st.spinner("Swing Trades શોધી રહ્યા છીએ..."):
+
+        for symbol in stocks:
+
+            try:
+
+                stock = yf.Ticker(symbol)
+
+                hist = stock.history(period="6mo")
+
+                close = hist["Close"]
+
+                current_price = round(close.iloc[-1], 2)
+
+                ma50 = close.rolling(50).mean().iloc[-1]
+                ma200 = close.rolling(200).mean().iloc[-1]
+
+                if ma50 > ma200:
+
+                    entry = current_price
+                    target = round(current_price * 1.05, 2)
+                    stoploss = round(current_price * 0.97, 2)
+
+                    swing_trades.append(
+                        (
+                            symbol,
+                            entry,
+                            target,
+                            stoploss
+                        )
+                    )
+
+            except:
+                pass
+
+    st.subheader("🔥 Top Swing Trades")
+
+    for symbol, entry, target, stoploss in swing_trades:
+
+        reward = round(target - entry, 2)
+        risk = round(entry - stoploss, 2)
+
+        rr = round(reward / risk, 2)
+
+        st.write(
+            f"""
+✅ {symbol}
+
+Entry: ₹{entry}
+
+Target: ₹{target}
+
+Stop Loss: ₹{stoploss}
+
+Risk/Reward: {rr}
+"""
+        )
+
+    st.success("🤖 Swing Trade Scan Complete")
