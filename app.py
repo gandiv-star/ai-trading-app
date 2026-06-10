@@ -446,7 +446,7 @@ if st.button("🚀 Run RSI Pullback Backtest"):
                 if profit_pct >= 8:
                     wins += 1; trades += 1; total_profit += profit_pct; position = False
                 elif profit_pct <= -4:
-                    losses += 1; trades += 1; total_profit += profit_pct; position = False  # FIXED: Removed trailing underscore
+                    losses += 1; trades += 1; total_profit += profit_pct; position = False
 
         win_rate = round((wins / trades) * 100, 2) if trades > 0 else 0
         st.metric("Trades", trades)
@@ -460,7 +460,6 @@ if st.button("🚀 Run RSI Pullback Backtest"):
 # ==========================================
 # AI TRADE ADVISOR (V24)
 # ==========================================
-
 st.divider()
 st.subheader("🤖 AI Trade Advisor")
 
@@ -469,43 +468,33 @@ trade_symbol = st.text_input(
     value="RELIANCE.NS"
 )
 
+if "trade_journal" not in st.session_state:
+    st.session_state.trade_journal = []
+
 if st.button("🚀 Generate AI Trade Setup"):
-
     try:
-
         stock = yf.Ticker(trade_symbol)
-
         hist = stock.history(period="1y")
-
         close = hist["Close"]
 
         current_price = round(close.iloc[-1], 2)
-
         ma50 = round(close.rolling(50).mean().iloc[-1], 2)
         ma200 = round(close.rolling(200).mean().iloc[-1], 2)
 
         delta = close.diff()
-
         gain = delta.where(delta > 0, 0).rolling(14).mean()
         loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
 
         rs = gain / loss
-
-        rsi = round(
-            (100 - (100 / (1 + rs))).iloc[-1],
-            2
-        )
+        rsi = round((100 - (100 / (1 + rs))).iloc[-1], 2)
 
         score = 50
-
         if ma50 > ma200:
             score += 20
-
         if rsi > 55:
             score += 15
         elif rsi < 30:
             score += 10
-
         if current_price > ma50:
             score += 15
 
@@ -521,68 +510,39 @@ if st.button("🚀 Generate AI Trade Setup"):
         stoploss = round(current_price * 0.95, 2)
 
         st.success(f"Recommendation: {advice}")
-
         st.write(f"AI Score: {score}/100")
         st.write(f"RSI: {rsi}")
-
         st.write(f"🎯 Entry: ₹{entry}")
         st.write(f"🚀 Target: ₹{target}")
         st.write(f"🛑 Stop Loss: ₹{stoploss}")
 
-        if "trade_journal" not in st.session_state:
-            st.session_state.trade_journal = []
-
-# Save Values
-st.session_state.last_trade = {
-    "Date": str(datetime.date.today()),
-    "Stock": trade_symbol,
-    "Score": score,
-    "Advice": advice,
-    "Entry": entry
-    }
+        # Save Values to session state inside the try block safely
+        st.session_state.last_trade = {
+            "Date": str(datetime.date.today()),
+            "Stock": trade_symbol,
+            "Score": score,
+            "Advice": advice,
+            "Entry": entry
+        }
     except Exception as e:
         st.error(f"Error: {e}")
+
 if "last_trade" in st.session_state:
-
     if st.button("💾 Save Latest Trade"):
-
-        st.session_state.trade_journal.append(
-            st.session_state.last_trade
-        )
-
+        st.session_state.trade_journal.append(st.session_state.last_trade)
         st.success("✅ Trade Saved Successfully")
+        del st.session_state.last_trade  # Clear after saving to avoid double click issues
+
 # ==========================================
 # TRADE JOURNAL (V25)
 # ==========================================
-
 st.divider()
 st.subheader("📒 Trade Journal")
 
-if "trade_journal" not in st.session_state:
-    st.session_state.trade_journal = []
-
 if len(st.session_state.trade_journal) > 0:
-
-    journal_df = pd.DataFrame(
-        st.session_state.trade_journal
-    )
-
-    st.dataframe(
-        journal_df,
-        use_container_width=True
-    )
-
-    st.metric(
-        "Saved Trades",
-        len(st.session_state.trade_journal)
-    )
-
-    avg_score = round(
-        journal_df["Score"].mean(),
-        2
-    )
-
-    st.metric(
-        "Average AI Score",
-        avg_score
-    )
+    journal_df = pd.DataFrame(st.session_state.trade_journal)
+    st.dataframe(journal_df, use_container_width=True)
+    st.metric("Saved Trades", len(st.session_state.trade_journal))
+    avg_score = round(journal_df["Score"].mean(), 2)
+    st.metric("Average AI Score", avg_score)
+    
