@@ -1158,3 +1158,121 @@ RSI Pullback = {rsi_score}
     st.success(
         f"🥇 Best Overall Strategy: {ranking[0][0]}"
     )
+st.divider()
+
+st.subheader("🤖 AI Trade Advisor")
+
+trade_symbol = st.text_input(
+    "Stock Symbol for AI Advice",
+    value="RELIANCE.NS"
+)
+
+if st.button("🚀 Generate AI Trade Setup"):
+
+    try:
+
+        stock = yf.Ticker(trade_symbol)
+
+        hist = stock.history(period="1y")
+
+        close = hist["Close"]
+
+        current_price = round(close.iloc[-1], 2)
+
+        ma50 = round(
+            close.rolling(50).mean().iloc[-1],
+            2
+        )
+
+        ma200 = round(
+            close.rolling(200).mean().iloc[-1],
+            2
+        )
+
+        delta = close.diff()
+
+        gain = delta.where(
+            delta > 0,
+            0
+        ).rolling(14).mean()
+
+        loss = (
+            -delta.where(
+                delta < 0,
+                0
+            )
+        ).rolling(14).mean()
+
+        rs = gain / loss
+
+        rsi = round(
+            (
+                100 - (
+                    100 / (1 + rs)
+                )
+            ).iloc[-1],
+            2
+        )
+
+        score = 50
+
+        if ma50 > ma200:
+            score += 20
+
+        if rsi > 55:
+            score += 15
+
+        if current_price > ma50:
+            score += 15
+
+        if score >= 80:
+            advice = "🔥 BUY"
+
+        elif score >= 65:
+            advice = "🟡 HOLD"
+
+        else:
+            advice = "🔴 AVOID"
+
+        entry = current_price
+
+        target = round(
+            current_price * 1.08,
+            2
+        )
+
+        stoploss = round(
+            current_price * 0.95,
+            2
+        )
+
+        st.subheader("📊 AI Trade Setup")
+
+        st.write(f"Stock: {trade_symbol}")
+        st.write(f"AI Score: {score}/100")
+        st.write(f"RSI: {rsi}")
+        st.write(f"50 DMA: {ma50}")
+        st.write(f"200 DMA: {ma200}")
+
+        st.success(
+            f"Recommendation: {advice}"
+        )
+
+        st.write(f"🎯 Entry: ₹{entry}")
+        st.write(f"🚀 Target: ₹{target}")
+        st.write(f"🛑 Stop Loss: ₹{stoploss}")
+
+        risk_reward = round(
+            (target - entry)
+            /
+            (entry - stoploss),
+            2
+        )
+
+        st.info(
+            f"Risk/Reward Ratio: {risk_reward}"
+        )
+
+    except Exception as e:
+
+        st.error(f"Error: {e}")
