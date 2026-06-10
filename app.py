@@ -994,3 +994,167 @@ if st.button("🚀 Run RSI Pullback Backtest"):
         st.error(
             f"Error: {e}"
         )
+st.divider()
+
+st.subheader("🧪 V24 Pro - Multi Stock Multi Strategy Engine")
+
+if st.button("🚀 Run V24 Pro"):
+
+    stocks = [
+        "ITC.NS",
+        "BHARTIARTL.NS",
+        "ICICIBANK.NS",
+        "LT.NS"
+    ]
+
+    strategy_scores = {
+        "MA Cross": [],
+        "Momentum": [],
+        "RSI Pullback": []
+    }
+
+    with st.spinner("Strategies Testing..."):
+
+        for symbol in stocks:
+
+            try:
+
+                stock = yf.Ticker(symbol)
+
+                hist = stock.history(period="3y")
+
+                close = hist["Close"]
+
+                ma50 = close.rolling(50).mean()
+                ma200 = close.rolling(200).mean()
+
+                delta = close.diff()
+
+                gain = delta.where(
+                    delta > 0,
+                    0
+                ).rolling(14).mean()
+
+                loss = (
+                    -delta.where(
+                        delta < 0,
+                        0
+                    )
+                ).rolling(14).mean()
+
+                rs = gain / loss
+
+                rsi = 100 - (
+                    100 / (1 + rs)
+                )
+
+                volume = hist["Volume"]
+
+                avg_volume = volume.rolling(20).mean()
+
+                ma_score = 0
+                momentum_score = 0
+                rsi_score = 0
+
+                if ma50.iloc[-1] > ma200.iloc[-1]:
+                    ma_score += 50
+
+                if close.iloc[-1] > ma50.iloc[-1]:
+                    ma_score += 50
+
+                breakout_high = close.iloc[-20:].max()
+
+                if (
+                    close.iloc[-1] >= breakout_high * 0.98
+                    and volume.iloc[-1] > avg_volume.iloc[-1]
+                ):
+                    momentum_score += 100
+
+                if (
+                    ma50.iloc[-1] > ma200.iloc[-1]
+                    and rsi.iloc[-1] < 40
+                ):
+                    rsi_score += 100
+
+                strategy_scores["MA Cross"].append(
+                    ma_score
+                )
+
+                strategy_scores["Momentum"].append(
+                    momentum_score
+                )
+
+                strategy_scores["RSI Pullback"].append(
+                    rsi_score
+                )
+
+                stock_winner = max(
+                    {
+                        "MA Cross": ma_score,
+                        "Momentum": momentum_score,
+                        "RSI Pullback": rsi_score
+                    },
+                    key=lambda x: {
+                        "MA Cross": ma_score,
+                        "Momentum": momentum_score,
+                        "RSI Pullback": rsi_score
+                    }[x]
+                )
+
+                st.write(
+                    f"""
+📈 {symbol}
+
+MA Cross = {ma_score}
+
+Momentum = {momentum_score}
+
+RSI Pullback = {rsi_score}
+
+🏆 Winner = {stock_winner}
+"""
+                )
+
+            except Exception as e:
+
+                st.error(
+                    f"{symbol}: {e}"
+                )
+
+    st.subheader(
+        "🏆 Overall Strategy Ranking"
+    )
+
+    overall_results = {}
+
+    for strategy, scores in strategy_scores.items():
+
+        avg_score = (
+            round(
+                sum(scores) / len(scores),
+                2
+            )
+            if len(scores) > 0
+            else 0
+        )
+
+        overall_results[strategy] = avg_score
+
+    ranking = sorted(
+        overall_results.items(),
+        key=lambda x: x[1],
+        reverse=True
+    )
+
+    for rank, (name, score) in enumerate(
+        ranking,
+        start=1
+    ):
+
+        st.write(
+            f"{rank}. {name} → Average Score: {score}"
+        )
+
+    st.success(
+        f"🥇 Best Overall Strategy: {ranking[0][0]}"
+    )
