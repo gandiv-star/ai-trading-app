@@ -1219,9 +1219,11 @@ if st.button("🚀 Generate AI Trade Setup"):
         if ma50 > ma200:
             score += 20
 
-        if rsi > 55:
-            score += 15
+if rsi > 55:
+    score += 15
 
+elif rsi < 30:
+    score += 10
         if current_price > ma50:
             score += 15
 
