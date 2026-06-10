@@ -3,6 +3,7 @@ import streamlit as st
 import google.generativeai as genai
 import yfinance as yf
 import pandas as pd
+import datetime
 
 # Page Configuration
 st.set_page_config(
@@ -456,3 +457,130 @@ if st.button("🚀 Run RSI Pullback Backtest"):
     except Exception as e:
         st.error(f"Error: {e}")
                 
+# ==========================================
+# AI TRADE ADVISOR (V24)
+# ==========================================
+
+st.divider()
+st.subheader("🤖 AI Trade Advisor")
+
+trade_symbol = st.text_input(
+    "Stock Symbol for AI Advice",
+    value="RELIANCE.NS"
+)
+
+if st.button("🚀 Generate AI Trade Setup"):
+
+    try:
+
+        stock = yf.Ticker(trade_symbol)
+
+        hist = stock.history(period="1y")
+
+        close = hist["Close"]
+
+        current_price = round(close.iloc[-1], 2)
+
+        ma50 = round(close.rolling(50).mean().iloc[-1], 2)
+        ma200 = round(close.rolling(200).mean().iloc[-1], 2)
+
+        delta = close.diff()
+
+        gain = delta.where(delta > 0, 0).rolling(14).mean()
+        loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
+
+        rs = gain / loss
+
+        rsi = round(
+            (100 - (100 / (1 + rs))).iloc[-1],
+            2
+        )
+
+        score = 50
+
+        if ma50 > ma200:
+            score += 20
+
+        if rsi > 55:
+            score += 15
+        elif rsi < 30:
+            score += 10
+
+        if current_price > ma50:
+            score += 15
+
+        if score >= 80:
+            advice = "🔥 BUY"
+        elif score >= 65:
+            advice = "🟡 HOLD"
+        else:
+            advice = "🔴 AVOID"
+
+        entry = current_price
+        target = round(current_price * 1.08, 2)
+        stoploss = round(current_price * 0.95, 2)
+
+        st.success(f"Recommendation: {advice}")
+
+        st.write(f"AI Score: {score}/100")
+        st.write(f"RSI: {rsi}")
+
+        st.write(f"🎯 Entry: ₹{entry}")
+        st.write(f"🚀 Target: ₹{target}")
+        st.write(f"🛑 Stop Loss: ₹{stoploss}")
+
+        if "trade_journal" not in st.session_state:
+            st.session_state.trade_journal = []
+
+        if st.button("💾 Save Trade"):
+
+            st.session_state.trade_journal.append(
+                {
+                    "Date": str(datetime.date.today()),
+                    "Stock": trade_symbol,
+                    "Score": score,
+                    "Advice": advice,
+                    "Entry": entry
+                }
+            )
+
+            st.success("Trade Saved Successfully")
+
+    except Exception as e:
+        st.error(f"Error: {e}")
+
+# ==========================================
+# TRADE JOURNAL (V25)
+# ==========================================
+
+st.divider()
+st.subheader("📒 Trade Journal")
+
+if "trade_journal" not in st.session_state:
+    st.session_state.trade_journal = []
+
+if len(st.session_state.trade_journal) > 0:
+
+    journal_df = pd.DataFrame(
+        st.session_state.trade_journal
+    )
+
+    st.dataframe(
+        journal_df,
+        use_container_width=True
+    )
+
+    st.metric(
+        "Saved Trades",
+        len(st.session_state.trade_journal)
+    )
+
+    avg_score = round(
+        journal_df["Score"].mean(),
+        2
+    )
+
+    st.metric(
+        "Average AI Score",
+        avg_score
+    )
