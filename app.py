@@ -532,23 +532,25 @@ if st.button("🚀 Generate AI Trade Setup"):
         if "trade_journal" not in st.session_state:
             st.session_state.trade_journal = []
 
-        if st.button("💾 Save Trade"):
-
-            st.session_state.trade_journal.append(
-                {
-                    "Date": str(datetime.date.today()),
-                    "Stock": trade_symbol,
-                    "Score": score,
-                    "Advice": advice,
-                    "Entry": entry
-                }
-            )
-
-            st.success("Trade Saved Successfully")
-
+# Save Values
+st.session_state.last_trade = {
+    "Date": str(datetime.date.today()),
+    "Stock": trade_symbol,
+    "Score": score,
+    "Advice": advice,
+    "Entry": entry
+    }
     except Exception as e:
         st.error(f"Error: {e}")
+if "last_trade" in st.session_state:
 
+    if st.button("💾 Save Latest Trade"):
+
+        st.session_state.trade_journal.append(
+            st.session_state.last_trade
+        )
+
+        st.success("✅ Trade Saved Successfully")
 # ==========================================
 # TRADE JOURNAL (V25)
 # ==========================================
