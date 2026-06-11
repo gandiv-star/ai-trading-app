@@ -555,3 +555,60 @@ col_sim1, col_sim2 = st.columns(2)
 
 with col_sim1:
     paper_symbol = st.text_input("Paper Trade Stock", value="RELIANCE.NS", key="paper_symbol")
+paper_qty = st.number_input(
+    "Quantity",
+    min_value=1,
+    value=10
+)
+
+if st.button("🟢 Buy Paper Trade"):
+
+    try:
+        stock = yf.Ticker(paper_symbol)
+        price = round(
+            stock.history(period="1d")["Close"].iloc[-1],
+            2
+        )
+
+        total_cost = price * paper_qty
+
+        if total_cost <= st.session_state.paper_cash:
+
+            st.session_state.paper_cash -= total_cost
+
+            st.session_state.paper_trades.append({
+                "Stock": paper_symbol,
+                "Qty": paper_qty,
+                "Buy Price": price,
+                "Total": total_cost
+            })
+
+            st.success(
+                f"✅ Bought {paper_qty} shares of {paper_symbol} @ ₹{price}"
+            )
+
+        else:
+            st.error("❌ Not enough cash")
+
+    except Exception as e:
+        st.error(f"Error: {e}")
+
+if len(st.session_state.paper_trades) > 0:
+
+    st.subheader("📊 Open Positions")
+
+    df = pd.DataFrame(
+        st.session_state.paper_trades
+    )
+
+    st.dataframe(
+        df,
+        use_container_width=True
+    )
+
+    invested = df["Total"].sum()
+
+    st.metric(
+        "Total Invested",
+        f"₹{invested:,.0f}"
+    )
