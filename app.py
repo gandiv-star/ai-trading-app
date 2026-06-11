@@ -542,6 +542,11 @@ if len(st.session_state.trade_journal) > 0:
 # ==========================================
 st.divider()
 st.subheader("💰 Paper Trading Simulator")
+if "paper_cash" not in st.session_state:
+    st.session_state.paper_cash = 100000
+
+if "paper_trades" not in st.session_state:
+    st.session_state.paper_trades = []
 
 if "paper_cash" not in st.session_state:
     st.session_state.paper_cash = 100000.0
