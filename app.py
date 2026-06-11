@@ -538,7 +538,7 @@ if len(st.session_state.trade_journal) > 0:
     st.metric("Average AI Score", avg_score)
     
 # ==========================================
-# PAPER TRADING SIMULATOR (V26) - COMPLETED
+# PAPER TRADING SIMULATOR (V26) - FIXED & COMPLETED
 # ==========================================
 st.divider()
 st.subheader("💰 Paper Trading Simulator")
@@ -555,4 +555,4 @@ col_sim1, col_sim2 = st.columns(2)
 
 with col_sim1:
     paper_symbol = st.text_input("Paper Trade Stock", value="RELIANCE.NS", key="paper_symbol")
-    quantity = 
+    qua
