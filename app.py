@@ -634,3 +634,124 @@ if len(st.session_state.paper_trades) > 0:
         "Total Trades",
         len(st.session_state.paper_trades)
     )
+# ==========================================
+# PORTFOLIO TRACKER (V27)
+# ==========================================
+
+st.divider()
+st.subheader("📦 Portfolio Tracker")
+
+if len(st.session_state.paper_trades) > 0:
+
+    portfolio_data = []
+
+    total_invested = 0
+    total_current = 0
+
+    for trade in st.session_state.paper_trades:
+
+        try:
+
+            symbol = trade["Stock"]
+            qty = trade["Qty"]
+            buy_price = trade["Price"]
+
+            current_price = round(
+                yf.Ticker(symbol)
+                .history(period="1d")["Close"]
+                .iloc[-1],
+                2
+            )
+
+            invested = buy_price * qty
+            current_value = current_price * qty
+
+            pnl = round(
+                current_value - invested,
+                2
+            )
+
+            pnl_pct = round(
+                (pnl / invested) * 100,
+                2
+            )
+
+            total_invested += invested
+            total_current += current_value
+
+            portfolio_data.append(
+                {
+                    "Stock": symbol,
+                    "Qty": qty,
+                    "Buy Price": buy_price,
+                    "Current Price": current_price,
+                    "P&L ₹": pnl,
+                    "P&L %": pnl_pct
+                }
+            )
+
+        except:
+            pass
+
+    if len(portfolio_data) > 0:
+
+        df = pd.DataFrame(portfolio_data)
+
+        st.dataframe(
+            df,
+            use_container_width=True
+        )
+
+        total_pnl = round(
+            total_current - total_invested,
+            2
+        )
+
+        return_pct = round(
+            (total_pnl / total_invested) * 100,
+            2
+        )
+
+        col1, col2, col3 = st.columns(3)
+
+        col1.metric(
+            "💰 Invested",
+            f"₹{round(total_invested,2)}"
+        )
+
+        col2.metric(
+            "📈 Current Value",
+            f"₹{round(total_current,2)}"
+        )
+
+        col3.metric(
+            "🏆 P&L",
+            f"₹{total_pnl}"
+        )
+
+        st.metric(
+            "Portfolio Return %",
+            f"{return_pct}%"
+        )
+
+        best_stock = df.loc[
+            df["P&L %"].idxmax()
+        ]
+
+        worst_stock = df.loc[
+            df["P&L %"].idxmin()
+        ]
+
+        st.success(
+            f"🥇 Best Stock: {best_stock['Stock']} ({best_stock['P&L %']}%)"
+        )
+
+        st.warning(
+            f"🔻 Worst Stock: {worst_stock['Stock']} ({worst_stock['P&L %']}%)"
+        )
+
+else:
+
+    st.info(
+        "પહેલા Paper Trade Buy કરો."
+    )
