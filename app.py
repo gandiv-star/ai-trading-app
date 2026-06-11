@@ -546,3 +546,91 @@ if len(st.session_state.trade_journal) > 0:
     avg_score = round(journal_df["Score"].mean(), 2)
     st.metric("Average AI Score", avg_score)
     
+# ==========================================
+# PAPER TRADING SIMULATOR (V26)
+# ==========================================
+
+st.divider()
+st.subheader("💰 Paper Trading Simulator")
+
+if "paper_cash" not in st.session_state:
+    st.session_state.paper_cash = 100000
+
+if "paper_trades" not in st.session_state:
+    st.session_state.paper_trades = []
+
+st.metric(
+    "Available Cash",
+    f"₹{st.session_state.paper_cash:,.0f}"
+)
+
+paper_symbol = st.text_input(
+    "Paper Trade Stock",
+    value="RELIANCE.NS",
+    key="paper_symbol"
+)
+
+quantity = st.number_input(
+    "Quantity",
+    min_value=1,
+    value=1,
+    step=1
+)
+
+if st.button("🟢 Buy Paper Trade"):
+
+    try:
+
+        stock = yf.Ticker(paper_symbol)
+
+        price = round(
+            stock.history(period="1d")["Close"].iloc[-1],
+            2
+        )
+
+        cost = price * quantity
+
+        if cost <= st.session_state.paper_cash:
+
+            st.session_state.paper_cash -= cost
+
+            st.session_state.paper_trades.append(
+                {
+                    "Date": str(datetime.date.today()),
+                    "Stock": paper_symbol,
+                    "Type": "BUY",
+                    "Price": price,
+                    "Qty": quantity,
+                    "Value": round(cost, 2)
+                }
+            )
+
+            st.success(
+                f"✅ Bought {quantity} shares of {paper_symbol} @ ₹{price}"
+            )
+
+        else:
+
+            st.error("❌ Not Enough Virtual Cash")
+
+    except Exception as e:
+
+        st.error(f"Error: {e}")
+
+if len(st.session_state.paper_trades) > 0:
+
+    st.subheader("📒 Paper Trade History")
+
+    trades_df = pd.DataFrame(
+        st.session_state.paper_trades
+    )
+
+    st.dataframe(
+        trades_df,
+        use_container_width=True
+    )
+
+    st.metric(
+        "Total Trades",
+        len(st.session_state.paper_trades)
+    )
