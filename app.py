@@ -617,3 +617,95 @@ if len(st.session_state.paper_trades) > 0:
         "Total Invested",
         f"₹{invested:,.0f}"
     )
+# ==========================================
+# SELL & PNL TRACKER (V29)
+# ==========================================
+
+st.divider()
+st.subheader("💸 Sell Position")
+
+if len(st.session_state.paper_trades) > 0:
+
+    trade_options = [
+        f"{i} - {trade['Stock']}"
+        for i, trade in enumerate(st.session_state.paper_trades)
+    ]
+
+    selected_trade = st.selectbox(
+        "Select Position",
+        trade_options
+    )
+
+    if st.button("🔴 Sell Selected Position"):
+
+        try:
+            index = int(selected_trade.split(" - ")[0])
+
+            trade = st.session_state.paper_trades[index]
+
+            stock = yf.Ticker(trade["Stock"])
+
+            sell_price = round(
+                stock.history(period="1d")["Close"].iloc[-1],
+                2
+            )
+
+            sell_value = sell_price * trade["Qty"]
+
+            buy_value = trade["Total"]
+
+            pnl = round(
+                sell_value - buy_value,
+                2
+            )
+
+            st.session_state.paper_cash += sell_value
+
+            if "closed_trades" not in st.session_state:
+                st.session_state.closed_trades = []
+
+            st.session_state.closed_trades.append({
+                "Stock": trade["Stock"],
+                "Qty": trade["Qty"],
+                "Buy Value": buy_value,
+                "Sell Value": sell_value,
+                "PnL": pnl
+            })
+
+            st.session_state.paper_trades.pop(index)
+
+            if pnl > 0:
+                st.success(f"✅ Profit Booked ₹{pnl}")
+            else:
+                st.error(f"❌ Loss ₹{pnl}")
+
+        except Exception as e:
+            st.error(f"Error: {e}")
+            # ==========================================
+# CLOSED TRADES REPORT
+# ==========================================
+
+if "closed_trades" in st.session_state:
+
+    if len(st.session_state.closed_trades) > 0:
+
+        st.subheader("📈 Closed Trades")
+
+        closed_df = pd.DataFrame(
+            st.session_state.closed_trades
+        )
+
+        st.dataframe(
+            closed_df,
+            use_container_width=True
+        )
+
+        total_pnl = round(
+            closed_df["PnL"].sum(),
+            2
+        )
+
+        st.metric(
+            "Total P&L",
+            f"₹{total_pnl}"
+        )
