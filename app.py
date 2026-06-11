@@ -555,4 +555,3 @@ col_sim1, col_sim2 = st.columns(2)
 
 with col_sim1:
     paper_symbol = st.text_input("Paper Trade Stock", value="RELIANCE.NS", key="paper_symbol")
-    qua
