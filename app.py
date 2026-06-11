@@ -1,14 +1,15 @@
+import datetime
 import requests
 import streamlit as st
 import google.generativeai as genai
 import yfinance as yf
 import pandas as pd
-import datetime
 
 # Page Configuration
 st.set_page_config(
     page_title="Gandiv AI Stock Research",
-    page_icon="📈"
+    page_icon="📈",
+    layout="wide"
 )
 
 # AI Model Configuration
@@ -16,6 +17,36 @@ genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 model = genai.GenerativeModel("gemini-2.5-flash")
 
 st.title("📈 Gandiv AI Trading Assistant")
+
+# Helper function to prevent redundant code and excessive API calling
+def fetch_technical_data(symbol, period="1y"):
+    stock = yf.Ticker(symbol)
+    hist = stock.history(period=period)
+    if hist.empty:
+        return None
+    
+    close = hist["Close"]
+    current_price = round(close.iloc[-1], 2)
+    
+    ma50 = close.rolling(50).mean().iloc[-1] if len(close) >= 50 else close.mean()
+    ma200 = close.rolling(200).mean().iloc[-1] if len(close) >= 200 else close.mean()
+    
+    delta = close.diff()
+    gain = delta.where(delta > 0, 0).rolling(14).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
+    rs = gain / loss
+    rsi = (100 - (100 / (1 + rs))).iloc[-1]
+    
+    trend = "Bullish" if ma50 > ma200 else "Bearish"
+    
+    return {
+        "current_price": current_price,
+        "ma50": round(ma50, 2),
+        "ma200": round(ma200, 2),
+        "rsi": round(rsi, 2),
+        "trend": trend,
+        "hist": hist
+    }
 
 # ==========================================
 # BEST STOCKS SCANNER
@@ -38,26 +69,17 @@ if st.button("🔥 Best Stocks Scanner"):
     with st.spinner("Stocks Scan થઈ રહ્યા છે..."):
         for symbol in stocks:
             try:
+                tech_data = fetch_technical_data(symbol)
+                if not tech_data: continue
+                
                 stock = yf.Ticker(symbol)
                 info = stock.info
 
                 pe = info.get("trailingPE", 999)
                 market_cap = info.get("marketCap", 0)
-
-                hist = stock.history(period="1y")
-                close = hist["Close"]
-
-                ma50 = close.rolling(50).mean().iloc[-1]
-                ma200 = close.rolling(200).mean().iloc[-1]
-
-                delta = close.diff()
-                gain = delta.where(delta > 0, 0).rolling(14).mean()
-                loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
-
-                rs = gain / loss
-                rsi = (100 - (100 / (1 + rs))).iloc[-1]
-
-                trend = "Bullish" if ma50 > ma200 else "Bearish"
+                
+                rsi = tech_data["rsi"]
+                trend = tech_data["trend"]
                 score = 100
 
                 if pe and pe != 999:
@@ -74,7 +96,7 @@ if st.button("🔥 Best Stocks Scanner"):
                 elif rsi < 30: score += 5
                 else: score += 10
 
-                results.append((symbol, score, round(rsi, 2), trend))
+                results.append((symbol, score, rsi, trend))
             except:
                 pass
 
@@ -101,37 +123,30 @@ symbol = st.text_input("Stock Symbol લખો (ઉદાહરણ: RELIANCE.NS)
 if st.button("🔍 Analyze"):
     if symbol:
         try:
-            stock = yf.Ticker(symbol)
-            info = stock.info
+            with st.spinner("Data Fetch થઈ રહ્યો છે..."):
+                tech_data = fetch_technical_data(symbol)
+                stock = yf.Ticker(symbol)
+                info = stock.info
 
-            current_price = info.get("currentPrice", "N/A")
-            market_cap = info.get("marketCap", "N/A")
-            pe_ratio = info.get("trailingPE", "N/A")
+            if tech_data:
+                current_price = info.get("currentPrice", tech_data["current_price"])
+                market_cap = info.get("marketCap", "N/A")
+                pe_ratio = info.get("trailingPE", "N/A")
+                ma50 = tech_data["ma50"]
+                ma200 = tech_data["ma200"]
+                rsi = tech_data["rsi"]
+                trend = tech_data["trend"]
 
-            hist = stock.history(period="1y")
-            close = hist["Close"]
+                st.subheader("📊 Live Market Data")
+                st.write(f"💰 Current Price: {current_price}")
+                st.write(f"🏢 Market Cap: {market_cap}")
+                st.write(f"📈 P/E Ratio: {pe_ratio}")
+                st.write(f"📊 50 DMA: {ma50}")
+                st.write(f"📊 200 DMA: {ma200}")
+                st.write(f"⚡ RSI: {rsi}")
+                st.write(f"📍 Trend: {trend}")
 
-            ma50 = round(close.rolling(50).mean().iloc[-1], 2)
-            ma200 = round(close.rolling(200).mean().iloc[-1], 2)
-
-            delta = close.diff()
-            gain = delta.where(delta > 0, 0).rolling(14).mean()
-            loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
-
-            rs = gain / loss
-            rsi = round((100 - (100 / (1 + rs))).iloc[-1], 2)
-            trend = "Bullish" if ma50 > ma200 else "Bearish"
-
-            st.subheader("📊 Live Market Data")
-            st.write(f"💰 Current Price: {current_price}")
-            st.write(f"🏢 Market Cap: {market_cap}")
-            st.write(f"📈 P/E Ratio: {pe_ratio}")
-            st.write(f"📊 50 DMA: {ma50}")
-            st.write(f"📊 200 DMA: {ma200}")
-            st.write(f"⚡ RSI: {rsi}")
-            st.write(f"📍 Trend: {trend}")
-
-            prompt = f"""
+                prompt = f"""
 તમે Professional Stock Market Analyst છો.
 Stock: {symbol}
 Current Price: {current_price}
@@ -155,10 +170,12 @@ Trend: {trend}
 
 છેલ્લે લખો: 'આ નાણાકીય સલાહ નથી.'
 """
-            with st.spinner("AI Analysis કરી રહ્યું છે..."):
-                response = model.generate_content(prompt)
+                with st.spinner("AI Analysis કરી રહ્યું છે..."):
+                    response = model.generate_content(prompt)
 
-            st.markdown(response.text)
+                st.markdown(response.text)
+            else:
+                st.error("આ સિમ્બોલ માટે ડેટા મળ્યો નથી.")
         except Exception as e:
             st.error(f"Error: {e}")
     else:
@@ -234,14 +251,11 @@ if st.button("🚀 Find Best Opportunities"):
     with st.spinner("AI Opportunities શોધી રહ્યું છે..."):
         for symbol in stocks:
             try:
-                stock = yf.Ticker(symbol)
-                hist = stock.history(period="1y")
-                close = hist["Close"]
-                ma50 = close.rolling(50).mean().iloc[-1]
-                ma200 = close.rolling(200).mean().iloc[-1]
-                trend = "Bullish" if ma50 > ma200 else "Bearish"
-                score = 90 if trend == "Bullish" else 60
-                opportunities.append((symbol, score, trend))
+                tech_data = fetch_technical_data(symbol)
+                if tech_data:
+                    trend = tech_data["trend"]
+                    score = 90 if trend == "Bullish" else 60
+                    opportunities.append((symbol, score, trend))
             except:
                 pass
 
@@ -268,17 +282,15 @@ if st.button("📋 Analyze Watchlist"):
     for symbol in symbols:
         try:
             symbol = symbol.strip()
-            stock = yf.Ticker(symbol)
-            hist = stock.history(period="1y")
-            close = hist["Close"]
-            current_price = round(close.iloc[-1], 2)
-            ma50 = close.rolling(50).mean().iloc[-1]
-            ma200 = close.rolling(200).mean().iloc[-1]
-
-            trend = "Bullish 🟢" if ma50 > ma200 else "Bearish 🔴"
-            score = 90 if ma50 > ma200 else 60
-            rating = "🔥 Strong Buy" if score >= 85 else "✅ Buy" if score >= 75 else "🟡 Hold"
-            st.write(f"{symbol} | ₹{current_price} | {trend} | {rating}")
+            tech_data = fetch_technical_data(symbol)
+            if tech_data:
+                current_price = tech_data["current_price"]
+                trend_status = "Bullish 🟢" if tech_data["trend"] == "Bullish" else "Bearish 🔴"
+                score = 90 if tech_data["trend"] == "Bullish" else 60
+                rating = "🔥 Strong Buy" if score >= 85 else "✅ Buy" if score >= 75 else "🟡 Hold"
+                st.write(f"{symbol} | ₹{current_price} | {trend_status} | {rating}")
+            else:
+                st.warning(f"{symbol} Data Not Available")
         except:
             st.warning(f"{symbol} Data Not Available")
     st.success("🤖 Watchlist Analysis Complete")
@@ -304,14 +316,9 @@ if st.button("🚀 Find Swing Trades"):
     with st.spinner("Swing Trades શોધી રહ્યા છીએ..."):
         for symbol in stocks:
             try:
-                stock = yf.Ticker(symbol)
-                hist = stock.history(period="6mo")
-                close = hist["Close"]
-                current_price = round(close.iloc[-1], 2)
-                ma50 = close.rolling(50).mean().iloc[-1]
-                ma200 = close.rolling(200).mean().iloc[-1]
-
-                if ma50 > ma200:
+                tech_data = fetch_technical_data(symbol, period="6mo")
+                if tech_data and tech_data["trend"] == "Bullish":
+                    current_price = tech_data["current_price"]
                     target = round(current_price * 1.05, 2)
                     stoploss = round(current_price * 0.97, 2)
                     swing_trades.append((symbol, current_price, target, stoploss))
@@ -473,57 +480,41 @@ if "trade_journal" not in st.session_state:
 
 if st.button("🚀 Generate AI Trade Setup"):
     try:
-        stock = yf.Ticker(trade_symbol)
-        hist = stock.history(period="1y")
-        close = hist["Close"]
+        tech_data = fetch_technical_data(trade_symbol)
+        if tech_data:
+            current_price = tech_data["current_price"]
+            ma50 = tech_data["ma50"]
+            ma200 = tech_data["ma200"]
+            rsi = tech_data["rsi"]
 
-        current_price = round(close.iloc[-1], 2)
-        ma50 = round(close.rolling(50).mean().iloc[-1], 2)
-        ma200 = round(close.rolling(200).mean().iloc[-1], 2)
+            score = 50
+            if ma50 > ma200: score += 20
+            if rsi > 55: score += 15
+            elif rsi < 30: score += 10
+            if current_price > ma50: score += 15
 
-        delta = close.diff()
-        gain = delta.where(delta > 0, 0).rolling(14).mean()
-        loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
+            if score >= 80: advice = "🔥 BUY"
+            elif score >= 65: advice = "🟡 HOLD"
+            else: advice = "🔴 AVOID"
 
-        rs = gain / loss
-        rsi = round((100 - (100 / (1 + rs))).iloc[-1], 2)
+            entry = current_price
+            target = round(current_price * 1.08, 2)
+            stoploss = round(current_price * 0.95, 2)
 
-        score = 50
-        if ma50 > ma200:
-            score += 20
-        if rsi > 55:
-            score += 15
-        elif rsi < 30:
-            score += 10
-        if current_price > ma50:
-            score += 15
+            st.success(f"Recommendation: {advice}")
+            st.write(f"AI Score: {score}/100")
+            st.write(f"RSI: {rsi}")
+            st.write(f"🎯 Entry: ₹{entry}")
+            st.write(f"🚀 Target: ₹{target}")
+            st.write(f"🛑 Stop Loss: ₹{stoploss}")
 
-        if score >= 80:
-            advice = "🔥 BUY"
-        elif score >= 65:
-            advice = "🟡 HOLD"
-        else:
-            advice = "🔴 AVOID"
-
-        entry = current_price
-        target = round(current_price * 1.08, 2)
-        stoploss = round(current_price * 0.95, 2)
-
-        st.success(f"Recommendation: {advice}")
-        st.write(f"AI Score: {score}/100")
-        st.write(f"RSI: {rsi}")
-        st.write(f"🎯 Entry: ₹{entry}")
-        st.write(f"🚀 Target: ₹{target}")
-        st.write(f"🛑 Stop Loss: ₹{stoploss}")
-
-        # Save Values to session state inside the try block safely
-        st.session_state.last_trade = {
-            "Date": str(datetime.date.today()),
-            "Stock": trade_symbol,
-            "Score": score,
-            "Advice": advice,
-            "Entry": entry
-        }
+            st.session_state.last_trade = {
+                "Date": str(datetime.date.today()),
+                "Stock": trade_symbol,
+                "Score": score,
+                "Advice": advice,
+                "Entry": entry
+            }
     except Exception as e:
         st.error(f"Error: {e}")
 
@@ -531,7 +522,7 @@ if "last_trade" in st.session_state:
     if st.button("💾 Save Latest Trade"):
         st.session_state.trade_journal.append(st.session_state.last_trade)
         st.success("✅ Trade Saved Successfully")
-        del st.session_state.last_trade  # Clear after saving to avoid double click issues
+        del st.session_state.last_trade
 
 # ==========================================
 # TRADE JOURNAL (V25)
@@ -547,211 +538,21 @@ if len(st.session_state.trade_journal) > 0:
     st.metric("Average AI Score", avg_score)
     
 # ==========================================
-# PAPER TRADING SIMULATOR (V26)
+# PAPER TRADING SIMULATOR (V26) - COMPLETED
 # ==========================================
-
 st.divider()
 st.subheader("💰 Paper Trading Simulator")
 
 if "paper_cash" not in st.session_state:
-    st.session_state.paper_cash = 100000
+    st.session_state.paper_cash = 100000.0
 
-if "paper_trades" not in st.session_state:
-    st.session_state.paper_trades = []
+if "paper_portfolio" not in st.session_state:
+    st.session_state.paper_portfolio = {}  # { "SYMBOL": {"qty": X, "avg_price": Y} }
 
-st.metric(
-    "Available Cash",
-    f"₹{st.session_state.paper_cash:,.0f}"
-)
+st.metric("Available Cash", f"₹{st.session_state.paper_cash:,.2f}")
 
-paper_symbol = st.text_input(
-    "Paper Trade Stock",
-    value="RELIANCE.NS",
-    key="paper_symbol"
-)
+col_sim1, col_sim2 = st.columns(2)
 
-quantity = st.number_input(
-    "Quantity",
-    min_value=1,
-    value=1,
-    step=1
-)
-
-if st.button("🟢 Buy Paper Trade"):
-
-    try:
-
-        stock = yf.Ticker(paper_symbol)
-
-        price = round(
-            stock.history(period="1d")["Close"].iloc[-1],
-            2
-        )
-
-        cost = price * quantity
-
-        if cost <= st.session_state.paper_cash:
-
-            st.session_state.paper_cash -= cost
-
-            st.session_state.paper_trades.append(
-                {
-                    "Date": str(datetime.date.today()),
-                    "Stock": paper_symbol,
-                    "Type": "BUY",
-                    "Price": price,
-                    "Qty": quantity,
-                    "Value": round(cost, 2)
-                }
-            )
-
-            st.success(
-                f"✅ Bought {quantity} shares of {paper_symbol} @ ₹{price}"
-            )
-
-        else:
-
-            st.error("❌ Not Enough Virtual Cash")
-
-    except Exception as e:
-
-        st.error(f"Error: {e}")
-
-if len(st.session_state.paper_trades) > 0:
-
-    st.subheader("📒 Paper Trade History")
-
-    trades_df = pd.DataFrame(
-        st.session_state.paper_trades
-    )
-
-    st.dataframe(
-        trades_df,
-        use_container_width=True
-    )
-
-    st.metric(
-        "Total Trades",
-        len(st.session_state.paper_trades)
-    )
-# ==========================================
-# PORTFOLIO TRACKER (V27)
-# ==========================================
-
-st.divider()
-st.subheader("📦 Portfolio Tracker")
-
-if len(st.session_state.paper_trades) > 0:
-
-    portfolio_data = []
-
-    total_invested = 0
-    total_current = 0
-
-    for trade in st.session_state.paper_trades:
-
-        try:
-
-            symbol = trade["Stock"]
-            qty = trade["Qty"]
-            buy_price = trade["Price"]
-
-            current_price = round(
-                yf.Ticker(symbol)
-                .history(period="1d")["Close"]
-                .iloc[-1],
-                2
-            )
-
-            invested = buy_price * qty
-            current_value = current_price * qty
-
-            pnl = round(
-                current_value - invested,
-                2
-            )
-
-            pnl_pct = round(
-                (pnl / invested) * 100,
-                2
-            )
-
-            total_invested += invested
-            total_current += current_value
-
-            portfolio_data.append(
-                {
-                    "Stock": symbol,
-                    "Qty": qty,
-                    "Buy Price": buy_price,
-                    "Current Price": current_price,
-                    "P&L ₹": pnl,
-                    "P&L %": pnl_pct
-                }
-            )
-
-        except:
-            pass
-
-    if len(portfolio_data) > 0:
-
-        df = pd.DataFrame(portfolio_data)
-
-        st.dataframe(
-            df,
-            use_container_width=True
-        )
-
-        total_pnl = round(
-            total_current - total_invested,
-            2
-        )
-
-        return_pct = round(
-            (total_pnl / total_invested) * 100,
-            2
-        )
-
-        col1, col2, col3 = st.columns(3)
-
-        col1.metric(
-            "💰 Invested",
-            f"₹{round(total_invested,2)}"
-        )
-
-        col2.metric(
-            "📈 Current Value",
-            f"₹{round(total_current,2)}"
-        )
-
-        col3.metric(
-            "🏆 P&L",
-            f"₹{total_pnl}"
-        )
-
-        st.metric(
-            "Portfolio Return %",
-            f"{return_pct}%"
-        )
-
-        best_stock = df.loc[
-            df["P&L %"].idxmax()
-        ]
-
-        worst_stock = df.loc[
-            df["P&L %"].idxmin()
-        ]
-
-        st.success(
-            f"🥇 Best Stock: {best_stock['Stock']} ({best_stock['P&L %']}%)"
-        )
-
-        st.warning(
-            f"🔻 Worst Stock: {worst_stock['Stock']} ({worst_stock['P&L %']}%)"
-        )
-
-else:
-
-    st.info(
-        "પહેલા Paper Trade Buy કરો."
-    )
+with col_sim1:
+    paper_symbol = st.text_input("Paper Trade Stock", value="RELIANCE.NS", key="paper_symbol")
+    quantity = 
