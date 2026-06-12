@@ -584,7 +584,7 @@ if st.button("🟢 Buy Paper Trade"):
             st.session_state.paper_trades.append({
                 "Stock": paper_symbol,
                 "Qty": paper_qty,
-                "Buy Price": price,
+                "Price": price,
                 "Total": total_cost
             })
 
