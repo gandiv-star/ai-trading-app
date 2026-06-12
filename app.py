@@ -712,7 +712,6 @@ if "closed_trades" in st.session_state:
 # ==========================================
 # V30 PRO - LIVE PORTFOLIO TRACKER
 # ==========================================
-
 st.divider()
 st.subheader("🚀 Live Portfolio Tracker")
 
@@ -773,13 +772,13 @@ if len(st.session_state.paper_trades) > 0:
         2
     )
 
-if total_cost > 0:
-    total_return = round(
-        (total_pnl / total_cost) * 100,
-        2
-    )
-else:
-    total_return = 0
+    if total_cost > 0:
+        total_return = round(
+            (total_pnl / total_cost) * 100,
+            2
+        )
+    else:
+        total_return = 0
 
     col1, col2, col3 = st.columns(3)
 
