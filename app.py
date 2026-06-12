@@ -709,3 +709,91 @@ if "closed_trades" in st.session_state:
             "Total P&L",
             f"₹{total_pnl}"
         )
+# ==========================================
+# V30 PRO - LIVE PORTFOLIO TRACKER
+# ==========================================
+
+st.divider()
+st.subheader("🚀 Live Portfolio Tracker")
+
+total_value = 0
+total_cost = 0
+
+if len(st.session_state.paper_trades) > 0:
+
+    portfolio_data = []
+
+    for trade in st.session_state.paper_trades:
+
+        try:
+            stock = yf.Ticker(trade["Stock"])
+
+            current_price = round(
+                stock.history(period="1d")["Close"].iloc[-1],
+                2
+            )
+
+            qty = trade["Qty"]
+
+            invested = trade["Price"] * qty
+            current_value = current_price * qty
+
+            pnl = round(
+                current_value - invested,
+                2
+            )
+
+            pnl_pct = round(
+                (pnl / invested) * 100,
+                2
+            )
+
+            total_value += current_value
+            total_cost += invested
+
+            portfolio_data.append({
+                "Stock": trade["Stock"],
+                "Qty": qty,
+                "Buy": trade["Price"],
+                "LTP": current_price,
+                "PnL": pnl,
+                "Return %": pnl_pct
+            })
+
+        except:
+            pass
+
+    st.dataframe(
+        pd.DataFrame(portfolio_data),
+        use_container_width=True
+    )
+
+    total_pnl = round(
+        total_value - total_cost,
+        2
+    )
+
+    total_return = round(
+        (total_pnl / total_cost) * 100,
+        2
+    )
+
+    col1, col2, col3 = st.columns(3)
+
+    col1.metric(
+        "Portfolio Value",
+        f"₹{round(total_value,0):,.0f}"
+    )
+
+    col2.metric(
+        "Profit/Loss",
+        f"₹{total_pnl:,.0f}"
+    )
+
+    col3.metric(
+        "Return %",
+        f"{total_return}%"
+    )
+
+else:
+    st.info("No Open Positions")
