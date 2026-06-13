@@ -1195,3 +1195,101 @@ if "last_scan" in st.session_state:
         st.write(f"Swing Setups Found: {len(st.session_state.last_scan['Swings'])}")
         st.write(f"Momentum Setups Found: {len(st.session_state.last_scan['Momentum'])}")
         
+# ==========================================
+# SECTOR ROTATION AI (V37)
+# ==========================================
+st.divider()
+st.subheader("🔄 Sector Rotation AI")
+st.caption("કયો Sector Strong છે, કયો Weak - Sector-wise Trend Scan")
+
+SECTOR_MAP = {
+    "Banking": ["HDFCBANK.NS", "ICICIBANK.NS", "SBIN.NS", "KOTAKBANK.NS", "AXISBANK.NS", "INDUSINDBK.NS"],
+    "IT": ["TCS.NS", "INFY.NS", "WIPRO.NS", "HCLTECH.NS", "TECHM.NS"],
+    "FMCG": ["HINDUNILVR.NS", "ITC.NS", "NESTLEIND.NS"],
+    "Auto": ["MARUTI.NS", "TATAMOTORS.NS", "M&M.NS", "HEROMOTOCO.NS", "EICHERMOT.NS"],
+    "Pharma": ["SUNPHARMA.NS", "DRREDDY.NS", "CIPLA.NS", "DIVISLAB.NS"],
+    "Metal": ["TATASTEEL.NS", "JSWSTEEL.NS"],
+    "Energy": ["RELIANCE.NS", "ONGC.NS", "BPCL.NS", "NTPC.NS", "POWERGRID.NS", "COALINDIA.NS"],
+    "Finance": ["BAJFINANCE.NS", "BAJAJFINSV.NS"],
+    "Infra/Cement": ["LT.NS", "ULTRACEMCO.NS", "GRASIM.NS", "ADANIPORTS.NS"],
+    "Telecom": ["BHARTIARTL.NS"],
+    "Paints": ["ASIANPAINT.NS"],
+    "Consumer": ["TITAN.NS"]
+}
+
+if st.button("🔄 Scan All Sectors"):
+    sector_results = []
+
+    with st.spinner("તમામ Sectors Scan થઈ રહ્યા છે..."):
+        for sector, stocks in SECTOR_MAP.items():
+            bullish_count = 0
+            total_count = 0
+            rsi_sum = 0
+
+            for symbol in stocks:
+                try:
+                    td = fetch_technical_data(symbol, period="6mo")
+                    if not td:
+                        continue
+                    total_count += 1
+                    rsi_sum += td["rsi"]
+                    if td["trend"] == "Bullish":
+                        bullish_count += 1
+                except:
+                    pass
+
+            if total_count > 0:
+                bullish_pct = round((bullish_count / total_count) * 100, 1)
+                avg_rsi = round(rsi_sum / total_count, 1)
+
+                if bullish_pct >= 65:
+                    status = "🟢 Strong"
+                elif bullish_pct >= 35:
+                    status = "🟡 Neutral"
+                else:
+                    status = "🔴 Weak"
+
+                sector_results.append({
+                    "Sector": sector,
+                    "Status": status,
+                    "Bullish Stocks": f"{bullish_count}/{total_count}",
+                    "Bullish %": bullish_pct,
+                    "Avg RSI": avg_rsi
+                })
+
+    sector_results.sort(key=lambda x: x["Bullish %"], reverse=True)
+
+    st.markdown("### 📊 Sector Strength Ranking")
+    st.dataframe(pd.DataFrame(sector_results), use_container_width=True)
+
+    # Best opportunity: strongest sector's strongest stock
+    if sector_results:
+        top_sector_name = sector_results[0]["Sector"]
+        top_stocks = SECTOR_MAP[top_sector_name]
+
+        best_stock = None
+        best_score = -999
+        for symbol in top_stocks:
+            try:
+                td = fetch_technical_data(symbol, period="6mo")
+                if td and td["trend"] == "Bullish":
+                    score = td["rsi"] + (10 if td["current_price"] > td["ma50"] else 0)
+                    if score > best_score:
+                        best_score = score
+                        best_stock = symbol
+            except:
+                pass
+
+        st.divider()
+        st.markdown("### 🏆 Best Opportunity Today")
+        if best_stock:
+            st.success(f"**Strongest Sector:** {top_sector_name} {sector_results[0]['Status']}")
+            st.success(f"**Top Pick:** {best_stock}")
+        else:
+            st.info(f"Strongest Sector: {top_sector_name}, પણ હાલ કોઈ Strong Individual Stock નથી મળ્યો.")
+
+    st.success("✅ Sector Rotation Scan Complete")
+    st.caption("⚠️ આ Technical Scan છે, Financial Advice નથી.")
+else:
+    st.info("'Scan All Sectors' button click કરો - 12 Sectors, 40 Stocks Scan થશે.")
+    
