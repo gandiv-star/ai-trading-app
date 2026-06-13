@@ -1062,3 +1062,136 @@ if st.button("🔄 Generate Dashboard"):
 else:
     st.info("Dashboard Data જોવા માટે 'Generate Dashboard' button click કરો.")
     
+# ==========================================
+# AUTO WATCHLIST SCANNER (V36)
+# ==========================================
+st.divider()
+st.subheader("🔍 Auto Watchlist Scanner")
+st.caption("દરરોજ Top Breakout, Swing અને Momentum Stocks Scan કરો")
+
+# Common NSE stock universe for scanning
+SCAN_UNIVERSE = [
+    "RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", "ICICIBANK.NS",
+    "SBIN.NS", "LT.NS", "BHARTIARTL.NS", "ITC.NS", "HINDUNILVR.NS",
+    "KOTAKBANK.NS", "AXISBANK.NS", "BAJFINANCE.NS", "MARUTI.NS",
+    "ASIANPAINT.NS", "SUNPHARMA.NS", "TITAN.NS", "ULTRACEMCO.NS",
+    "WIPRO.NS", "NESTLEIND.NS", "POWERGRID.NS", "NTPC.NS", "ONGC.NS",
+    "ADANIPORTS.NS", "TATASTEEL.NS", "JSWSTEEL.NS", "HCLTECH.NS",
+    "TECHM.NS", "INDUSINDBK.NS", "COALINDIA.NS", "BAJAJFINSV.NS",
+    "DRREDDY.NS", "CIPLA.NS", "GRASIM.NS", "HEROMOTOCO.NS",
+    "EICHERMOT.NS", "DIVISLAB.NS", "TATAMOTORS.NS", "M&M.NS", "BPCL.NS"
+]
+
+if st.button("🚀 Run Auto Scanner (Top 5 Each)"):
+
+    breakout_results = []
+    swing_results = []
+    momentum_results = []
+
+    with st.spinner(f"{len(SCAN_UNIVERSE)} Stocks Scan થઈ રહ્યા છે... થોડો સમય લાગશે"):
+        for symbol in SCAN_UNIVERSE:
+            try:
+                td = fetch_technical_data(symbol, period="6mo")
+                if not td:
+                    continue
+
+                hist = td["hist"]
+                close = hist["Close"]
+                volume = hist["Volume"]
+
+                current_price = td["current_price"]
+                ma50 = td["ma50"]
+                ma200 = td["ma200"]
+                rsi = td["rsi"]
+                trend = td["trend"]
+
+                avg_volume = volume.rolling(20).mean().iloc[-1]
+                current_volume = volume.iloc[-1]
+
+                # ---- BREAKOUT LOGIC ----
+                # Price breaking above recent 20-day high with volume confirmation
+                recent_high = close.iloc[-21:-1].max()  # last 20 days excluding today
+                if current_price > recent_high and current_volume > avg_volume:
+                    breakout_strength = round(((current_price - recent_high) / recent_high) * 100, 2)
+                    breakout_results.append({
+                        "Stock": symbol,
+                        "Price": current_price,
+                        "Breakout %": breakout_strength,
+                        "Volume vs Avg": round(current_volume / avg_volume, 2) if avg_volume > 0 else 0
+                    })
+
+                # ---- SWING TRADE LOGIC ----
+                # Bullish trend, RSI in healthy zone, price above MA50
+                if trend == "Bullish" and 45 <= rsi <= 65 and current_price > ma50:
+                    target = round(current_price * 1.05, 2)
+                    stoploss = round(current_price * 0.97, 2)
+                    swing_results.append({
+                        "Stock": symbol,
+                        "Entry": current_price,
+                        "Target": target,
+                        "Stop Loss": stoploss,
+                        "RSI": rsi
+                    })
+
+                # ---- MOMENTUM LOGIC ----
+                # Strong price momentum: above both MAs + RSI > 60 + above-average volume
+                if current_price > ma50 and current_price > ma200 and rsi > 60 and current_volume > avg_volume:
+                    momentum_score = round(rsi + (current_volume / avg_volume if avg_volume > 0 else 1) * 10, 2)
+                    momentum_results.append({
+                        "Stock": symbol,
+                        "Price": current_price,
+                        "RSI": rsi,
+                        "Momentum Score": momentum_score
+                    })
+
+            except:
+                pass
+
+    # Sort and pick top 5 for each category
+    breakout_results.sort(key=lambda x: x["Breakout %"], reverse=True)
+    swing_results.sort(key=lambda x: x["RSI"], reverse=True)
+    momentum_results.sort(key=lambda x: x["Momentum Score"], reverse=True)
+
+    top_breakouts = breakout_results[:5]
+    top_swings = swing_results[:5]
+    top_momentum = momentum_results[:5]
+
+    # ---- DISPLAY RESULTS ----
+    st.markdown("### 🚀 Top 5 Breakout Stocks")
+    if top_breakouts:
+        st.dataframe(pd.DataFrame(top_breakouts), use_container_width=True)
+    else:
+        st.info("આજે કોઈ Breakout Setup મળ્યું નથી.")
+
+    st.markdown("### 📈 Top 5 Swing Trades")
+    if top_swings:
+        st.dataframe(pd.DataFrame(top_swings), use_container_width=True)
+    else:
+        st.info("આજે કોઈ Swing Setup મળ્યું નથી.")
+
+    st.markdown("### 🔥 Top 5 Momentum Stocks")
+    if top_momentum:
+        st.dataframe(pd.DataFrame(top_momentum), use_container_width=True)
+    else:
+        st.info("આજે કોઈ Momentum Setup મળ્યું નથી.")
+
+    st.success(f"✅ Scan Complete | Total Stocks Scanned: {len(SCAN_UNIVERSE)}")
+    st.caption("⚠️ આ ફક્ત Technical Scan છે, Financial Advice નથી. પોતાનું Research કરો.")
+
+    # Save scan results for later reference
+    st.session_state.last_scan = {
+        "Date": str(datetime.date.today()),
+        "Breakouts": top_breakouts,
+        "Swings": top_swings,
+        "Momentum": top_momentum
+    }
+else:
+    st.info(f"'Run Auto Scanner' button click કરો - {len(SCAN_UNIVERSE)} NSE Stocks Scan થશે.")
+
+# Show last scan summary if available
+if "last_scan" in st.session_state:
+    with st.expander(f"📅 Last Scan Date: {st.session_state.last_scan['Date']}"):
+        st.write(f"Breakouts Found: {len(st.session_state.last_scan['Breakouts'])}")
+        st.write(f"Swing Setups Found: {len(st.session_state.last_scan['Swings'])}")
+        st.write(f"Momentum Setups Found: {len(st.session_state.last_scan['Momentum'])}")
+        
