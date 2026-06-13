@@ -1293,3 +1293,98 @@ if st.button("🔄 Scan All Sectors"):
 else:
     st.info("'Scan All Sectors' button click કરો - 12 Sectors, 40 Stocks Scan થશે.")
     
+# ==========================================
+# RELATIVE STRENGTH SCANNER (V38)
+# ==========================================
+st.divider()
+st.subheader("💪 Relative Strength Scanner")
+st.caption("Nifty કરતાં વધુ Strong Stocks શોધે છે (Last 3 Months Performance)")
+
+RS_UNIVERSE = [
+    "RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", "ICICIBANK.NS",
+    "SBIN.NS", "LT.NS", "BHARTIARTL.NS", "ITC.NS", "HINDUNILVR.NS",
+    "KOTAKBANK.NS", "AXISBANK.NS", "BAJFINANCE.NS", "MARUTI.NS",
+    "ASIANPAINT.NS", "SUNPHARMA.NS", "TITAN.NS", "ULTRACEMCO.NS",
+    "WIPRO.NS", "NESTLEIND.NS", "POWERGRID.NS", "NTPC.NS", "ONGC.NS",
+    "ADANIPORTS.NS", "TATASTEEL.NS", "JSWSTEEL.NS", "HCLTECH.NS",
+    "TECHM.NS", "INDUSINDBK.NS", "COALINDIA.NS", "BAJAJFINSV.NS",
+    "DRREDDY.NS", "CIPLA.NS", "GRASIM.NS", "HEROMOTOCO.NS",
+    "EICHERMOT.NS", "DIVISLAB.NS", "TATAMOTORS.NS", "M&M.NS", "BPCL.NS"
+]
+
+if st.button("💪 Run Relative Strength Scan"):
+    with st.spinner("Nifty અને તમામ Stocks ની Performance Compare થઈ રહી છે..."):
+        # Nifty 3-month return as benchmark
+        nifty_hist = yf.Ticker("^NSEI").history(period="3mo")
+        if nifty_hist.empty:
+            st.error("Nifty Data Fetch ન થયો.")
+        else:
+            nifty_return = round(((nifty_hist["Close"].iloc[-1] - nifty_hist["Close"].iloc[0]) / nifty_hist["Close"].iloc[0]) * 100, 2)
+
+            rs_results = []
+            for symbol in RS_UNIVERSE:
+                try:
+                    hist = yf.Ticker(symbol).history(period="3mo")
+                    if hist.empty or len(hist) < 2:
+                        continue
+
+                    stock_return = round(((hist["Close"].iloc[-1] - hist["Close"].iloc[0]) / hist["Close"].iloc[0]) * 100, 2)
+                    rs_score = round(stock_return - nifty_return, 2)
+
+                    current_price = round(hist["Close"].iloc[-1], 2)
+
+                    rs_results.append({
+                        "Stock": symbol,
+                        "Price": current_price,
+                        "3M Return %": stock_return,
+                        "Nifty Return %": nifty_return,
+                        "Relative Strength": rs_score
+                    })
+                except:
+                    pass
+
+            rs_results.sort(key=lambda x: x["Relative Strength"], reverse=True)
+
+            # Outperformers (RS > 0)
+            outperformers = [r for r in rs_results if r["Relative Strength"] > 0]
+            underperformers = [r for r in rs_results if r["Relative Strength"] <= 0]
+
+            st.metric("📊 Nifty 3-Month Return", f"{nifty_return}%")
+
+            st.markdown("### 🏆 Stocks Outperforming Nifty")
+            if outperformers:
+                st.dataframe(pd.DataFrame(outperformers), use_container_width=True)
+            else:
+                st.info("હાલ કોઈ Stock Nifty કરતાં Outperform નથી કરી રહ્યું.")
+
+            st.markdown("### 📉 Stocks Underperforming Nifty")
+            if underperformers:
+                with st.expander(f"જુઓ ({len(underperformers)} Stocks)"):
+                    st.dataframe(pd.DataFrame(underperformers), use_container_width=True)
+
+            # Best Opportunity: Top RS stock with also-bullish current trend
+            st.divider()
+            st.markdown("### 🔥 Best Opportunity (Top RS + Bullish Trend)")
+            best_pick = None
+            for r in outperformers[:10]:
+                try:
+                    td = fetch_technical_data(r["Stock"])
+                    if td and td["trend"] == "Bullish":
+                        best_pick = {**r, "RSI": td["rsi"], "Trend": td["trend"]}
+                        break
+                except:
+                    pass
+
+            if best_pick:
+                st.success(f"**{best_pick['Stock']}** | Price: ₹{best_pick['Price']} | RS Score: {best_pick['Relative Strength']} | RSI: {best_pick['RSI']} | Trend: Bullish 🟢")
+            elif outperformers:
+                top = outperformers[0]
+                st.warning(f"Top RS Stock: **{top['Stock']}** (RS: {top['Relative Strength']}), પણ હાલ Bullish Trend Confirm નથી.")
+            else:
+                st.info("હાલ કોઈ Strong Opportunity નથી મળ્યો.")
+
+            st.success(f"✅ Scan Complete | Total Scanned: {len(rs_results)} Stocks")
+            st.caption("⚠️ આ Technical Scan છે, Financial Advice નથી.")
+else:
+    st.info(f"'Run Relative Strength Scan' click કરો - {len(RS_UNIVERSE)} Stocks vs Nifty Compare થશે.")
+    
