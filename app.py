@@ -1388,3 +1388,99 @@ if st.button("💪 Run Relative Strength Scan"):
 else:
     st.info(f"'Run Relative Strength Scan' click કરો - {len(RS_UNIVERSE)} Stocks vs Nifty Compare થશે.")
     
+# ==========================================
+# SMART MONEY TRACKER (V39)
+# ==========================================
+st.divider()
+st.subheader("🐋 Smart Money Tracker")
+st.caption("Volume Spikes, Breakout Detection - Smart Money ક્યાં Active છે")
+
+SMT_UNIVERSE = [
+    "RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", "ICICIBANK.NS",
+    "SBIN.NS", "LT.NS", "BHARTIARTL.NS", "ITC.NS", "HINDUNILVR.NS",
+    "KOTAKBANK.NS", "AXISBANK.NS", "BAJFINANCE.NS", "MARUTI.NS",
+    "ASIANPAINT.NS", "SUNPHARMA.NS", "TITAN.NS", "ULTRACEMCO.NS",
+    "WIPRO.NS", "NESTLEIND.NS", "POWERGRID.NS", "NTPC.NS", "ONGC.NS",
+    "ADANIPORTS.NS", "TATASTEEL.NS", "JSWSTEEL.NS", "HCLTECH.NS",
+    "TECHM.NS", "INDUSINDBK.NS", "COALINDIA.NS", "BAJAJFINSV.NS",
+    "DRREDDY.NS", "CIPLA.NS", "GRASIM.NS", "HEROMOTOCO.NS",
+    "EICHERMOT.NS", "DIVISLAB.NS", "TATAMOTORS.NS", "M&M.NS", "BPCL.NS"
+]
+
+if st.button("🐋 Run Smart Money Scan"):
+    smart_money_results = []
+
+    with st.spinner("Volume Spikes અને Breakouts Scan થઈ રહ્યા છે..."):
+        for symbol in SMT_UNIVERSE:
+            try:
+                stock = yf.Ticker(symbol)
+                hist = stock.history(period="3mo")
+                if hist.empty or len(hist) < 21:
+                    continue
+
+                close = hist["Close"]
+                volume = hist["Volume"]
+
+                current_price = round(close.iloc[-1], 2)
+                current_volume = volume.iloc[-1]
+                avg_volume_20 = volume.iloc[-21:-1].mean()
+
+                if avg_volume_20 == 0:
+                    continue
+
+                volume_ratio = round(current_volume / avg_volume_20, 2)
+
+                price_change_pct = round(((close.iloc[-1] - close.iloc[-2]) / close.iloc[-2]) * 100, 2)
+
+                # 20-day high/low for breakout/breakdown detection
+                recent_high_20 = close.iloc[-21:-1].max()
+                recent_low_20 = close.iloc[-21:-1].min()
+
+                signal = None
+                if current_price > recent_high_20 and volume_ratio >= 1.5:
+                    signal = "🚀 Breakout + Volume Spike"
+                elif current_price < recent_low_20 and volume_ratio >= 1.5:
+                    signal = "🔻 Breakdown + Volume Spike"
+                elif volume_ratio >= 2.0 and price_change_pct > 0:
+                    signal = "📈 Accumulation (High Volume Buying)"
+                elif volume_ratio >= 2.0 and price_change_pct < 0:
+                    signal = "📉 Distribution (High Volume Selling)"
+                elif volume_ratio >= 1.5:
+                    signal = "⚡ Unusual Volume Activity"
+
+                if signal:
+                    smart_money_results.append({
+                        "Stock": symbol,
+                        "Price": current_price,
+                        "Change %": price_change_pct,
+                        "Volume vs 20D Avg": volume_ratio,
+                        "Signal": signal
+                    })
+            except:
+                pass
+
+    smart_money_results.sort(key=lambda x: x["Volume vs 20D Avg"], reverse=True)
+
+    st.markdown("### 🐋 Smart Money Activity Detected")
+    if smart_money_results:
+        st.dataframe(pd.DataFrame(smart_money_results), use_container_width=True)
+
+        # Best opportunity: top breakout/accumulation signal
+        priority_signals = ["🚀 Breakout + Volume Spike", "📈 Accumulation (High Volume Buying)"]
+        best_picks = [r for r in smart_money_results if r["Signal"] in priority_signals]
+
+        st.divider()
+        st.markdown("### 🏆 Top Smart Money Opportunity")
+        if best_picks:
+            top = best_picks[0]
+            st.success(f"**{top['Stock']}** | Price: ₹{top['Price']} | {top['Signal']} | Volume: {top['Volume vs 20D Avg']}x Avg | Change: {top['Change %']}%")
+        else:
+            st.info("હાલ કોઈ Strong Buying Signal નથી - Distribution/Breakdown Signals વધારે છે, સાવધાન રહો.")
+    else:
+        st.info("આજે કોઈ Unusual Volume Activity મળી નથી.")
+
+    st.success(f"✅ Scan Complete | Total Scanned: {len(SMT_UNIVERSE)} Stocks | Signals Found: {len(smart_money_results)}")
+    st.caption("⚠️ આ Technical Scan છે, Financial Advice નથી. Volume Spike Confirmation માટે Delivery % Data Broker Platform પર ચેક કરો.")
+else:
+    st.info(f"'Run Smart Money Scan' click કરો - {len(SMT_UNIVERSE)} Stocks માં Volume Spikes/Breakouts Scan થશે.")
+    
