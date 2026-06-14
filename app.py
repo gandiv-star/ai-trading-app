@@ -1691,3 +1691,145 @@ Sector Exposure:
             st.markdown(review_response.text)
 else:
     st.info("'Review My Portfolio' button click કરો.")
+# ==========================================
+# AI REBALANCER (V42)
+# ==========================================
+st.divider()
+st.subheader("⚖️ AI Portfolio Rebalancer")
+st.caption("કયા Stocks વેચવા, કયા Stocks માં વધારે Invest કરવું - AI Suggestions")
+
+if st.button("⚖️ Get Rebalancing Suggestions"):
+    if not st.session_state.paper_portfolio:
+        st.info("Portfolio Empty છે. પહેલા Stocks Buy કરો (Paper Trading Section).")
+    else:
+        with st.spinner("Portfolio Rebalancing Analyze થઈ રહ્યું છે..."):
+            holding_rows = []
+            total_current = 0
+
+            for sym, pos in st.session_state.paper_portfolio.items():
+                try:
+                    td = fetch_technical_data(sym)
+                    if td:
+                        cp = td["current_price"]
+                        rsi = td["rsi"]
+                        trend = td["trend"]
+                        ma50 = td["ma50"]
+                        ma200 = td["ma200"]
+                    else:
+                        cp = pos["avg_price"]
+                        rsi, trend, ma50, ma200 = 50, "N/A", cp, cp
+                except:
+                    cp = pos["avg_price"]
+                    rsi, trend, ma50, ma200 = 50, "N/A", cp, cp
+
+                invested = pos["qty"] * pos["avg_price"]
+                current_val = pos["qty"] * cp
+                pnl_pct = round(((cp - pos["avg_price"]) / pos["avg_price"]) * 100, 2) if pos["avg_price"] > 0 else 0
+                total_current += current_val
+
+                # Score each holding (0-100)
+                score = 50
+                if trend == "Bullish": score += 20
+                else: score -= 10
+                if 40 <= rsi <= 65: score += 15
+                elif rsi > 75: score -= 15  # overbought
+                elif rsi < 25: score += 5   # oversold, may recover
+                if cp > ma50: score += 10
+                if cp > ma200: score += 5
+                score = max(0, min(100, score))
+
+                # Suggested action
+                if score >= 70:
+                    action = "🟢 HOLD / ADD MORE"
+                elif score >= 45:
+                    action = "🟡 HOLD"
+                else:
+                    action = "🔴 CONSIDER TRIM/EXIT"
+
+                holding_rows.append({
+                    "Stock": sym,
+                    "Qty": pos["qty"],
+                    "Current Value": round(current_val, 2),
+                    "P&L %": pnl_pct,
+                    "RSI": rsi,
+                    "Trend": trend,
+                    "Health Score": score,
+                    "Suggested Action": action
+                })
+
+            hold_df = pd.DataFrame(holding_rows)
+            hold_df["Allocation %"] = round((hold_df["Current Value"] / total_current) * 100, 1) if total_current > 0 else 0
+            hold_df = hold_df.sort_values("Health Score", ascending=False)
+
+            st.dataframe(hold_df, use_container_width=True)
+
+            # Identify weak holdings (candidates to trim)
+            weak = hold_df[hold_df["Health Score"] < 45]
+            strong = hold_df[hold_df["Health Score"] >= 70]
+
+            # Quick scan a few fresh ideas for "where to add" suggestions
+            candidate_pool = ["RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "ICICIBANK.NS", "INFY.NS",
+                              "LT.NS", "SUNPHARMA.NS", "TITAN.NS", "BAJFINANCE.NS", "ITC.NS"]
+            new_ideas = []
+            existing_symbols = set(st.session_state.paper_portfolio.keys())
+            for sym in candidate_pool:
+                if sym in existing_symbols:
+                    continue
+                try:
+                    td = fetch_technical_data(sym)
+                    if td and td["trend"] == "Bullish" and 45 <= td["rsi"] <= 65:
+                        new_ideas.append(sym)
+                except:
+                    pass
+                if len(new_ideas) >= 3:
+                    break
+
+            col_rb1, col_rb2 = st.columns(2)
+            with col_rb1:
+                st.markdown("#### 🔴 Trim/Exit Candidates")
+                if not weak.empty:
+                    for _, row in weak.iterrows():
+                        st.write(f"• **{row['Stock']}** | Score: {row['Health Score']}/100 | P&L: {row['P&L %']}%")
+                else:
+                    st.write("કોઈ Weak Holding નથી ✅")
+
+            with col_rb2:
+                st.markdown("#### 🟢 Strong / Add More")
+                if not strong.empty:
+                    for _, row in strong.iterrows():
+                        st.write(f"• **{row['Stock']}** | Score: {row['Health Score']}/100 | Allocation: {row['Allocation %']}%")
+                else:
+                    st.write("હાલ કોઈ Strong Add-More Candidate નથી")
+
+            st.markdown("#### 💡 New Ideas (Not in Portfolio)")
+            if new_ideas:
+                st.write(", ".join(new_ideas))
+            else:
+                st.write("હાલ કોઈ નવો Bullish Setup નથી મળ્યો")
+
+            # AI narrative
+            rebalance_prompt = f"""
+તમે Professional Portfolio Manager છો. નીચે Holdings ની Health Analysis છે:
+
+{hold_df.to_string(index=False)}
+
+Trim/Exit Candidates: {', '.join(weak['Stock'].tolist()) if not weak.empty else 'કોઈ નહીં'}
+Strong Holdings: {', '.join(strong['Stock'].tolist()) if not strong.empty else 'કોઈ નહીં'}
+New Bullish Ideas (Not Held): {', '.join(new_ideas) if new_ideas else 'કોઈ નહીં'}
+
+ગુજરાતીમાં ટૂંકમાં (6-8 lines):
+1. Overall Rebalancing Strategy
+2. કયા Stock વેચીને કયા માં Shift કરવું (specific)
+3. Allocation Concentration નું Risk (જો કોઈ Stock 30%+ Allocation હોય)
+4. Priority Order - શું પહેલા કરવું
+
+છેલ્લે લખો: 'આ નાણાકીય સલાહ નથી, પોતાનું Research કરો.'
+"""
+            with st.spinner("AI Rebalancing Strategy તૈયાર કરી રહ્યું છે..."):
+                rebalance_response = model.generate_content(rebalance_prompt)
+
+            st.markdown("### 🤖 AI Rebalancing Strategy")
+            st.markdown(rebalance_response.text)
+else:
+    st.info("'Get Rebalancing Suggestions' button click કરો.")
+    
