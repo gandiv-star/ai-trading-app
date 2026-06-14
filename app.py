@@ -1484,3 +1484,100 @@ if st.button("🐋 Run Smart Money Scan"):
 else:
     st.info(f"'Run Smart Money Scan' click કરો - {len(SMT_UNIVERSE)} Stocks માં Volume Spikes/Breakouts Scan થશે.")
     
+# ==========================================
+# AI TRADE COACH (V40)
+# ==========================================
+st.divider()
+st.subheader("🧑‍🏫 Gemini AI Trade Coach")
+st.caption("ઉદાહરણ: 'Should I buy Reliance?' અથવા 'TCS માં Entry આપો'")
+
+coach_question = st.text_input("તમારો Trading Question લખો", value="Should I buy Reliance?", key="coach_question")
+
+if st.button("🤖 Ask AI Coach"):
+    if coach_question.strip():
+        try:
+            # Try to extract a stock symbol mentioned by the user
+            COMMON_NAMES = {
+                "reliance": "RELIANCE.NS", "tcs": "TCS.NS", "infosys": "INFY.NS", "infy": "INFY.NS",
+                "hdfc": "HDFCBANK.NS", "hdfcbank": "HDFCBANK.NS", "icici": "ICICIBANK.NS",
+                "sbi": "SBIN.NS", "lt": "LT.NS", "airtel": "BHARTIARTL.NS", "bharti": "BHARTIARTL.NS",
+                "itc": "ITC.NS", "hul": "HINDUNILVR.NS", "kotak": "KOTAKBANK.NS", "axis": "AXISBANK.NS",
+                "bajajfinance": "BAJFINANCE.NS", "maruti": "MARUTI.NS", "asianpaint": "ASIANPAINT.NS",
+                "sunpharma": "SUNPHARMA.NS", "titan": "TITAN.NS", "ultratech": "ULTRACEMCO.NS",
+                "wipro": "WIPRO.NS", "nestle": "NESTLEIND.NS", "powergrid": "POWERGRID.NS",
+                "ntpc": "NTPC.NS", "ongc": "ONGC.NS", "adaniports": "ADANIPORTS.NS",
+                "tatasteel": "TATASTEEL.NS", "jswsteel": "JSWSTEEL.NS", "hcltech": "HCLTECH.NS",
+                "techm": "TECHM.NS", "indusind": "INDUSINDBK.NS", "coalindia": "COALINDIA.NS",
+                "drreddy": "DRREDDY.NS", "cipla": "CIPLA.NS", "grasim": "GRASIM.NS",
+                "heromotoco": "HEROMOTOCO.NS", "eichermotors": "EICHERMOT.NS", "divislab": "DIVISLAB.NS",
+                "tatamotors": "TATAMOTORS.NS", "mahindra": "M&M.NS", "bpcl": "BPCL.NS"
+            }
+
+            question_lower = coach_question.lower()
+            detected_symbol = None
+            for name, sym in COMMON_NAMES.items():
+                if name in question_lower:
+                    detected_symbol = sym
+                    break
+
+            tech_context = ""
+            if detected_symbol:
+                td = fetch_technical_data(detected_symbol)
+                if td:
+                    current_price = td["current_price"]
+                    ma50 = td["ma50"]
+                    ma200 = td["ma200"]
+                    rsi = td["rsi"]
+                    trend = td["trend"]
+
+                    suggested_target = round(current_price * 1.08, 2)
+                    suggested_sl = round(current_price * 0.95, 2)
+
+                    tech_context = f"""
+Detected Stock: {detected_symbol}
+Current Price: ₹{current_price}
+50 DMA: ₹{ma50}
+200 DMA: ₹{ma200}
+RSI: {rsi}
+Trend: {trend}
+Suggested Target (8%): ₹{suggested_target}
+Suggested Stop Loss (5%): ₹{suggested_sl}
+"""
+                    st.markdown("#### 📊 Live Technical Snapshot")
+                    col_c1, col_c2, col_c3, col_c4 = st.columns(4)
+                    col_c1.metric("Price", f"₹{current_price}")
+                    col_c2.metric("RSI", rsi)
+                    col_c3.metric("Trend", trend)
+                    col_c4.metric("50/200 DMA", f"{ma50}/{ma200}")
+
+            coach_prompt = f"""
+તમે Professional Trading Coach છો. User નો Question નીચે છે.
+
+User Question: "{coach_question}"
+
+{tech_context if tech_context else "Note: કોઈ specific stock detect નથી થયો, general guidance આપો."}
+
+ગુજરાતીમાં જવાબ આપો, નીચેના Format માં (જો Stock Specific Question હોય):
+1. **Recommendation**: BUY / WAIT / AVOID
+2. **Entry**: ₹ (specific level)
+3. **Target**: ₹ (specific level)
+4. **Stop Loss**: ₹ (specific level)
+5. **Risk**: Low / Medium / High અને કેમ
+6. **Probability**: Approximate success probability % અને reasoning
+7. **Reasoning**: 2-3 lines માં Technical Logic
+
+જો Question Stock-Specific ન હોય, તો General Trading Guidance આપો.
+
+છેલ્લે અચૂક લખો: 'આ નાણાકીય સલાહ નથી, પોતાનું Research કરો.'
+"""
+            with st.spinner("AI Coach Analyze કરી રહ્યું છે..."):
+                coach_response = model.generate_content(coach_prompt)
+
+            st.markdown("### 🤖 AI Coach Response")
+            st.markdown(coach_response.text)
+
+        except Exception as e:
+            st.error(f"Error: {e}")
+    else:
+        st.warning("કૃપા કરીને Question લખો.")
+                    
