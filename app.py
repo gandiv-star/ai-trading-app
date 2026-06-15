@@ -1,11 +1,15 @@
 import datetime
+import json
+import os
 import requests
 import streamlit as st
 import google.generativeai as genai
 import yfinance as yf
 import pandas as pd
 
-# Page Configuration
+# ==========================================
+# PAGE CONFIGURATION
+# ==========================================
 st.set_page_config(
     page_title="Gandiv AI Stock Research",
     page_icon="📈",
@@ -18,27 +22,75 @@ model = genai.GenerativeModel("gemini-2.5-flash")
 
 st.title("📈 Gandiv AI Trading Assistant")
 
-# Helper function to prevent redundant code and excessive API calling
+# ==========================================
+# DATA PERSISTENCE
+# ==========================================
+DATA_FILE = "gandiv_data.json"
+
+def load_data():
+    if os.path.exists(DATA_FILE):
+        try:
+            with open(DATA_FILE, "r") as f:
+                data = json.load(f)
+            st.session_state.paper_cash = data.get("paper_cash", 100000.0)
+            st.session_state.paper_portfolio = data.get("paper_portfolio", {})
+            st.session_state.paper_trade_history = data.get("paper_trade_history", [])
+            st.session_state.equity_curve = data.get("equity_curve", [])
+            st.session_state.trade_journal = data.get("trade_journal", [])
+        except Exception:
+            st.session_state.paper_cash = 100000.0
+            st.session_state.paper_portfolio = {}
+            st.session_state.paper_trade_history = []
+            st.session_state.equity_curve = []
+            st.session_state.trade_journal = []
+    else:
+        st.session_state.paper_cash = 100000.0
+        st.session_state.paper_portfolio = {}
+        st.session_state.paper_trade_history = []
+        st.session_state.equity_curve = []
+        st.session_state.trade_journal = []
+
+def save_data():
+    data = {
+        "paper_cash": st.session_state.paper_cash,
+        "paper_portfolio": st.session_state.paper_portfolio,
+        "paper_trade_history": st.session_state.paper_trade_history,
+        "equity_curve": st.session_state.equity_curve,
+        "trade_journal": st.session_state.trade_journal,
+    }
+    try:
+        with open(DATA_FILE, "w") as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        st.error(f"Save Error: {e}")
+
+if "data_loaded" not in st.session_state:
+    load_data()
+    st.session_state.data_loaded = True
+
+# ==========================================
+# HELPER FUNCTION
+# ==========================================
 def fetch_technical_data(symbol, period="1y"):
     stock = yf.Ticker(symbol)
     hist = stock.history(period=period)
     if hist.empty:
         return None
-    
+
     close = hist["Close"]
     current_price = round(close.iloc[-1], 2)
-    
+
     ma50 = close.rolling(50).mean().iloc[-1] if len(close) >= 50 else close.mean()
     ma200 = close.rolling(200).mean().iloc[-1] if len(close) >= 200 else close.mean()
-    
+
     delta = close.diff()
     gain = delta.where(delta > 0, 0).rolling(14).mean()
     loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
     rs = gain / loss
     rsi = (100 - (100 / (1 + rs))).iloc[-1]
-    
+
     trend = "Bullish" if ma50 > ma200 else "Bearish"
-    
+
     return {
         "current_price": current_price,
         "ma50": round(ma50, 2),
@@ -49,35 +101,55 @@ def fetch_technical_data(symbol, period="1y"):
     }
 
 # ==========================================
+# SHARED STOCK UNIVERSE & SECTOR MAP
+# ==========================================
+STOCK_UNIVERSE = [
+    "RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", "ICICIBANK.NS",
+    "SBIN.NS", "LT.NS", "BHARTIARTL.NS", "ITC.NS", "HINDUNILVR.NS",
+    "KOTAKBANK.NS", "AXISBANK.NS", "BAJFINANCE.NS", "MARUTI.NS",
+    "ASIANPAINT.NS", "SUNPHARMA.NS", "TITAN.NS", "ULTRACEMCO.NS",
+    "WIPRO.NS", "NESTLEIND.NS", "POWERGRID.NS", "NTPC.NS", "ONGC.NS",
+    "ADANIPORTS.NS", "TATASTEEL.NS", "JSWSTEEL.NS", "HCLTECH.NS",
+    "TECHM.NS", "INDUSINDBK.NS", "COALINDIA.NS", "BAJAJFINSV.NS",
+    "DRREDDY.NS", "CIPLA.NS", "GRASIM.NS", "HEROMOTOCO.NS",
+    "EICHERMOT.NS", "DIVISLAB.NS", "TATAMOTORS.NS", "M&M.NS", "BPCL.NS"
+]
+
+SECTOR_MAP = {
+    "Banking": ["HDFCBANK.NS", "ICICIBANK.NS", "SBIN.NS", "KOTAKBANK.NS", "AXISBANK.NS", "INDUSINDBK.NS"],
+    "IT": ["TCS.NS", "INFY.NS", "WIPRO.NS", "HCLTECH.NS", "TECHM.NS"],
+    "FMCG": ["HINDUNILVR.NS", "ITC.NS", "NESTLEIND.NS"],
+    "Auto": ["MARUTI.NS", "TATAMOTORS.NS", "M&M.NS", "HEROMOTOCO.NS", "EICHERMOT.NS"],
+    "Pharma": ["SUNPHARMA.NS", "DRREDDY.NS", "CIPLA.NS", "DIVISLAB.NS"],
+    "Metal": ["TATASTEEL.NS", "JSWSTEEL.NS"],
+    "Energy": ["RELIANCE.NS", "ONGC.NS", "BPCL.NS", "NTPC.NS", "POWERGRID.NS", "COALINDIA.NS"],
+    "Finance": ["BAJFINANCE.NS", "BAJAJFINSV.NS"],
+    "Infra/Cement": ["LT.NS", "ULTRACEMCO.NS", "GRASIM.NS", "ADANIPORTS.NS"],
+    "Telecom": ["BHARTIARTL.NS"],
+    "Paints": ["ASIANPAINT.NS"],
+    "Consumer": ["TITAN.NS"]
+}
+
+# ==========================================
 # BEST STOCKS SCANNER
 # ==========================================
 st.divider()
 
 if st.button("🔥 Best Stocks Scanner"):
-    stocks = [
-        "RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", "ICICIBANK.NS",
-        "SBIN.NS", "LT.NS", "BHARTIARTL.NS", "ITC.NS", "HINDUNILVR.NS",
-        "KOTAKBANK.NS", "AXISBANK.NS", "BAJFINANCE.NS", "MARUTI.NS",
-        "ASIANPAINT.NS", "SUNPHARMA.NS", "TITAN.NS", "ULTRACEMCO.NS",
-        "WIPRO.NS", "NESTLEIND.NS", "POWERGRID.NS", "NTPC.NS", "ONGC.NS",
-        "ADANIPORTS.NS", "TATASTEEL.NS", "JSWSTEEL.NS", "HCLTECH.NS",
-        "TECHM.NS", "INDUSINDBK.NS", "COALINDIA.NS"
-    ]
-
     results = []
 
     with st.spinner("Stocks Scan થઈ રહ્યા છે..."):
-        for symbol in stocks:
+        for symbol in STOCK_UNIVERSE:
             try:
                 tech_data = fetch_technical_data(symbol)
                 if not tech_data: continue
-                
+
                 stock = yf.Ticker(symbol)
                 info = stock.info
 
                 pe = info.get("trailingPE", 999)
                 market_cap = info.get("marketCap", 0)
-                
+
                 rsi = tech_data["rsi"]
                 trend = tech_data["trend"]
                 score = 100
@@ -110,7 +182,7 @@ if st.button("🔥 Best Stocks Scanner"):
         else: rating = "🔴 Avoid"
 
         st.write(f"{rank}. {symbol} | {rating} | Score: {score}/100 | RSI: {rsi} | Trend: {trend}")
-        
+
     st.success("🤖 AI Premium Scanner Completed")
 
 # ==========================================
@@ -236,7 +308,7 @@ if st.button("📂 My Holdings"):
         st.json(response.json())
     except Exception as e:
         st.error(f"Error: {e}")
-                    
+
 st.write("Token Loaded:", st.secrets["UPSTOX_ACCESS_TOKEN"][:15] + "...")
 
 # ==========================================
@@ -247,7 +319,7 @@ st.divider()
 if st.button("🚀 Find Best Opportunities"):
     opportunities = []
     stocks = ["RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", "ICICIBANK.NS", "ITC.NS", "LT.NS", "BHARTIARTL.NS", "SUNPHARMA.NS", "TITAN.NS"]
-    
+
     with st.spinner("AI Opportunities શોધી રહ્યું છે..."):
         for symbol in stocks:
             try:
@@ -263,7 +335,7 @@ if st.button("🚀 Find Best Opportunities"):
     st.subheader("🔥 Top Market Opportunities")
     for rank, (symbol, score, trend) in enumerate(opportunities[:5], start=1):
         st.write(f"{rank}. {symbol} | Score: {score}/100 | Trend: {trend}")
-    st.success("🤖 AI Opportunity Scan Complete")         
+    st.success("🤖 AI Opportunity Scan Complete")
 
 st.divider()
 st.subheader("📊 AI Market Dashboard")
@@ -356,7 +428,7 @@ if st.button("🧪 Run Backtest"):
 
         for i in range(200, len(close)):
             if not position:
-                if (ma50.iloc[i] > ma200.iloc[i] and 45 <= rsi_series.iloc[i] <= 65 and 
+                if (ma50.iloc[i] > ma200.iloc[i] and 45 <= rsi_series.iloc[i] <= 65 and
                     volume.iloc[i] > avg_volume.iloc[i] and close.iloc[i] > ma200.iloc[i]):
                     entry_price = close.iloc[i]
                     position = True
@@ -373,13 +445,13 @@ if st.button("🧪 Run Backtest"):
         st.metric("Total Return", f"{round(total_profit, 2)}%")
         st.write(f"✅ Wins: {wins}")
         st.write(f"❌ Losses: {losses}")
-        
+
         verdict = "🔥 Excellent Strategy" if win_rate >= 60 else "✅ Good Strategy" if win_rate >= 50 else "⚠️ Needs Improvement"
         st.success(f"AI Verdict: {verdict}")
         st.info("V19 Multi-Filter Strategy Active 🚀")
     except Exception as e:
-        st.error(f"Backtest Error: {e}")
-                
+                st.error(f"Backtest Error: {e}")
+
 st.divider()
 st.subheader("🚀 Momentum Breakout Backtest")
 
@@ -400,7 +472,7 @@ if st.button("🔥 Run Momentum Backtest"):
         for i in range(200, len(close)):
             breakout_high = close.iloc[i-20:i].max()
             if not position:
-                if (close.iloc[i] > ma50.iloc[i] and close.iloc[i] > ma200.iloc[i] and 
+                if (close.iloc[i] > ma50.iloc[i] and close.iloc[i] > ma200.iloc[i] and
                     close.iloc[i] > breakout_high and volume.iloc[i] > avg_volume.iloc[i]):
                     entry_price = close.iloc[i]
                     position = True
@@ -417,7 +489,7 @@ if st.button("🔥 Run Momentum Backtest"):
         st.metric("Total Return", f"{round(total_profit, 2)}%")
         st.write(f"✅ Wins: {wins}")
         st.write(f"❌ Losses: {losses}")
-        
+
         verdict = "🔥 Excellent" if win_rate >= 60 else "✅ Good" if win_rate >= 50 else "⚠️ Weak"
         st.success(f"Momentum Verdict: {verdict}")
     except Exception as e:
@@ -463,7 +535,7 @@ if st.button("🚀 Run RSI Pullback Backtest"):
         st.write(f"❌ Losses: {losses}")
     except Exception as e:
         st.error(f"Error: {e}")
-                
+
 # ==========================================
 # AI TRADE ADVISOR (V24)
 # ==========================================
@@ -474,9 +546,6 @@ trade_symbol = st.text_input(
     "Stock Symbol for AI Advice",
     value="RELIANCE.NS"
 )
-
-if "trade_journal" not in st.session_state:
-    st.session_state.trade_journal = []
 
 if st.button("🚀 Generate AI Trade Setup"):
     try:
@@ -521,6 +590,7 @@ if st.button("🚀 Generate AI Trade Setup"):
 if "last_trade" in st.session_state:
     if st.button("💾 Save Latest Trade"):
         st.session_state.trade_journal.append(st.session_state.last_trade)
+        save_data()
         st.success("✅ Trade Saved Successfully")
         del st.session_state.last_trade
 
@@ -536,21 +606,12 @@ if len(st.session_state.trade_journal) > 0:
     st.metric("Saved Trades", len(st.session_state.trade_journal))
     avg_score = round(journal_df["Score"].mean(), 2)
     st.metric("Average AI Score", avg_score)
-    
+
 # ==========================================
 # PAPER TRADING SIMULATOR (V26)
 # ==========================================
 st.divider()
 st.subheader("💰 Paper Trading Simulator")
-
-if "paper_cash" not in st.session_state:
-    st.session_state.paper_cash = 100000.0
-
-if "paper_portfolio" not in st.session_state:
-    st.session_state.paper_portfolio = {}  # { "SYMBOL": {"qty": X, "avg_price": Y} }
-
-if "paper_trade_history" not in st.session_state:
-    st.session_state.paper_trade_history = []  # closed trades for analytics
 
 st.metric("Available Cash", f"₹{st.session_state.paper_cash:,.2f}")
 
@@ -582,6 +643,7 @@ if pt_buy_btn:
                     st.session_state.paper_portfolio[pt_symbol] = {"qty": total_qty, "avg_price": new_avg}
                 else:
                     st.session_state.paper_portfolio[pt_symbol] = {"qty": pt_qty, "avg_price": price}
+                save_data()
                 st.success(f"✅ Bought {pt_qty} of {pt_symbol} @ ₹{price}")
         else:
             st.error("ડેટા મળ્યો નથી")
@@ -612,7 +674,6 @@ if st.session_state.paper_portfolio:
 
                 st.session_state.paper_cash += proceeds
 
-                # record closed trade for analytics
                 st.session_state.paper_trade_history.append({
                     "Date": str(datetime.date.today()),
                     "Stock": sell_symbol,
@@ -623,12 +684,13 @@ if st.session_state.paper_portfolio:
                     "P&L %": profit_pct
                 })
 
-                # update or remove holding
                 remaining_qty = holding["qty"] - sell_qty
                 if remaining_qty <= 0:
                     del st.session_state.paper_portfolio[sell_symbol]
                 else:
                     st.session_state.paper_portfolio[sell_symbol]["qty"] = remaining_qty
+
+                save_data()
 
                 if profit >= 0:
                     st.success(f"✅ Sold {sell_qty} {sell_symbol} @ ₹{current_price} | Profit: ₹{round(profit,2)} ({profit_pct}%)")
@@ -657,10 +719,7 @@ if st.session_state.paper_portfolio:
             for sym, pos in st.session_state.paper_portfolio.items():
                 try:
                     tech_data = fetch_technical_data(sym)
-                    if tech_data:
-                        cp = tech_data["current_price"]
-                    else:
-                        cp = pos["avg_price"]
+                    cp = tech_data["current_price"] if tech_data else pos["avg_price"]
                 except:
                     cp = pos["avg_price"]
 
@@ -728,6 +787,7 @@ if st.button("🔄 Reset Account"):
     st.session_state.paper_cash = 100000.0
     st.session_state.paper_portfolio = {}
     st.session_state.paper_trade_history = []
+    save_data()
     st.success("✅ Paper Trading Account Reset Done. Cash: ₹1,00,000")
 
 # ==========================================
@@ -765,7 +825,6 @@ if st.session_state.paper_trade_history:
 else:
     st.info("હજુ સુધી કોઈ Trade Close થયેલ નથી. Realized Analytics માટે Sell Position કરો.")
 
-# Unrealized P&L summary (uses current open positions)
 if st.session_state.paper_portfolio:
     unrealized_total = 0
     for sym, pos in st.session_state.paper_portfolio.items():
@@ -843,8 +902,7 @@ st.divider()
 st.subheader("🧠 AI Market Sentiment")
 
 if st.button("🌐 Get AI Market Sentiment"):
-    try:
-        # Use Nifty as proxy for overall market sentiment
+        try:
         nifty_data = fetch_technical_data("^NSEI", period="6mo")
 
         if nifty_data:
@@ -882,16 +940,13 @@ Nifty RSI: {nifty_rsi}
             st.error("Nifty Data Fetch ન થયો.")
     except Exception as e:
         st.error(f"Error: {e}")
+
 # ==========================================
 # EQUITY CURVE (V34)
 # ==========================================
 st.divider()
 st.subheader("📈 Equity Curve & Drawdown")
 
-if "equity_curve" not in st.session_state:
-    st.session_state.equity_curve = []  # list of {"Date":..., "Value":...}
-
-# Calculate current total portfolio value (cash + holdings current value)
 current_holdings_value = 0
 for sym, pos in st.session_state.paper_portfolio.items():
     try:
@@ -909,7 +964,6 @@ with col_eq1:
 with col_eq2:
     if st.button("📸 Record Snapshot (Today)"):
         today_str = str(datetime.date.today())
-        # Replace today's entry if exists, else append
         existing_dates = [e["Date"] for e in st.session_state.equity_curve]
         if today_str in existing_dates:
             for e in st.session_state.equity_curve:
@@ -917,6 +971,7 @@ with col_eq2:
                     e["Value"] = current_total_value
         else:
             st.session_state.equity_curve.append({"Date": today_str, "Value": current_total_value})
+        save_data()
         st.success(f"✅ Snapshot Saved: ₹{current_total_value:,.2f} on {today_str}")
 
 if len(st.session_state.equity_curve) >= 1:
@@ -928,13 +983,11 @@ if len(st.session_state.equity_curve) >= 1:
     st.markdown("#### 📊 Portfolio Growth Chart")
     st.line_chart(eq_df["Value"])
 
-    # Profit Curve (change from starting value)
     starting_value = eq_df["Value"].iloc[0]
     eq_df["Profit"] = eq_df["Value"] - starting_value
     st.markdown("#### 💰 Profit Curve")
     st.line_chart(eq_df["Profit"])
 
-    # Drawdown calculation
     eq_df["Peak"] = eq_df["Value"].cummax()
     eq_df["Drawdown %"] = ((eq_df["Value"] - eq_df["Peak"]) / eq_df["Peak"]) * 100
     st.markdown("#### 📉 Drawdown")
@@ -953,6 +1006,7 @@ if len(st.session_state.equity_curve) >= 1:
 
     if st.button("🗑️ Clear Equity History"):
         st.session_state.equity_curve = []
+        save_data()
         st.success("✅ Equity History Cleared")
 else:
     st.info("હજુ સુધી કોઈ Snapshot નથી. 'Record Snapshot' button click કરી દરરોજ Portfolio Value Save કરો - Equity Curve બનાવવા માટે.")
@@ -966,7 +1020,6 @@ st.caption("એક નજરમાં તમારું Portfolio, Market Mood,
 
 if st.button("🔄 Generate Dashboard"):
     with st.spinner("Dashboard Data Tayar થઈ રહ્યો છે..."):
-        # 1. Portfolio Value
         dash_holdings_value = 0
         position_count = len(st.session_state.paper_portfolio)
         for sym, pos in st.session_state.paper_portfolio.items():
@@ -979,7 +1032,6 @@ if st.button("🔄 Generate Dashboard"):
 
         dash_total_value = round(st.session_state.paper_cash + dash_holdings_value, 2)
 
-        # 2. Market Mood (via Nifty)
         try:
             nifty_data = fetch_technical_data("^NSEI", period="6mo")
             if nifty_data:
@@ -992,7 +1044,6 @@ if st.button("🔄 Generate Dashboard"):
             market_mood = "Unknown ⚪"
             nifty_rsi = 50
 
-        # 3. Risk Level (based on portfolio concentration + market RSI)
         if position_count == 0:
             risk_level = "No Open Positions ⚪"
         elif position_count <= 2:
@@ -1007,7 +1058,6 @@ if st.button("🔄 Generate Dashboard"):
         elif nifty_rsi < 30:
             risk_level += " | Market Oversold ⚠️"
 
-        # 4. Best Opportunity (quick scan of common stocks)
         best_opportunity = "Scanning..."
         opp_stocks = ["RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "ICICIBANK.NS", "INFY.NS", "ITC.NS", "LT.NS", "SUNPHARMA.NS"]
         best_score = -999
@@ -1025,7 +1075,6 @@ if st.button("🔄 Generate Dashboard"):
             except:
                 pass
 
-        # 5. AI Confidence (composite of market mood + best opportunity score)
         ai_confidence = 50
         if "Bullish" in market_mood:
             ai_confidence += 20
@@ -1037,7 +1086,6 @@ if st.button("🔄 Generate Dashboard"):
             ai_confidence += 10
         ai_confidence = max(0, min(100, ai_confidence))
 
-        # Display Dashboard
         col_h1, col_h2, col_h3 = st.columns(3)
         col_h1.metric("💰 Portfolio Value", f"₹{dash_total_value:,.2f}")
         col_h2.metric("🌐 Market Mood", market_mood)
@@ -1061,7 +1109,7 @@ if st.button("🔄 Generate Dashboard"):
             st.error("🤖 AI Verdict: Unfavorable - Defensive Stance Recommended 🔴")
 else:
     st.info("Dashboard Data જોવા માટે 'Generate Dashboard' button click કરો.")
-    
+
 # ==========================================
 # AUTO WATCHLIST SCANNER (V36)
 # ==========================================
@@ -1069,27 +1117,14 @@ st.divider()
 st.subheader("🔍 Auto Watchlist Scanner")
 st.caption("દરરોજ Top Breakout, Swing અને Momentum Stocks Scan કરો")
 
-# Common NSE stock universe for scanning
-SCAN_UNIVERSE = [
-    "RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", "ICICIBANK.NS",
-    "SBIN.NS", "LT.NS", "BHARTIARTL.NS", "ITC.NS", "HINDUNILVR.NS",
-    "KOTAKBANK.NS", "AXISBANK.NS", "BAJFINANCE.NS", "MARUTI.NS",
-    "ASIANPAINT.NS", "SUNPHARMA.NS", "TITAN.NS", "ULTRACEMCO.NS",
-    "WIPRO.NS", "NESTLEIND.NS", "POWERGRID.NS", "NTPC.NS", "ONGC.NS",
-    "ADANIPORTS.NS", "TATASTEEL.NS", "JSWSTEEL.NS", "HCLTECH.NS",
-    "TECHM.NS", "INDUSINDBK.NS", "COALINDIA.NS", "BAJAJFINSV.NS",
-    "DRREDDY.NS", "CIPLA.NS", "GRASIM.NS", "HEROMOTOCO.NS",
-    "EICHERMOT.NS", "DIVISLAB.NS", "TATAMOTORS.NS", "M&M.NS", "BPCL.NS"
-]
-
 if st.button("🚀 Run Auto Scanner (Top 5 Each)"):
 
     breakout_results = []
     swing_results = []
     momentum_results = []
 
-    with st.spinner(f"{len(SCAN_UNIVERSE)} Stocks Scan થઈ રહ્યા છે... થોડો સમય લાગશે"):
-        for symbol in SCAN_UNIVERSE:
+    with st.spinner(f"{len(STOCK_UNIVERSE)} Stocks Scan થઈ રહ્યા છે... થોડો સમય લાગશે"):
+        for symbol in STOCK_UNIVERSE:
             try:
                 td = fetch_technical_data(symbol, period="6mo")
                 if not td:
@@ -1108,9 +1143,7 @@ if st.button("🚀 Run Auto Scanner (Top 5 Each)"):
                 avg_volume = volume.rolling(20).mean().iloc[-1]
                 current_volume = volume.iloc[-1]
 
-                # ---- BREAKOUT LOGIC ----
-                # Price breaking above recent 20-day high with volume confirmation
-                recent_high = close.iloc[-21:-1].max()  # last 20 days excluding today
+                recent_high = close.iloc[-21:-1].max()
                 if current_price > recent_high and current_volume > avg_volume:
                     breakout_strength = round(((current_price - recent_high) / recent_high) * 100, 2)
                     breakout_results.append({
@@ -1120,8 +1153,6 @@ if st.button("🚀 Run Auto Scanner (Top 5 Each)"):
                         "Volume vs Avg": round(current_volume / avg_volume, 2) if avg_volume > 0 else 0
                     })
 
-                # ---- SWING TRADE LOGIC ----
-                # Bullish trend, RSI in healthy zone, price above MA50
                 if trend == "Bullish" and 45 <= rsi <= 65 and current_price > ma50:
                     target = round(current_price * 1.05, 2)
                     stoploss = round(current_price * 0.97, 2)
@@ -1133,8 +1164,6 @@ if st.button("🚀 Run Auto Scanner (Top 5 Each)"):
                         "RSI": rsi
                     })
 
-                # ---- MOMENTUM LOGIC ----
-                # Strong price momentum: above both MAs + RSI > 60 + above-average volume
                 if current_price > ma50 and current_price > ma200 and rsi > 60 and current_volume > avg_volume:
                     momentum_score = round(rsi + (current_volume / avg_volume if avg_volume > 0 else 1) * 10, 2)
                     momentum_results.append({
@@ -1147,7 +1176,6 @@ if st.button("🚀 Run Auto Scanner (Top 5 Each)"):
             except:
                 pass
 
-    # Sort and pick top 5 for each category
     breakout_results.sort(key=lambda x: x["Breakout %"], reverse=True)
     swing_results.sort(key=lambda x: x["RSI"], reverse=True)
     momentum_results.sort(key=lambda x: x["Momentum Score"], reverse=True)
@@ -1156,7 +1184,6 @@ if st.button("🚀 Run Auto Scanner (Top 5 Each)"):
     top_swings = swing_results[:5]
     top_momentum = momentum_results[:5]
 
-    # ---- DISPLAY RESULTS ----
     st.markdown("### 🚀 Top 5 Breakout Stocks")
     if top_breakouts:
         st.dataframe(pd.DataFrame(top_breakouts), use_container_width=True)
@@ -1175,10 +1202,9 @@ if st.button("🚀 Run Auto Scanner (Top 5 Each)"):
     else:
         st.info("આજે કોઈ Momentum Setup મળ્યું નથી.")
 
-    st.success(f"✅ Scan Complete | Total Stocks Scanned: {len(SCAN_UNIVERSE)}")
+    st.success(f"✅ Scan Complete | Total Stocks Scanned: {len(STOCK_UNIVERSE)}")
     st.caption("⚠️ આ ફક્ત Technical Scan છે, Financial Advice નથી. પોતાનું Research કરો.")
 
-    # Save scan results for later reference
     st.session_state.last_scan = {
         "Date": str(datetime.date.today()),
         "Breakouts": top_breakouts,
@@ -1186,36 +1212,20 @@ if st.button("🚀 Run Auto Scanner (Top 5 Each)"):
         "Momentum": top_momentum
     }
 else:
-    st.info(f"'Run Auto Scanner' button click કરો - {len(SCAN_UNIVERSE)} NSE Stocks Scan થશે.")
+    st.info(f"'Run Auto Scanner' button click કરો - {len(STOCK_UNIVERSE)} NSE Stocks Scan થશે.")
 
-# Show last scan summary if available
 if "last_scan" in st.session_state:
     with st.expander(f"📅 Last Scan Date: {st.session_state.last_scan['Date']}"):
         st.write(f"Breakouts Found: {len(st.session_state.last_scan['Breakouts'])}")
         st.write(f"Swing Setups Found: {len(st.session_state.last_scan['Swings'])}")
         st.write(f"Momentum Setups Found: {len(st.session_state.last_scan['Momentum'])}")
-        
+
 # ==========================================
 # SECTOR ROTATION AI (V37)
 # ==========================================
 st.divider()
 st.subheader("🔄 Sector Rotation AI")
 st.caption("કયો Sector Strong છે, કયો Weak - Sector-wise Trend Scan")
-
-SECTOR_MAP = {
-    "Banking": ["HDFCBANK.NS", "ICICIBANK.NS", "SBIN.NS", "KOTAKBANK.NS", "AXISBANK.NS", "INDUSINDBK.NS"],
-    "IT": ["TCS.NS", "INFY.NS", "WIPRO.NS", "HCLTECH.NS", "TECHM.NS"],
-    "FMCG": ["HINDUNILVR.NS", "ITC.NS", "NESTLEIND.NS"],
-    "Auto": ["MARUTI.NS", "TATAMOTORS.NS", "M&M.NS", "HEROMOTOCO.NS", "EICHERMOT.NS"],
-    "Pharma": ["SUNPHARMA.NS", "DRREDDY.NS", "CIPLA.NS", "DIVISLAB.NS"],
-    "Metal": ["TATASTEEL.NS", "JSWSTEEL.NS"],
-    "Energy": ["RELIANCE.NS", "ONGC.NS", "BPCL.NS", "NTPC.NS", "POWERGRID.NS", "COALINDIA.NS"],
-    "Finance": ["BAJFINANCE.NS", "BAJAJFINSV.NS"],
-    "Infra/Cement": ["LT.NS", "ULTRACEMCO.NS", "GRASIM.NS", "ADANIPORTS.NS"],
-    "Telecom": ["BHARTIARTL.NS"],
-    "Paints": ["ASIANPAINT.NS"],
-    "Consumer": ["TITAN.NS"]
-}
 
 if st.button("🔄 Scan All Sectors"):
     sector_results = []
@@ -1262,7 +1272,6 @@ if st.button("🔄 Scan All Sectors"):
     st.markdown("### 📊 Sector Strength Ranking")
     st.dataframe(pd.DataFrame(sector_results), use_container_width=True)
 
-    # Best opportunity: strongest sector's strongest stock
     if sector_results:
         top_sector_name = sector_results[0]["Sector"]
         top_stocks = SECTOR_MAP[top_sector_name]
@@ -1292,7 +1301,7 @@ if st.button("🔄 Scan All Sectors"):
     st.caption("⚠️ આ Technical Scan છે, Financial Advice નથી.")
 else:
     st.info("'Scan All Sectors' button click કરો - 12 Sectors, 40 Stocks Scan થશે.")
-    
+
 # ==========================================
 # RELATIVE STRENGTH SCANNER (V38)
 # ==========================================
@@ -1300,21 +1309,8 @@ st.divider()
 st.subheader("💪 Relative Strength Scanner")
 st.caption("Nifty કરતાં વધુ Strong Stocks શોધે છે (Last 3 Months Performance)")
 
-RS_UNIVERSE = [
-    "RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", "ICICIBANK.NS",
-    "SBIN.NS", "LT.NS", "BHARTIARTL.NS", "ITC.NS", "HINDUNILVR.NS",
-    "KOTAKBANK.NS", "AXISBANK.NS", "BAJFINANCE.NS", "MARUTI.NS",
-    "ASIANPAINT.NS", "SUNPHARMA.NS", "TITAN.NS", "ULTRACEMCO.NS",
-    "WIPRO.NS", "NESTLEIND.NS", "POWERGRID.NS", "NTPC.NS", "ONGC.NS",
-    "ADANIPORTS.NS", "TATASTEEL.NS", "JSWSTEEL.NS", "HCLTECH.NS",
-    "TECHM.NS", "INDUSINDBK.NS", "COALINDIA.NS", "BAJAJFINSV.NS",
-    "DRREDDY.NS", "CIPLA.NS", "GRASIM.NS", "HEROMOTOCO.NS",
-    "EICHERMOT.NS", "DIVISLAB.NS", "TATAMOTORS.NS", "M&M.NS", "BPCL.NS"
-]
-
 if st.button("💪 Run Relative Strength Scan"):
     with st.spinner("Nifty અને તમામ Stocks ની Performance Compare થઈ રહી છે..."):
-        # Nifty 3-month return as benchmark
         nifty_hist = yf.Ticker("^NSEI").history(period="3mo")
         if nifty_hist.empty:
             st.error("Nifty Data Fetch ન થયો.")
@@ -1322,7 +1318,7 @@ if st.button("💪 Run Relative Strength Scan"):
             nifty_return = round(((nifty_hist["Close"].iloc[-1] - nifty_hist["Close"].iloc[0]) / nifty_hist["Close"].iloc[0]) * 100, 2)
 
             rs_results = []
-            for symbol in RS_UNIVERSE:
+            for symbol in STOCK_UNIVERSE:
                 try:
                     hist = yf.Ticker(symbol).history(period="3mo")
                     if hist.empty or len(hist) < 2:
@@ -1345,7 +1341,6 @@ if st.button("💪 Run Relative Strength Scan"):
 
             rs_results.sort(key=lambda x: x["Relative Strength"], reverse=True)
 
-            # Outperformers (RS > 0)
             outperformers = [r for r in rs_results if r["Relative Strength"] > 0]
             underperformers = [r for r in rs_results if r["Relative Strength"] <= 0]
 
@@ -1359,10 +1354,9 @@ if st.button("💪 Run Relative Strength Scan"):
 
             st.markdown("### 📉 Stocks Underperforming Nifty")
             if underperformers:
-                with st.expander(f"જુઓ ({len(underperformers)} Stocks)"):
+                    with st.expander(f"જુઓ ({len(underperformers)} Stocks)"):
                     st.dataframe(pd.DataFrame(underperformers), use_container_width=True)
 
-            # Best Opportunity: Top RS stock with also-bullish current trend
             st.divider()
             st.markdown("### 🔥 Best Opportunity (Top RS + Bullish Trend)")
             best_pick = None
@@ -1386,8 +1380,8 @@ if st.button("💪 Run Relative Strength Scan"):
             st.success(f"✅ Scan Complete | Total Scanned: {len(rs_results)} Stocks")
             st.caption("⚠️ આ Technical Scan છે, Financial Advice નથી.")
 else:
-    st.info(f"'Run Relative Strength Scan' click કરો - {len(RS_UNIVERSE)} Stocks vs Nifty Compare થશે.")
-    
+    st.info(f"'Run Relative Strength Scan' click કરો - {len(STOCK_UNIVERSE)} Stocks vs Nifty Compare થશે.")
+
 # ==========================================
 # SMART MONEY TRACKER (V39)
 # ==========================================
@@ -1395,23 +1389,11 @@ st.divider()
 st.subheader("🐋 Smart Money Tracker")
 st.caption("Volume Spikes, Breakout Detection - Smart Money ક્યાં Active છે")
 
-SMT_UNIVERSE = [
-    "RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", "ICICIBANK.NS",
-    "SBIN.NS", "LT.NS", "BHARTIARTL.NS", "ITC.NS", "HINDUNILVR.NS",
-    "KOTAKBANK.NS", "AXISBANK.NS", "BAJFINANCE.NS", "MARUTI.NS",
-    "ASIANPAINT.NS", "SUNPHARMA.NS", "TITAN.NS", "ULTRACEMCO.NS",
-    "WIPRO.NS", "NESTLEIND.NS", "POWERGRID.NS", "NTPC.NS", "ONGC.NS",
-    "ADANIPORTS.NS", "TATASTEEL.NS", "JSWSTEEL.NS", "HCLTECH.NS",
-    "TECHM.NS", "INDUSINDBK.NS", "COALINDIA.NS", "BAJAJFINSV.NS",
-    "DRREDDY.NS", "CIPLA.NS", "GRASIM.NS", "HEROMOTOCO.NS",
-    "EICHERMOT.NS", "DIVISLAB.NS", "TATAMOTORS.NS", "M&M.NS", "BPCL.NS"
-]
-
 if st.button("🐋 Run Smart Money Scan"):
     smart_money_results = []
 
     with st.spinner("Volume Spikes અને Breakouts Scan થઈ રહ્યા છે..."):
-        for symbol in SMT_UNIVERSE:
+        for symbol in STOCK_UNIVERSE:
             try:
                 stock = yf.Ticker(symbol)
                 hist = stock.history(period="3mo")
@@ -1432,7 +1414,6 @@ if st.button("🐋 Run Smart Money Scan"):
 
                 price_change_pct = round(((close.iloc[-1] - close.iloc[-2]) / close.iloc[-2]) * 100, 2)
 
-                # 20-day high/low for breakout/breakdown detection
                 recent_high_20 = close.iloc[-21:-1].max()
                 recent_low_20 = close.iloc[-21:-1].min()
 
@@ -1465,7 +1446,6 @@ if st.button("🐋 Run Smart Money Scan"):
     if smart_money_results:
         st.dataframe(pd.DataFrame(smart_money_results), use_container_width=True)
 
-        # Best opportunity: top breakout/accumulation signal
         priority_signals = ["🚀 Breakout + Volume Spike", "📈 Accumulation (High Volume Buying)"]
         best_picks = [r for r in smart_money_results if r["Signal"] in priority_signals]
 
@@ -1479,11 +1459,11 @@ if st.button("🐋 Run Smart Money Scan"):
     else:
         st.info("આજે કોઈ Unusual Volume Activity મળી નથી.")
 
-    st.success(f"✅ Scan Complete | Total Scanned: {len(SMT_UNIVERSE)} Stocks | Signals Found: {len(smart_money_results)}")
+    st.success(f"✅ Scan Complete | Total Scanned: {len(STOCK_UNIVERSE)} Stocks | Signals Found: {len(smart_money_results)}")
     st.caption("⚠️ આ Technical Scan છે, Financial Advice નથી. Volume Spike Confirmation માટે Delivery % Data Broker Platform પર ચેક કરો.")
 else:
-    st.info(f"'Run Smart Money Scan' click કરો - {len(SMT_UNIVERSE)} Stocks માં Volume Spikes/Breakouts Scan થશે.")
-    
+    st.info(f"'Run Smart Money Scan' click કરો - {len(STOCK_UNIVERSE)} Stocks માં Volume Spikes/Breakouts Scan થશે.")
+
 # ==========================================
 # AI TRADE COACH (V40)
 # ==========================================
@@ -1496,7 +1476,6 @@ coach_question = st.text_input("તમારો Trading Question લખો", val
 if st.button("🤖 Ask AI Coach"):
     if coach_question.strip():
         try:
-            # Try to extract a stock symbol mentioned by the user
             COMMON_NAMES = {
                 "reliance": "RELIANCE.NS", "tcs": "TCS.NS", "infosys": "INFY.NS", "infy": "INFY.NS",
                 "hdfc": "HDFCBANK.NS", "hdfcbank": "HDFCBANK.NS", "icici": "ICICIBANK.NS",
@@ -1580,7 +1559,7 @@ User Question: "{coach_question}"
             st.error(f"Error: {e}")
     else:
         st.warning("કૃપા કરીને Question લખો.")
-                    
+
 # ==========================================
 # PORTFOLIO REVIEW AI (V41)
 # ==========================================
@@ -1617,7 +1596,6 @@ if st.button("🤖 Review My Portfolio"):
                 total_invested += invested
                 total_current += current_val
 
-                # Map to sector
                 sector_name = "Other"
                 for sec, stocks in SECTOR_MAP.items():
                     if sym in stocks:
@@ -1657,7 +1635,6 @@ if st.button("🤖 Review My Portfolio"):
             sector_df = sector_df.sort_values("Allocation %", ascending=False)
             st.dataframe(sector_df, use_container_width=True)
 
-            # Build prompt for AI
             portfolio_summary = port_df.to_string(index=False)
             sector_summary = sector_df.to_string(index=False)
 
@@ -1691,6 +1668,7 @@ Sector Exposure:
             st.markdown(review_response.text)
 else:
     st.info("'Review My Portfolio' button click કરો.")
+
 # ==========================================
 # AI REBALANCER (V42)
 # ==========================================
@@ -1727,18 +1705,16 @@ if st.button("⚖️ Get Rebalancing Suggestions"):
                 pnl_pct = round(((cp - pos["avg_price"]) / pos["avg_price"]) * 100, 2) if pos["avg_price"] > 0 else 0
                 total_current += current_val
 
-                # Score each holding (0-100)
                 score = 50
                 if trend == "Bullish": score += 20
                 else: score -= 10
                 if 40 <= rsi <= 65: score += 15
-                elif rsi > 75: score -= 15  # overbought
-                elif rsi < 25: score += 5   # oversold, may recover
+                elif rsi > 75: score -= 15
+                elif rsi < 25: score += 5
                 if cp > ma50: score += 10
                 if cp > ma200: score += 5
                 score = max(0, min(100, score))
 
-                # Suggested action
                 if score >= 70:
                     action = "🟢 HOLD / ADD MORE"
                 elif score >= 45:
@@ -1763,11 +1739,9 @@ if st.button("⚖️ Get Rebalancing Suggestions"):
 
             st.dataframe(hold_df, use_container_width=True)
 
-            # Identify weak holdings (candidates to trim)
             weak = hold_df[hold_df["Health Score"] < 45]
             strong = hold_df[hold_df["Health Score"] >= 70]
 
-            # Quick scan a few fresh ideas for "where to add" suggestions
             candidate_pool = ["RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "ICICIBANK.NS", "INFY.NS",
                               "LT.NS", "SUNPHARMA.NS", "TITAN.NS", "BAJFINANCE.NS", "ITC.NS"]
             new_ideas = []
@@ -1807,7 +1781,6 @@ if st.button("⚖️ Get Rebalancing Suggestions"):
             else:
                 st.write("હાલ કોઈ નવો Bullish Setup નથી મળ્યો")
 
-            # AI narrative
             rebalance_prompt = f"""
 તમે Professional Portfolio Manager છો. નીચે Holdings ની Health Analysis છે:
 
@@ -1832,4 +1805,4 @@ New Bullish Ideas (Not Held): {', '.join(new_ideas) if new_ideas else 'કોઈ
             st.markdown(rebalance_response.text)
 else:
     st.info("'Get Rebalancing Suggestions' button click કરો.")
-    
+                
