@@ -450,7 +450,7 @@ if st.button("🧪 Run Backtest"):
         st.success(f"AI Verdict: {verdict}")
         st.info("V19 Multi-Filter Strategy Active 🚀")
     except Exception as e:
-                st.error(f"Backtest Error: {e}")
+        st.error(f"Backtest Error: {e}")
 
 st.divider()
 st.subheader("🚀 Momentum Breakout Backtest")
@@ -902,7 +902,7 @@ st.divider()
 st.subheader("🧠 AI Market Sentiment")
 
 if st.button("🌐 Get AI Market Sentiment"):
-        try:
+    try:
         nifty_data = fetch_technical_data("^NSEI", period="6mo")
 
         if nifty_data:
@@ -1354,7 +1354,7 @@ if st.button("💪 Run Relative Strength Scan"):
 
             st.markdown("### 📉 Stocks Underperforming Nifty")
             if underperformers:
-                    with st.expander(f"જુઓ ({len(underperformers)} Stocks)"):
+                       with st.expander(f"જુઓ ({len(underperformers)} Stocks)"):
                     st.dataframe(pd.DataFrame(underperformers), use_container_width=True)
 
             st.divider()
@@ -1805,4 +1805,5 @@ New Bullish Ideas (Not Held): {', '.join(new_ideas) if new_ideas else 'કોઈ
             st.markdown(rebalance_response.text)
 else:
     st.info("'Get Rebalancing Suggestions' button click કરો.")
+                
                 
