@@ -1353,8 +1353,8 @@ if st.button("💪 Run Relative Strength Scan"):
                 st.info("હાલ કોઈ Stock Nifty કરતાં Outperform નથી કરી રહ્યું.")
 
             st.markdown("### 📉 Stocks Underperforming Nifty")
-            if underperformers:
-with st.expander(f"જુઓ ({len(underperformers)} Stocks)"):
+if underperformers:
+                with st.expander(f"જુઓ ({len(underperformers)} Stocks)"):
                     st.dataframe(pd.DataFrame(underperformers), use_container_width=True)
             st.divider()
             st.markdown("### 🔥 Best Opportunity (Top RS + Bullish Trend)")
