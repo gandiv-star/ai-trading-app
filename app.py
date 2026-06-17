@@ -761,6 +761,38 @@ if st.session_state.paper_portfolio:
         st.metric("Total Portfolio Value (Cash + Holdings)", f"₹{(st.session_state.paper_cash + total_current):,.2f}")
 else:
     st.info("Portfolio Empty છે. પહેલા Stocks ખરીદો.")
+    # ==========================================
+# PAPER PORTFOLIO HOLDINGS TABLE (V29)
+# ==========================================
+st.divider()
+st.subheader("📋 Current Holdings")
+
+if st.session_state.paper_portfolio:
+    holdings_rows = []
+    for sym, pos in st.session_state.paper_portfolio.items():
+        holdings_rows.append({
+            "Stock": sym,
+            "Qty": pos["qty"],
+            "Avg Price": round(pos["avg_price"], 2),
+            "Invested Amount": round(pos["qty"] * pos["avg_price"], 2)
+        })
+    holdings_df = pd.DataFrame(holdings_rows)
+    st.dataframe(holdings_df, use_container_width=True)
+else:
+    st.info("કોઈ Holdings નથી.")
+
+# ==========================================
+# RESET PAPER TRADING (V30)
+# ==========================================
+st.divider()
+st.subheader("♻️ Reset Paper Trading Account")
+
+if st.button("🔄 Reset Account"):
+    st.session_state.paper_cash = 100000.0
+    st.session_state.paper_portfolio = {}
+    st.session_state.paper_trade_history = []
+    save_data()
+    st.success("✅ Paper Trading Account Reset Done. Cash: ₹1,00,000")
 
 # ==========================================
 # AI MARKET SENTIMENT (V33)
