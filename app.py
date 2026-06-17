@@ -734,3 +734,217 @@ if st.session_state.paper_portfolio:
 else:
     st.info("Portfolio Empty છે. પહેલા Stocks ખરીદો.")
 
+# ==========================================
+# AI MARKET SENTIMENT (V33)
+# ==========================================
+st.divider()
+st.subheader("🧠 AI Market Sentiment")
+
+if st.button("🌐 Get AI Market Sentiment"):
+    try:
+        nifty_data = fetch_technical_data("^NSEI", period="6mo")
+
+        if nifty_data:
+            nifty_trend = nifty_data["trend"]
+            nifty_rsi = nifty_data["rsi"]
+            nifty_price = nifty_data["current_price"]
+
+            mood = "Bullish 🟢" if nifty_trend == "Bullish" else "Bearish 🔴"
+
+            col_s1, col_s2, col_s3 = st.columns(3)
+            col_s1.metric("Nifty Price", nifty_price)
+            col_s2.metric("Nifty RSI", nifty_rsi)
+            col_s3.metric("Market Mood", mood)
+
+            sentiment_prompt = f"""
+તમે Professional Market Strategist છો.
+Nifty 50 Current Price: {nifty_price}
+Nifty Trend: {nifty_trend}
+Nifty RSI: {nifty_rsi}
+
+ગુજરાતીમાં Short Summary આપો (5-6 lines):
+1. Overall Market Sentiment - Bullish/Bearish/Neutral
+2. શા માટે
+3. Traders માટે ટૂંકી Strategy Suggestion
+4. Caution Points
+
+છેલ્લે લખો: 'આ નાણાકીય સલાહ નથી.'
+"""
+            with st.spinner("AI Market Sentiment Analyze કરી રહ્યું છે..."):
+                sentiment_response = model.generate_content(sentiment_prompt)
+
+            st.markdown("### 🤖 AI Market Mood Summary")
+            st.markdown(sentiment_response.text)
+        else:
+            st.error("Nifty Data Fetch ન થયો.")
+    except Exception as e:
+        st.error(f"Error: {e}")
+
+# ==========================================
+# EQUITY CURVE (V34)
+# ==========================================
+st.divider()
+st.subheader("📈 Equity Curve & Drawdown")
+
+current_holdings_value = 0
+for sym, pos in st.session_state.paper_portfolio.items():
+    try:
+        tech_data = fetch_technical_data(sym)
+        cp = tech_data["current_price"] if tech_data else pos["avg_price"]
+    except:
+        cp = pos["avg_price"]
+    current_holdings_value += cp * pos["qty"]
+
+current_total_value = round(st.session_state.paper_cash + current_holdings_value, 2)
+
+col_eq1, col_eq2 = st.columns(2)
+with col_eq1:
+    st.metric("Current Portfolio Value", f"₹{current_total_value:,.2f}")
+with col_eq2:
+    if st.button("📸 Record Snapshot (Today)"):
+        today_str = str(datetime.date.today())
+        existing_dates = [e["Date"] for e in st.session_state.equity_curve]
+        if today_str in existing_dates:
+            for e in st.session_state.equity_curve:
+                if e["Date"] == today_str:
+                    e["Value"] = current_total_value
+        else:
+            st.session_state.equity_curve.append({"Date": today_str, "Value": current_total_value})
+        save_data()
+        st.success(f"✅ Snapshot Saved: ₹{current_total_value:,.2f} on {today_str}")
+
+if len(st.session_state.equity_curve) >= 1:
+    eq_df = pd.DataFrame(st.session_state.equity_curve)
+    eq_df["Date"] = pd.to_datetime(eq_df["Date"])
+    eq_df = eq_df.sort_values("Date")
+    eq_df = eq_df.set_index("Date")
+
+    st.markdown("#### 📊 Portfolio Growth Chart")
+    st.line_chart(eq_df["Value"])
+
+    starting_value = eq_df["Value"].iloc[0]
+    eq_df["Profit"] = eq_df["Value"] - starting_value
+    st.markdown("#### 💰 Profit Curve")
+    st.line_chart(eq_df["Profit"])
+
+    eq_df["Peak"] = eq_df["Value"].cummax()
+    eq_df["Drawdown %"] = ((eq_df["Value"] - eq_df["Peak"]) / eq_df["Peak"]) * 100
+    st.markdown("#### 📉 Drawdown")
+    st.line_chart(eq_df["Drawdown %"])
+
+    max_drawdown = round(eq_df["Drawdown %"].min(), 2)
+    total_growth = round(((eq_df["Value"].iloc[-1] - starting_value) / starting_value) * 100, 2) if starting_value > 0 else 0
+
+    col_eq3, col_eq4, col_eq5 = st.columns(3)
+    col_eq3.metric("Starting Value", f"₹{starting_value:,.2f}")
+    col_eq4.metric("Total Growth", f"{total_growth}%")
+    col_eq5.metric("Max Drawdown", f"{max_drawdown}%")
+
+    with st.expander("📋 Snapshot History"):
+        st.dataframe(eq_df[["Value", "Profit", "Drawdown %"]].reset_index(), use_container_width=True)
+
+    if st.button("🗑️ Clear Equity History"):
+        st.session_state.equity_curve = []
+        save_data()
+        st.success("✅ Equity History Cleared")
+else:
+    st.info("હજુ સુધી કોઈ Snapshot નથી. 'Record Snapshot' button click કરી દરરોજ Portfolio Value Save કરો - Equity Curve બનાવવા માટે.")
+
+# ==========================================
+# HEDGE FUND DASHBOARD (V35)
+# ==========================================
+st.divider()
+st.subheader("🏦 Hedge Fund Dashboard")
+st.caption("એક નજરમાં તમારું Portfolio, Market Mood, Risk અને AI Confidence")
+
+if st.button("🔄 Generate Dashboard"):
+    with st.spinner("Dashboard Data Tayar થઈ રહ્યો છે..."):
+        dash_holdings_value = 0
+        position_count = len(st.session_state.paper_portfolio)
+        for sym, pos in st.session_state.paper_portfolio.items():
+            try:
+                tech_data = fetch_technical_data(sym)
+                cp = tech_data["current_price"] if tech_data else pos["avg_price"]
+            except:
+                cp = pos["avg_price"]
+            dash_holdings_value += cp * pos["qty"]
+
+        dash_total_value = round(st.session_state.paper_cash + dash_holdings_value, 2)
+
+        try:
+            nifty_data = fetch_technical_data("^NSEI", period="6mo")
+            if nifty_data:
+                market_mood = "Bullish 🟢" if nifty_data["trend"] == "Bullish" else "Bearish 🔴"
+                nifty_rsi = nifty_data["rsi"]
+            else:
+                market_mood = "Unknown ⚪"
+                nifty_rsi = 50
+        except:
+            market_mood = "Unknown ⚪"
+            nifty_rsi = 50
+
+        if position_count == 0:
+            risk_level = "No Open Positions ⚪"
+        elif position_count <= 2:
+            risk_level = "High (Low Diversification) 🔴"
+        elif position_count <= 4:
+            risk_level = "Medium 🟡"
+        else:
+            risk_level = "Low (Well Diversified) 🟢"
+
+        if nifty_rsi > 70:
+            risk_level += " | Market Overbought ⚠️"
+        elif nifty_rsi < 30:
+            risk_level += " | Market Oversold ⚠️"
+
+        best_opportunity = "Scanning..."
+        opp_stocks = ["RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "ICICIBANK.NS", "INFY.NS", "ITC.NS", "LT.NS", "SUNPHARMA.NS"]
+        best_score = -999
+        for sym in opp_stocks:
+            try:
+                td = fetch_technical_data(sym)
+                if td:
+                    sc = 50
+                    if td["trend"] == "Bullish": sc += 25
+                    if 45 <= td["rsi"] <= 65: sc += 15
+                    if td["current_price"] > td["ma50"]: sc += 10
+                    if sc > best_score:
+                        best_score = sc
+                        best_opportunity = f"{sym} (Score: {sc}/100)"
+            except:
+                pass
+
+        ai_confidence = 50
+        if "Bullish" in market_mood:
+            ai_confidence += 20
+        else:
+            ai_confidence -= 10
+        if best_score >= 75:
+            ai_confidence += 20
+        elif best_score >= 60:
+            ai_confidence += 10
+        ai_confidence = max(0, min(100, ai_confidence))
+
+        col_h1, col_h2, col_h3 = st.columns(3)
+        col_h1.metric("💰 Portfolio Value", f"₹{dash_total_value:,.2f}")
+        col_h2.metric("🌐 Market Mood", market_mood)
+        col_h3.metric("🤖 AI Confidence", f"{ai_confidence}/100")
+
+        col_h4, col_h5 = st.columns(2)
+        col_h4.metric("🔥 Best Opportunity", best_opportunity)
+        col_h5.metric("🛡️ Risk Level", risk_level)
+
+        st.divider()
+        st.write(f"📊 Open Positions: {position_count}")
+        st.write(f"💵 Available Cash: ₹{st.session_state.paper_cash:,.2f}")
+        st.write(f"📈 Holdings Value: ₹{dash_holdings_value:,.2f}")
+        st.write(f"⚡ Nifty RSI: {nifty_rsi}")
+
+        if ai_confidence >= 70:
+            st.success("🤖 AI Verdict: Favorable Conditions for Trading 🚀")
+        elif ai_confidence >= 50:
+            st.warning("🤖 AI Verdict: Neutral - Trade with Caution 🟡")
+        else:
+            st.error("🤖 AI Verdict: Unfavorable - Defensive Stance Recommended 🔴")
+else:
+    st.info("Dashboard Data જોવા માટે 'Generate Dashboard' button click કરો.")
