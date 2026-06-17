@@ -948,3 +948,452 @@ if st.button("🔄 Generate Dashboard"):
             st.error("🤖 AI Verdict: Unfavorable - Defensive Stance Recommended 🔴")
 else:
     st.info("Dashboard Data જોવા માટે 'Generate Dashboard' button click કરો.")
+# ==========================================
+# AUTO WATCHLIST SCANNER (V36)
+# ==========================================
+st.divider()
+st.subheader("🔍 Auto Watchlist Scanner")
+st.caption("દરરોજ Top Breakout, Swing અને Momentum Stocks Scan કરો")
+
+if st.button("🚀 Run Auto Scanner (Top 5 Each)"):
+
+    breakout_results = []
+    swing_results = []
+    momentum_results = []
+
+    with st.spinner(f"{len(STOCK_UNIVERSE)} Stocks Scan થઈ રહ્યા છે... થોડો સમય લાગશે"):
+        for symbol in STOCK_UNIVERSE:
+            try:
+                td = fetch_technical_data(symbol, period="6mo")
+                if not td:
+                    continue
+
+                hist = td["hist"]
+                close = hist["Close"]
+                volume = hist["Volume"]
+
+                current_price = td["current_price"]
+                ma50 = td["ma50"]
+                ma200 = td["ma200"]
+                rsi = td["rsi"]
+                trend = td["trend"]
+
+                avg_volume = volume.rolling(20).mean().iloc[-1]
+                current_volume = volume.iloc[-1]
+
+                recent_high = close.iloc[-21:-1].max()
+                if current_price > recent_high and current_volume > avg_volume:
+                    breakout_strength = round(((current_price - recent_high) / recent_high) * 100, 2)
+                    breakout_results.append({
+                        "Stock": symbol,
+                        "Price": current_price,
+                        "Breakout %": breakout_strength,
+                        "Volume vs Avg": round(current_volume / avg_volume, 2) if avg_volume > 0 else 0
+                    })
+
+                if trend == "Bullish" and 45 <= rsi <= 65 and current_price > ma50:
+                    target = round(current_price * 1.05, 2)
+                    stoploss = round(current_price * 0.97, 2)
+                    swing_results.append({
+                        "Stock": symbol,
+                        "Entry": current_price,
+                        "Target": target,
+                        "Stop Loss": stoploss,
+                        "RSI": rsi
+                    })
+
+                if current_price > ma50 and current_price > ma200 and rsi > 60 and current_volume > avg_volume:
+                    momentum_score = round(rsi + (current_volume / avg_volume if avg_volume > 0 else 1) * 10, 2)
+                    momentum_results.append({
+                        "Stock": symbol,
+                        "Price": current_price,
+                        "RSI": rsi,
+                        "Momentum Score": momentum_score
+                    })
+
+            except:
+                pass
+
+    breakout_results.sort(key=lambda x: x["Breakout %"], reverse=True)
+    swing_results.sort(key=lambda x: x["RSI"], reverse=True)
+    momentum_results.sort(key=lambda x: x["Momentum Score"], reverse=True)
+
+    top_breakouts = breakout_results[:5]
+    top_swings = swing_results[:5]
+    top_momentum = momentum_results[:5]
+
+    st.markdown("### 🚀 Top 5 Breakout Stocks")
+    if top_breakouts:
+        st.dataframe(pd.DataFrame(top_breakouts), use_container_width=True)
+    else:
+        st.info("આજે કોઈ Breakout Setup મળ્યું નથી.")
+
+    st.markdown("### 📈 Top 5 Swing Trades")
+    if top_swings:
+        st.dataframe(pd.DataFrame(top_swings), use_container_width=True)
+    else:
+        st.info("આજે કોઈ Swing Setup મળ્યું નથી.")
+
+    st.markdown("### 🔥 Top 5 Momentum Stocks")
+    if top_momentum:
+        st.dataframe(pd.DataFrame(top_momentum), use_container_width=True)
+    else:
+        st.info("આજે કોઈ Momentum Setup મળ્યું નથી.")
+
+    st.success(f"✅ Scan Complete | Total Stocks Scanned: {len(STOCK_UNIVERSE)}")
+    st.caption("⚠️ આ ફક્ત Technical Scan છે, Financial Advice નથી. પોતાનું Research કરો.")
+
+    st.session_state.last_scan = {
+        "Date": str(datetime.date.today()),
+        "Breakouts": top_breakouts,
+        "Swings": top_swings,
+        "Momentum": top_momentum
+    }
+else:
+    st.info(f"'Run Auto Scanner' button click કરો - {len(STOCK_UNIVERSE)} NSE Stocks Scan થશે.")
+
+if "last_scan" in st.session_state:
+    with st.expander(f"📅 Last Scan Date: {st.session_state.last_scan['Date']}"):
+        st.write(f"Breakouts Found: {len(st.session_state.last_scan['Breakouts'])}")
+        st.write(f"Swing Setups Found: {len(st.session_state.last_scan['Swings'])}")
+        st.write(f"Momentum Setups Found: {len(st.session_state.last_scan['Momentum'])}")
+
+# ==========================================
+# SECTOR ROTATION AI (V37)
+# ==========================================
+st.divider()
+st.subheader("🔄 Sector Rotation AI")
+st.caption("કયો Sector Strong છે, કયો Weak - Sector-wise Trend Scan")
+
+if st.button("🔄 Scan All Sectors"):
+    sector_results = []
+
+    with st.spinner("તમામ Sectors Scan થઈ રહ્યા છે..."):
+        for sector, stocks in SECTOR_MAP.items():
+            bullish_count = 0
+            total_count = 0
+            rsi_sum = 0
+
+            for symbol in stocks:
+                try:
+                    td = fetch_technical_data(symbol, period="6mo")
+                    if not td:
+                        continue
+                    total_count += 1
+                    rsi_sum += td["rsi"]
+                    if td["trend"] == "Bullish":
+                        bullish_count += 1
+                except:
+                    pass
+
+            if total_count > 0:
+                bullish_pct = round((bullish_count / total_count) * 100, 1)
+                avg_rsi = round(rsi_sum / total_count, 1)
+
+                if bullish_pct >= 65:
+                    status = "🟢 Strong"
+                elif bullish_pct >= 35:
+                    status = "🟡 Neutral"
+                else:
+                    status = "🔴 Weak"
+
+                sector_results.append({
+                    "Sector": sector,
+                    "Status": status,
+                    "Bullish Stocks": f"{bullish_count}/{total_count}",
+                    "Bullish %": bullish_pct,
+                    "Avg RSI": avg_rsi
+                })
+
+    sector_results.sort(key=lambda x: x["Bullish %"], reverse=True)
+
+    st.markdown("### 📊 Sector Strength Ranking")
+    st.dataframe(pd.DataFrame(sector_results), use_container_width=True)
+
+    if sector_results:
+        top_sector_name = sector_results[0]["Sector"]
+        top_stocks = SECTOR_MAP[top_sector_name]
+
+        best_stock = None
+        best_score = -999
+        for symbol in top_stocks:
+            try:
+                td = fetch_technical_data(symbol, period="6mo")
+                if td and td["trend"] == "Bullish":
+                    score = td["rsi"] + (10 if td["current_price"] > td["ma50"] else 0)
+                    if score > best_score:
+                        best_score = score
+                        best_stock = symbol
+            except:
+                pass
+
+        st.divider()
+        st.markdown("### 🏆 Best Opportunity Today")
+        if best_stock:
+            st.success(f"**Strongest Sector:** {top_sector_name} {sector_results[0]['Status']}")
+            st.success(f"**Top Pick:** {best_stock}")
+        else:
+            st.info(f"Strongest Sector: {top_sector_name}, પણ હાલ કોઈ Strong Individual Stock નથી મળ્યો.")
+
+    st.success("✅ Sector Rotation Scan Complete")
+    st.caption("⚠️ આ Technical Scan છે, Financial Advice નથી.")
+else:
+    st.info("'Scan All Sectors' button click કરો - 12 Sectors, 40 Stocks Scan થશે.")
+
+# ==========================================
+# RELATIVE STRENGTH SCANNER (V38)
+# ==========================================
+st.divider()
+st.subheader("💪 Relative Strength Scanner")
+st.caption("Nifty કરતાં વધુ Strong Stocks શોધે છે (Last 3 Months Performance)")
+
+if st.button("💪 Run Relative Strength Scan"):
+    with st.spinner("Nifty અને તમામ Stocks ની Performance Compare થઈ રહી છે..."):
+        nifty_hist = yf.Ticker("^NSEI").history(period="3mo")
+        if nifty_hist.empty:
+            st.error("Nifty Data Fetch ન થયો.")
+        else:
+            nifty_return = round(((nifty_hist["Close"].iloc[-1] - nifty_hist["Close"].iloc[0]) / nifty_hist["Close"].iloc[0]) * 100, 2)
+
+            rs_results = []
+            for symbol in STOCK_UNIVERSE:
+                try:
+                    hist = yf.Ticker(symbol).history(period="3mo")
+                    if hist.empty or len(hist) < 2:
+                        continue
+
+                    stock_return = round(((hist["Close"].iloc[-1] - hist["Close"].iloc[0]) / hist["Close"].iloc[0]) * 100, 2)
+                    rs_score = round(stock_return - nifty_return, 2)
+
+                    current_price = round(hist["Close"].iloc[-1], 2)
+
+                    rs_results.append({
+                        "Stock": symbol,
+                        "Price": current_price,
+                        "3M Return %": stock_return,
+                        "Nifty Return %": nifty_return,
+                        "Relative Strength": rs_score
+                    })
+                except:
+                    pass
+
+            rs_results.sort(key=lambda x: x["Relative Strength"], reverse=True)
+
+            outperformers = [r for r in rs_results if r["Relative Strength"] > 0]
+            underperformers = [r for r in rs_results if r["Relative Strength"] <= 0]
+
+            st.metric("📊 Nifty 3-Month Return", f"{nifty_return}%")
+
+            st.markdown("### 🏆 Stocks Outperforming Nifty")
+            if outperformers:
+                st.dataframe(pd.DataFrame(outperformers), use_container_width=True)
+            else:
+                st.info("હાલ કોઈ Stock Nifty કરતાં Outperform નથી કરી રહ્યું.")
+
+            st.markdown("### 📉 Stocks Underperforming Nifty")
+            if underperformers:
+                with st.expander(f"જુઓ ({len(underperformers)} Stocks)"):
+                    st.dataframe(pd.DataFrame(underperformers), use_container_width=True)
+
+            st.divider()
+            st.markdown("### 🔥 Best Opportunity (Top RS + Bullish Trend)")
+            best_pick = None
+            for r in outperformers[:10]:
+                try:
+                    td = fetch_technical_data(r["Stock"])
+                    if td and td["trend"] == "Bullish":
+                        best_pick = {**r, "RSI": td["rsi"], "Trend": td["trend"]}
+                        break
+                except:
+                    pass
+
+            if best_pick:
+                st.success(f"**{best_pick['Stock']}** | Price: ₹{best_pick['Price']} | RS Score: {best_pick['Relative Strength']} | RSI: {best_pick['RSI']} | Trend: Bullish 🟢")
+            elif outperformers:
+                top = outperformers[0]
+                st.warning(f"Top RS Stock: **{top['Stock']}** (RS: {top['Relative Strength']}), પણ હાલ Bullish Trend Confirm નથી.")
+            else:
+                st.info("હાલ કોઈ Strong Opportunity નથી મળ્યો.")
+
+            st.success(f"✅ Scan Complete | Total Scanned: {len(rs_results)} Stocks")
+            st.caption("⚠️ આ Technical Scan છે, Financial Advice નથી.")
+else:
+    st.info(f"'Run Relative Strength Scan' click કરો - {len(STOCK_UNIVERSE)} Stocks vs Nifty Compare થશે.")
+
+# ==========================================
+# SMART MONEY TRACKER (V39)
+# ==========================================
+st.divider()
+st.subheader("🐋 Smart Money Tracker")
+st.caption("Volume Spikes, Breakout Detection - Smart Money ક્યાં Active છે")
+
+if st.button("🐋 Run Smart Money Scan"):
+    smart_money_results = []
+
+    with st.spinner("Volume Spikes અને Breakouts Scan થઈ રહ્યા છે..."):
+        for symbol in STOCK_UNIVERSE:
+            try:
+                stock = yf.Ticker(symbol)
+                hist = stock.history(period="3mo")
+                if hist.empty or len(hist) < 21:
+                    continue
+
+                close = hist["Close"]
+                volume = hist["Volume"]
+
+                current_price = round(close.iloc[-1], 2)
+                current_volume = volume.iloc[-1]
+                avg_volume_20 = volume.iloc[-21:-1].mean()
+
+                if avg_volume_20 == 0:
+                    continue
+
+                volume_ratio = round(current_volume / avg_volume_20, 2)
+
+                price_change_pct = round(((close.iloc[-1] - close.iloc[-2]) / close.iloc[-2]) * 100, 2)
+
+                recent_high_20 = close.iloc[-21:-1].max()
+                recent_low_20 = close.iloc[-21:-1].min()
+
+                signal = None
+                if current_price > recent_high_20 and volume_ratio >= 1.5:
+                    signal = "🚀 Breakout + Volume Spike"
+                elif current_price < recent_low_20 and volume_ratio >= 1.5:
+                    signal = "🔻 Breakdown + Volume Spike"
+                elif volume_ratio >= 2.0 and price_change_pct > 0:
+                    signal = "📈 Accumulation (High Volume Buying)"
+                elif volume_ratio >= 2.0 and price_change_pct < 0:
+                    signal = "📉 Distribution (High Volume Selling)"
+                elif volume_ratio >= 1.5:
+                    signal = "⚡ Unusual Volume Activity"
+
+                if signal:
+                    smart_money_results.append({
+                        "Stock": symbol,
+                        "Price": current_price,
+                        "Change %": price_change_pct,
+                        "Volume vs 20D Avg": volume_ratio,
+                        "Signal": signal
+                    })
+            except:
+                pass
+
+    smart_money_results.sort(key=lambda x: x["Volume vs 20D Avg"], reverse=True)
+
+    st.markdown("### 🐋 Smart Money Activity Detected")
+    if smart_money_results:
+        st.dataframe(pd.DataFrame(smart_money_results), use_container_width=True)
+
+        priority_signals = ["🚀 Breakout + Volume Spike", "📈 Accumulation (High Volume Buying)"]
+        best_picks = [r for r in smart_money_results if r["Signal"] in priority_signals]
+
+        st.divider()
+        st.markdown("### 🏆 Top Smart Money Opportunity")
+        if best_picks:
+            top = best_picks[0]
+            st.success(f"**{top['Stock']}** | Price: ₹{top['Price']} | {top['Signal']} | Volume: {top['Volume vs 20D Avg']}x Avg | Change: {top['Change %']}%")
+        else:
+            st.info("હાલ કોઈ Strong Buying Signal નથી - Distribution/Breakdown Signals વધારે છે, સાવધાન રહો.")
+    else:
+        st.info("આજે કોઈ Unusual Volume Activity મળી નથી.")
+
+    st.success(f"✅ Scan Complete | Total Scanned: {len(STOCK_UNIVERSE)} Stocks | Signals Found: {len(smart_money_results)}")
+    st.caption("⚠️ આ Technical Scan છે, Financial Advice નથી. Volume Spike Confirmation માટે Delivery % Data Broker Platform પર ચેક કરો.")
+else:
+    st.info(f"'Run Smart Money Scan' click કરો - {len(STOCK_UNIVERSE)} Stocks માં Volume Spikes/Breakouts Scan થશે.")
+
+# ==========================================
+# AI TRADE COACH (V40)
+# ==========================================
+st.divider()
+st.subheader("🧑‍🏫 Gemini AI Trade Coach")
+st.caption("ઉદાહરણ: 'Should I buy Reliance?' અથવા 'TCS માં Entry આપો'")
+
+coach_question = st.text_input("તમારો Trading Question લખો", value="Should I buy Reliance?", key="coach_question")
+
+if st.button("🤖 Ask AI Coach"):
+    if coach_question.strip():
+        try:
+            COMMON_NAMES = {
+                "reliance": "RELIANCE.NS", "tcs": "TCS.NS", "infosys": "INFY.NS", "infy": "INFY.NS",
+                "hdfc": "HDFCBANK.NS", "hdfcbank": "HDFCBANK.NS", "icici": "ICICIBANK.NS",
+                "sbi": "SBIN.NS", "lt": "LT.NS", "airtel": "BHARTIARTL.NS", "bharti": "BHARTIARTL.NS",
+                "itc": "ITC.NS", "hul": "HINDUNILVR.NS", "kotak": "KOTAKBANK.NS", "axis": "AXISBANK.NS",
+                "bajajfinance": "BAJFINANCE.NS", "maruti": "MARUTI.NS", "asianpaint": "ASIANPAINT.NS",
+                "sunpharma": "SUNPHARMA.NS", "titan": "TITAN.NS", "ultratech": "ULTRACEMCO.NS",
+                "wipro": "WIPRO.NS", "nestle": "NESTLEIND.NS", "powergrid": "POWERGRID.NS",
+                "ntpc": "NTPC.NS", "ongc": "ONGC.NS", "adaniports": "ADANIPORTS.NS",
+                "tatasteel": "TATASTEEL.NS", "jswsteel": "JSWSTEEL.NS", "hcltech": "HCLTECH.NS",
+                "techm": "TECHM.NS", "indusind": "INDUSINDBK.NS", "coalindia": "COALINDIA.NS",
+                "drreddy": "DRREDDY.NS", "cipla": "CIPLA.NS", "grasim": "GRASIM.NS",
+                "heromotoco": "HEROMOTOCO.NS", "eichermotors": "EICHERMOT.NS", "divislab": "DIVISLAB.NS",
+                "tatamotors": "TATAMOTORS.NS", "mahindra": "M&M.NS", "bpcl": "BPCL.NS"
+            }
+
+            question_lower = coach_question.lower()
+            detected_symbol = None
+            for name, sym in COMMON_NAMES.items():
+                if name in question_lower:
+                    detected_symbol = sym
+                    break
+
+            tech_context = ""
+            if detected_symbol:
+                td = fetch_technical_data(detected_symbol)
+                if td:
+                    current_price = td["current_price"]
+                    ma50 = td["ma50"]
+                    ma200 = td["ma200"]
+                    rsi = td["rsi"]
+                    trend = td["trend"]
+
+                    suggested_target = round(current_price * 1.08, 2)
+                    suggested_sl = round(current_price * 0.95, 2)
+
+                    tech_context = f"""
+Detected Stock: {detected_symbol}
+Current Price: ₹{current_price}
+50 DMA: ₹{ma50}
+200 DMA: ₹{ma200}
+RSI: {rsi}
+Trend: {trend}
+Suggested Target (8%): ₹{suggested_target}
+Suggested Stop Loss (5%): ₹{suggested_sl}
+"""
+                    st.markdown("#### 📊 Live Technical Snapshot")
+                    col_c1, col_c2, col_c3, col_c4 = st.columns(4)
+                    col_c1.metric("Price", f"₹{current_price}")
+                    col_c2.metric("RSI", rsi)
+                    col_c3.metric("Trend", trend)
+                    col_c4.metric("50/200 DMA", f"{ma50}/{ma200}")
+
+            coach_prompt = f"""
+તમે Professional Trading Coach છો. User નો Question નીચે છે.
+
+User Question: "{coach_question}"
+
+{tech_context if tech_context else "Note: કોઈ specific stock detect નથી થયો, general guidance આપો."}
+
+ગુજરાતીમાં જવાબ આપો, નીચેના Format માં (જો Stock Specific Question હોય):
+1. **Recommendation**: BUY / WAIT / AVOID
+2. **Entry**: ₹ (specific level)
+3. **Target**: ₹ (specific level)
+4. **Stop Loss**: ₹ (specific level)
+5. **Risk**: Low / Medium / High અને કેમ
+6. **Probability**: Approximate success probability % અને reasoning
+7. **Reasoning**: 2-3 lines માં Technical Logic
+
+જો Question Stock-Specific ન હોય, તો General Trading Guidance આપો.
+
+છેલ્લે અચૂક લખો: 'આ નાણાકીય સલાહ નથી, પોતાનું Research કરો.'
+"""
+            with st.spinner("AI Coach Analyze કરી રહ્યું છે..."):
+                coach_response = model.generate_content(coach_prompt)
+
+            st.markdown("### 🤖 AI Coach Response")
+            st.markdown(coach_response.text)
+
+        except Exception as e:
+            st.error(f"Error: {e}")
+    else:
+        st.warning("કૃપા કરીને Question લખો.")
