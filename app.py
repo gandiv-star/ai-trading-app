@@ -4,6 +4,8 @@ import streamlit as st
 import google.generativeai as genai
 import yfinance as yf
 import pandas as pd
+import json
+import os
 
 # Page Configuration
 st.set_page_config(
@@ -17,6 +19,51 @@ genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 model = genai.GenerativeModel("gemini-2.5-flash")
 
 st.title("📈 Gandiv AI Trading Assistant")
+# ==========================================
+# DATA PERSISTENCE
+# ==========================================
+DATA_FILE = "gandiv_data.json"
+
+def load_data():
+    if os.path.exists(DATA_FILE):
+        try:
+            with open(DATA_FILE, "r") as f:
+                data = json.load(f)
+            st.session_state.paper_cash = data.get("paper_cash", 100000.0)
+            st.session_state.paper_portfolio = data.get("paper_portfolio", {})
+            st.session_state.paper_trade_history = data.get("paper_trade_history", [])
+            st.session_state.equity_curve = data.get("equity_curve", [])
+            st.session_state.trade_journal = data.get("trade_journal", [])
+        except Exception:
+            st.session_state.paper_cash = 100000.0
+            st.session_state.paper_portfolio = {}
+            st.session_state.paper_trade_history = []
+            st.session_state.equity_curve = []
+            st.session_state.trade_journal = []
+    else:
+        st.session_state.paper_cash = 100000.0
+        st.session_state.paper_portfolio = {}
+        st.session_state.paper_trade_history = []
+        st.session_state.equity_curve = []
+        st.session_state.trade_journal = []
+
+def save_data():
+    data = {
+        "paper_cash": st.session_state.paper_cash,
+        "paper_portfolio": st.session_state.paper_portfolio,
+        "paper_trade_history": st.session_state.paper_trade_history,
+        "equity_curve": st.session_state.equity_curve,
+        "trade_journal": st.session_state.trade_journal,
+    }
+    try:
+        with open(DATA_FILE, "w") as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        st.error(f"Save Error: {e}")
+
+if "data_loaded" not in st.session_state:
+    load_data()
+    st.session_state.data_loaded = True
 
 # Helper function to prevent redundant code and excessive API calling
 def fetch_technical_data(symbol, period="1y"):
