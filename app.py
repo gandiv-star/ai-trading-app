@@ -537,4 +537,290 @@ if len(st.session_state.trade_journal) > 0:
     avg_score = round(journal_df["Score"].mean(), 2)
     st.metric("Average AI Score", avg_score)
     
+# ==========================================
+# PAPER TRADING SIMULATOR (V26)
+# ==========================================
+st.divider()
+st.subheader("💰 Paper Trading Simulator")
 
+st.metric("Available Cash", f"₹{st.session_state.paper_cash:,.2f}")
+
+col_pt1, col_pt2, col_pt3 = st.columns(3)
+with col_pt1:
+    pt_symbol = st.text_input("Symbol (Buy)", value="RELIANCE.NS", key="pt_buy_symbol")
+with col_pt2:
+    pt_qty = st.number_input("Quantity", min_value=1, value=1, step=1, key="pt_buy_qty")
+with col_pt3:
+    st.write("")
+    st.write("")
+    pt_buy_btn = st.button("✅ Buy")
+
+if pt_buy_btn:
+    try:
+        tech_data = fetch_technical_data(pt_symbol)
+        if tech_data:
+            price = tech_data["current_price"]
+            cost = price * pt_qty
+            if cost > st.session_state.paper_cash:
+                st.error("❌ Insufficient Cash for this Trade")
+            else:
+                st.session_state.paper_cash -= cost
+                if pt_symbol in st.session_state.paper_portfolio:
+                    existing = st.session_state.paper_portfolio[pt_symbol]
+                    total_qty = existing["qty"] + pt_qty
+                    total_cost = (existing["qty"] * existing["avg_price"]) + cost
+                    new_avg = total_cost / total_qty
+                    st.session_state.paper_portfolio[pt_symbol] = {"qty": total_qty, "avg_price": new_avg}
+                else:
+                    st.session_state.paper_portfolio[pt_symbol] = {"qty": pt_qty, "avg_price": price}
+                save_data()
+                st.success(f"✅ Bought {pt_qty} of {pt_symbol} @ ₹{price}")
+        else:
+            st.error("ડેટા મળ્યો નથી")
+    except Exception as e:
+        st.error(f"Error: {e}")
+
+# ==========================================
+# SELL POSITION (V27)
+# ==========================================
+st.divider()
+st.subheader("📤 Sell Position")
+
+if st.session_state.paper_portfolio:
+    sell_symbol = st.selectbox("Stock વેચવા માટે પસંદ કરો", list(st.session_state.paper_portfolio.keys()), key="sell_symbol")
+    holding = st.session_state.paper_portfolio[sell_symbol]
+    st.write(f"Held Quantity: {holding['qty']} | Avg Price: ₹{round(holding['avg_price'],2)}")
+
+    sell_qty = st.number_input("Sell Quantity", min_value=1, max_value=int(holding["qty"]), value=int(holding["qty"]), step=1, key="sell_qty")
+
+    if st.button("🔴 Sell Position"):
+        try:
+            tech_data = fetch_technical_data(sell_symbol)
+            if tech_data:
+                current_price = tech_data["current_price"]
+                proceeds = current_price * sell_qty
+                profit = (current_price - holding["avg_price"]) * sell_qty
+                profit_pct = round(((current_price - holding["avg_price"]) / holding["avg_price"]) * 100, 2)
+
+                st.session_state.paper_cash += proceeds
+
+                st.session_state.paper_trade_history.append({
+                    "Date": str(datetime.date.today()),
+                    "Stock": sell_symbol,
+                    "Qty": sell_qty,
+                    "Buy Price": round(holding["avg_price"], 2),
+                    "Sell Price": current_price,
+                    "P&L": round(profit, 2),
+                    "P&L %": profit_pct
+                })
+
+                remaining_qty = holding["qty"] - sell_qty
+                if remaining_qty <= 0:
+                    del st.session_state.paper_portfolio[sell_symbol]
+                else:
+                    st.session_state.paper_portfolio[sell_symbol]["qty"] = remaining_qty
+
+                save_data()
+
+                if profit >= 0:
+                    st.success(f"✅ Sold {sell_qty} {sell_symbol} @ ₹{current_price} | Profit: ₹{round(profit,2)} ({profit_pct}%)")
+                else:
+                    st.error(f"🔴 Sold {sell_qty} {sell_symbol} @ ₹{current_price} | Loss: ₹{round(profit,2)} ({profit_pct}%)")
+            else:
+                st.error("ડેટા મળ્યો નથી")
+        except Exception as e:
+            st.error(f"Error: {e}")
+else:
+    st.info("હાલમાં તમારી પાસે કોઈ Holdings નથી.")
+
+# ==========================================
+# LIVE PORTFOLIO TRACKER (V28)
+# ==========================================
+st.divider()
+st.subheader("📡 Live Portfolio Tracker")
+
+if st.session_state.paper_portfolio:
+    if st.button("🔄 Refresh Live Prices"):
+        rows = []
+        total_invested = 0
+        total_current = 0
+
+        with st.spinner("Live Prices ફેચ થઈ રહ્યા છે..."):
+            for sym, pos in st.session_state.paper_portfolio.items():
+                try:
+                    tech_data = fetch_technical_data(sym)
+                    cp = tech_data["current_price"] if tech_data else pos["avg_price"]
+                except:
+                    cp = pos["avg_price"]
+
+                invested = pos["qty"] * pos["avg_price"]
+                current_val = pos["qty"] * cp
+                pnl = current_val - invested
+                pnl_pct = round((pnl / invested) * 100, 2) if invested > 0 else 0
+
+                total_invested += invested
+                total_current += current_val
+
+                rows.append({
+                    "Stock": sym,
+                    "Qty": pos["qty"],
+                    "Avg Price": round(pos["avg_price"], 2),
+                    "Current Price": cp,
+                    "Invested": round(invested, 2),
+                    "Current Value": round(current_val, 2),
+                    "Unrealized P&L": round(pnl, 2),
+                    "P&L %": pnl_pct
+                })
+
+        live_df = pd.DataFrame(rows)
+        st.dataframe(live_df, use_container_width=True)
+
+        total_pnl = total_current - total_invested
+        total_pnl_pct = round((total_pnl / total_invested) * 100, 2) if total_invested > 0 else 0
+
+        col_lp1, col_lp2, col_lp3 = st.columns(3)
+        col_lp1.metric("Total Invested", f"₹{total_invested:,.2f}")
+        col_lp2.metric("Current Value", f"₹{total_current:,.2f}")
+        col_lp3.metric("Unrealized P&L", f"₹{total_pnl:,.2f}", f"{total_pnl_pct}%")
+
+        st.metric("Total Portfolio Value (Cash + Holdings)", f"₹{(st.session_state.paper_cash + total_current):,.2f}")
+else:
+    st.info("Portfolio Empty છે. પહેલા Stocks ખરીદો.")
+
+# ==========================================
+# PAPER PORTFOLIO HOLDINGS TABLE (V29)
+# ==========================================
+st.divider()
+st.subheader("📋 Current Holdings")
+
+if st.session_state.paper_portfolio:
+    holdings_rows = []
+    for sym, pos in st.session_state.paper_portfolio.items():
+        holdings_rows.append({
+            "Stock": sym,
+            "Qty": pos["qty"],
+            "Avg Price": round(pos["avg_price"], 2),
+            "Invested Amount": round(pos["qty"] * pos["avg_price"], 2)
+        })
+    holdings_df = pd.DataFrame(holdings_rows)
+    st.dataframe(holdings_df, use_container_width=True)
+else:
+    st.info("કોઈ Holdings નથી.")
+
+# ==========================================
+# RESET PAPER TRADING (V30)
+# ==========================================
+st.divider()
+st.subheader("♻️ Reset Paper Trading Account")
+
+if st.button("🔄 Reset Account"):
+    st.session_state.paper_cash = 100000.0
+    st.session_state.paper_portfolio = {}
+    st.session_state.paper_trade_history = []
+    save_data()
+    st.success("✅ Paper Trading Account Reset Done. Cash: ₹1,00,000")
+
+# ==========================================
+# PORTFOLIO ANALYTICS PRO (V31)
+# ==========================================
+st.divider()
+st.subheader("📊 Portfolio Analytics Pro")
+
+if st.session_state.paper_trade_history:
+    hist_df = pd.DataFrame(st.session_state.paper_trade_history)
+
+    total_trades = len(hist_df)
+    wins = hist_df[hist_df["P&L"] > 0]
+    losses = hist_df[hist_df["P&L"] <= 0]
+    win_rate = round((len(wins) / total_trades) * 100, 2) if total_trades > 0 else 0
+
+    realized_pnl = round(hist_df["P&L"].sum(), 2)
+
+    best_trade = hist_df.loc[hist_df["P&L"].idxmax()]
+    worst_trade = hist_df.loc[hist_df["P&L"].idxmin()]
+
+    col_a1, col_a2, col_a3 = st.columns(3)
+    col_a1.metric("Total Trades", total_trades)
+    col_a2.metric("Win Rate", f"{win_rate}%")
+    col_a3.metric("Realized P&L", f"₹{realized_pnl:,.2f}")
+
+    col_a4, col_a5 = st.columns(2)
+    col_a4.metric("🏆 Best Stock", f"{best_trade['Stock']}", f"₹{best_trade['P&L']:,.2f}")
+    col_a5.metric("📉 Worst Stock", f"{worst_trade['Stock']}", f"₹{worst_trade['P&L']:,.2f}")
+
+    st.write(f"✅ Winning Trades: {len(wins)}")
+    st.write(f"❌ Losing Trades: {len(losses)}")
+
+    st.dataframe(hist_df, use_container_width=True)
+else:
+    st.info("હજુ સુધી કોઈ Trade Close થયેલ નથી. Realized Analytics માટે Sell Position કરો.")
+
+if st.session_state.paper_portfolio:
+    unrealized_total = 0
+    for sym, pos in st.session_state.paper_portfolio.items():
+        try:
+            tech_data = fetch_technical_data(sym)
+            cp = tech_data["current_price"] if tech_data else pos["avg_price"]
+        except:
+            cp = pos["avg_price"]
+        unrealized_total += (cp - pos["avg_price"]) * pos["qty"]
+
+    st.metric("📈 Total Unrealized P&L (Open Positions)", f"₹{round(unrealized_total, 2):,.2f}")
+
+# ==========================================
+# RISK MANAGER (V32)
+# ==========================================
+st.divider()
+st.subheader("🛡️ Risk Manager")
+
+st.write("એક Trade માટે Risk/Reward અને Position Size Calculate કરો.")
+
+col_r1, col_r2 = st.columns(2)
+with col_r1:
+    rm_capital = st.number_input("Total Capital (₹)", min_value=1000, value=100000, step=1000, key="rm_capital")
+    rm_entry = st.number_input("Entry Price (₹)", min_value=0.01, value=100.0, step=0.5, key="rm_entry")
+with col_r2:
+    rm_stoploss = st.number_input("Stop Loss Price (₹)", min_value=0.01, value=95.0, step=0.5, key="rm_stoploss")
+    rm_target = st.number_input("Target Price (₹)", min_value=0.01, value=110.0, step=0.5, key="rm_target")
+
+rm_risk_pct = st.slider("Capital Risk Per Trade (%)", min_value=0.5, max_value=10.0, value=1.0, step=0.5, key="rm_risk_pct")
+
+if st.button("🧮 Calculate Risk & Position Size"):
+    if rm_entry <= rm_stoploss:
+        st.error("Entry Price, Stop Loss કરતા વધારે હોવો જોઈએ (Long Trade માટે).")
+    else:
+        risk_per_share = rm_entry - rm_stoploss
+        reward_per_share = rm_target - rm_entry
+
+        risk_pct_of_entry = round((risk_per_share / rm_entry) * 100, 2)
+        reward_pct_of_entry = round((reward_per_share / rm_entry) * 100, 2)
+
+        risk_reward_ratio = round(reward_per_share / risk_per_share, 2) if risk_per_share > 0 else 0
+
+        max_risk_amount = rm_capital * (rm_risk_pct / 100)
+        position_size_shares = int(max_risk_amount / risk_per_share) if risk_per_share > 0 else 0
+        position_value = round(position_size_shares * rm_entry, 2)
+        max_loss = round(position_size_shares * risk_per_share, 2)
+        potential_profit = round(position_size_shares * reward_per_share, 2)
+
+        col_rr1, col_rr2, col_rr3 = st.columns(3)
+        col_rr1.metric("Risk %", f"{risk_pct_of_entry}%")
+        col_rr2.metric("Reward %", f"{reward_pct_of_entry}%")
+        col_rr3.metric("Risk:Reward Ratio", f"1:{risk_reward_ratio}")
+
+        col_rr4, col_rr5, col_rr6 = st.columns(3)
+        col_rr4.metric("Position Size (Shares)", position_size_shares)
+        col_rr5.metric("Position Value", f"₹{position_value:,.2f}")
+        col_rr6.metric("Max Loss", f"₹{max_loss:,.2f}")
+
+        st.metric("🎯 Potential Profit", f"₹{potential_profit:,.2f}")
+
+        if risk_reward_ratio >= 2:
+            st.success("✅ Good Risk:Reward Setup (≥ 1:2)")
+        elif risk_reward_ratio >= 1:
+            st.warning("🟡 Acceptable Risk:Reward (1:1 to 1:2)")
+        else:
+            st.error("🔴 Poor Risk:Reward Setup (< 1:1) - Avoid")
+
+        if position_size_shares == 0:
+            st.warning("⚠️ Capital/Risk Settings મુજબ Position Size 0 Shares આવે છે. Risk % વધારો અથવા Stop Loss નજીક લાવો.")
