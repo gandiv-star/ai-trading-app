@@ -1824,3 +1824,147 @@ New Bullish Ideas (Not Held): {', '.join(new_ideas) if new_ideas else 'કોઈ
             st.markdown(rebalance_response.text)
 else:
     st.info("'Get Rebalancing Suggestions' button click કરો.")
+# ==========================================
+# AUTO TRADE BOT (V43) - Manual Trigger
+# ==========================================
+st.divider()
+st.subheader("🤖 Auto Trade Bot")
+st.caption("એક Click માં: Scan → Auto Buy (Rules પ્રમાણે) → Existing Holdings Check → Auto Sell (Target/SL Hit)")
+
+with st.expander("⚙️ Auto Trade Rules (Settings)"):
+    at_max_positions = st.number_input("Max Open Positions", min_value=1, max_value=15, value=5, key="at_max_positions")
+    at_capital_per_trade = st.number_input("Capital Per New Trade (₹)", min_value=1000, value=10000, step=1000, key="at_capital_per_trade")
+    at_min_score = st.slider("Minimum AI Score to Buy", min_value=50, max_value=100, value=75, key="at_min_score")
+    at_target_pct = st.slider("Auto-Sell Target (%)", min_value=2.0, max_value=20.0, value=8.0, step=0.5, key="at_target_pct")
+    at_sl_pct = st.slider("Auto-Sell Stop Loss (%)", min_value=1.0, max_value=10.0, value=5.0, step=0.5, key="at_sl_pct")
+
+if st.button("🚀 Run Auto Trade Bot Now"):
+    log_messages = []
+
+    # ---------- STEP 1: CHECK EXISTING HOLDINGS FOR TARGET/SL ----------
+    st.markdown("#### 🔍 Step 1: Checking Existing Holdings (Target/Stop Loss)")
+    positions_to_sell = []
+
+    for sym, pos in list(st.session_state.paper_portfolio.items()):
+        try:
+            td = fetch_technical_data(sym)
+            if not td:
+                continue
+            cp = td["current_price"]
+            avg = pos["avg_price"]
+            change_pct = ((cp - avg) / avg) * 100
+
+            if change_pct >= at_target_pct:
+                positions_to_sell.append((sym, pos["qty"], cp, "🎯 Target Hit", change_pct))
+            elif change_pct <= -at_sl_pct:
+                positions_to_sell.append((sym, pos["qty"], cp, "🛑 Stop Loss Hit", change_pct))
+        except:
+            pass
+
+    if positions_to_sell:
+        for sym, qty, cp, reason, change_pct in positions_to_sell:
+            holding = st.session_state.paper_portfolio[sym]
+            proceeds = cp * qty
+            profit = (cp - holding["avg_price"]) * qty
+            profit_pct = round(((cp - holding["avg_price"]) / holding["avg_price"]) * 100, 2)
+
+            st.session_state.paper_cash += proceeds
+            st.session_state.paper_trade_history.append({
+                "Date": str(datetime.date.today()),
+                "Stock": sym,
+                "Qty": qty,
+                "Buy Price": round(holding["avg_price"], 2),
+                "Sell Price": cp,
+                "P&L": round(profit, 2),
+                "P&L %": profit_pct
+            })
+            del st.session_state.paper_portfolio[sym]
+
+            log_messages.append(f"{reason}: SOLD {qty} {sym} @ ₹{cp} | P&L: ₹{round(profit,2)} ({profit_pct}%)")
+
+        for msg in log_messages:
+            if "Target" in msg:
+                st.success(msg)
+            else:
+                st.error(msg)
+        save_data()
+    else:
+        st.info("કોઈ Holding એ Target/Stop Loss Hit નથી કર્યો.")
+
+    # ---------- STEP 2: SCAN FOR NEW BUY OPPORTUNITIES ----------
+    st.markdown("#### 🔍 Step 2: Scanning for New Buy Opportunities")
+
+    current_positions = len(st.session_state.paper_portfolio)
+    slots_available = at_max_positions - current_positions
+
+    if slots_available <= 0:
+        st.warning(f"⚠️ Max Positions ({at_max_positions}) પહેલેથી Full છે. નવો Buy નહીં થાય.")
+    else:
+        candidates = []
+        with st.spinner(f"{len(STOCK_UNIVERSE)} Stocks Scan થઈ રહ્યા છે..."):
+            for symbol in STOCK_UNIVERSE:
+                if symbol in st.session_state.paper_portfolio:
+                    continue
+                try:
+                    td = fetch_technical_data(symbol)
+                    if not td:
+                        continue
+
+                    rsi = td["rsi"]
+                    trend = td["trend"]
+                    cp = td["current_price"]
+                    ma50 = td["ma50"]
+
+                    score = 50
+                    if trend == "Bullish": score += 20
+                    if 45 <= rsi <= 65: score += 20
+                    elif rsi < 30: score += 5
+                    if cp > ma50: score += 10
+
+                    if score >= at_min_score:
+                        candidates.append({"Stock": symbol, "Score": score, "Price": cp, "RSI": rsi})
+                except:
+                    pass
+
+        candidates.sort(key=lambda x: x["Score"], reverse=True)
+        top_candidates = candidates[:slots_available]
+
+        if top_candidates:
+            st.markdown("##### 🟢 Auto-Buying These Stocks:")
+            for c in top_candidates:
+                qty = int(at_capital_per_trade / c["Price"])
+                if qty < 1:
+                    st.warning(f"{c['Stock']}: Capital Per Trade (₹{at_capital_per_trade}) Price (₹{c['Price']}) કરતા ઓછું છે, Skip.")
+                    continue
+
+                cost = qty * c["Price"]
+                if cost > st.session_state.paper_cash:
+                    st.warning(f"{c['Stock']}: Insufficient Cash, Skip.")
+                    continue
+
+                st.session_state.paper_cash -= cost
+                st.session_state.paper_portfolio[c["Stock"]] = {"qty": qty, "avg_price": c["Price"]}
+
+                st.success(f"✅ BOUGHT {qty} x {c['Stock']} @ ₹{c['Price']} | Score: {c['Score']}/100 | RSI: {c['RSI']}")
+
+            save_data()
+        else:
+            st.info(f"કોઈ Stock Minimum Score ({at_min_score}) Match નથી થયો. આજે કોઈ નવો Buy નહીં.")
+
+    # ---------- STEP 3: SUMMARY ----------
+    st.divider()
+    st.markdown("#### 📊 Auto Trade Run Summary")
+    final_holdings = len(st.session_state.paper_portfolio)
+    col_at1, col_at2 = st.columns(2)
+    col_at1.metric("Open Positions Now", final_holdings)
+    col_at2.metric("Available Cash", f"₹{st.session_state.paper_cash:,.2f}")
+
+    st.session_state.last_auto_trade_run = str(datetime.datetime.now())
+    save_data()
+    st.success(f"✅ Auto Trade Bot Run Complete at {datetime.datetime.now().strftime('%H:%M:%S')}")
+else:
+    st.info("'Run Auto Trade Bot Now' click કરો - Bot જાતે Scan, Buy, Sell કરશે (Rules પ્રમાણે).")
+
+if "last_auto_trade_run" in st.session_state:
+    st.caption(f"📅 Last Run: {st.session_state.last_auto_trade_run}")
+    
