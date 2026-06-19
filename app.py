@@ -20,6 +20,100 @@ model = genai.GenerativeModel("gemini-2.5-flash")
 
 st.title("📈 Gandiv AI Trading Assistant")
 # ==========================================
+# PREMIUM UI STYLING (Add right after st.title line)
+# ==========================================
+st.markdown("""
+<style>
+    /* Overall background */
+    .stApp {
+        background-color: #F7F9FC;
+    }
+
+    /* Main title */
+    h1 {
+        color: #1A237E;
+        font-weight: 800;
+        padding-bottom: 0px;
+    }
+
+    /* Section headers */
+    h2, h3 {
+        color: #1A237E;
+        font-weight: 700;
+    }
+
+    /* Buttons */
+    .stButton > button {
+        background: linear-gradient(135deg, #2962FF 0%, #1A237E 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 0.6rem 1.2rem;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(41, 98, 255, 0.25);
+        transition: all 0.2s ease;
+    }
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(41, 98, 255, 0.35);
+    }
+
+    /* Metrics - card style */
+    [data-testid="stMetric"] {
+        background-color: white;
+        border: 1px solid #E3E8F0;
+        border-radius: 12px;
+        padding: 1rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    [data-testid="stMetricLabel"] {
+        color: #5C6B89;
+        font-weight: 600;
+    }
+    [data-testid="stMetricValue"] {
+        color: #1A237E;
+        font-weight: 800;
+    }
+
+    /* Dataframes / Tables */
+    [data-testid="stDataFrame"] {
+        border-radius: 10px;
+        overflow: hidden;
+        border: 1px solid #E3E8F0;
+    }
+
+    /* Text inputs and number inputs */
+    .stTextInput > div > div > input,
+    .stNumberInput > div > div > input {
+        border-radius: 8px;
+        border: 1px solid #D0D7E6;
+    }
+
+    /* Success / Error / Warning / Info boxes */
+    .stAlert {
+        border-radius: 10px;
+    }
+
+    /* Divider */
+    hr {
+        border-color: #E3E8F0;
+    }
+
+    /* Expander */
+    [data-testid="stExpander"] {
+        background-color: white;
+        border-radius: 10px;
+        border: 1px solid #E3E8F0;
+    }
+
+    /* Sidebar (if used later) */
+    [data-testid="stSidebar"] {
+        background-color: #FFFFFF;
+        border-right: 1px solid #E3E8F0;
+    }
+</style>
+""", unsafe_allow_html=True)
+# ==========================================
 # DATA PERSISTENCE
 # ==========================================
 DATA_FILE = "gandiv_data.json"
