@@ -30,22 +30,22 @@ st.markdown("""
     }
 
     /* Main title */
-    h1 {
-        color: #1A237E;
+    h1, h1 span, .stMarkdown h1 {
+        color: #1A237E !important;
         font-weight: 800;
         padding-bottom: 0px;
     }
 
     /* Section headers */
-    h2, h3 {
-        color: #1A237E;
+    h2, h2 span, h3, h3 span {
+        color: #1A237E !important;
         font-weight: 700;
     }
 
     /* Buttons */
     .stButton > button {
         background: linear-gradient(135deg, #2962FF 0%, #1A237E 100%);
-        color: white;
+        color: white !important;
         border: none;
         border-radius: 10px;
         padding: 0.6rem 1.2rem;
@@ -57,6 +57,9 @@ st.markdown("""
         transform: translateY(-2px);
         box-shadow: 0 6px 16px rgba(41, 98, 255, 0.35);
     }
+    .stButton > button p {
+        color: white !important;
+    }
 
     /* Metrics - card style */
     [data-testid="stMetric"] {
@@ -67,11 +70,11 @@ st.markdown("""
         box-shadow: 0 2px 8px rgba(0,0,0,0.04);
     }
     [data-testid="stMetricLabel"] {
-        color: #5C6B89;
+        color: #5C6B89 !important;
         font-weight: 600;
     }
     [data-testid="stMetricValue"] {
-        color: #1A237E;
+        color: #1A237E !important;
         font-weight: 800;
     }
 
@@ -87,6 +90,7 @@ st.markdown("""
     .stNumberInput > div > div > input {
         border-radius: 8px;
         border: 1px solid #D0D7E6;
+        color: #1A237E !important;
     }
 
     /* Success / Error / Warning / Info boxes */
@@ -106,10 +110,9 @@ st.markdown("""
         border: 1px solid #E3E8F0;
     }
 
-    /* Sidebar (if used later) */
-    [data-testid="stSidebar"] {
-        background-color: #FFFFFF;
-        border-right: 1px solid #E3E8F0;
+    /* General body text */
+    .stMarkdown, .stText, p, label {
+        color: #2A2F45 !important;
     }
 </style>
 """, unsafe_allow_html=True)
