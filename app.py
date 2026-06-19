@@ -20,7 +20,7 @@ model = genai.GenerativeModel("gemini-2.5-flash")
 
 st.title("📈 Gandiv AI Trading Assistant")
 # ==========================================
-# PREMIUM UI STYLING (Add right after st.title line)
+# PREMIUM UI STYLING (Replace entire previous CSS block with this)
 # ==========================================
 st.markdown("""
 <style>
@@ -37,7 +37,7 @@ st.markdown("""
     }
 
     /* Section headers */
-    h2, h2 span, h3, h3 span {
+    h2, h2 span, h3, h3 span, h4, h4 span {
         color: #1A237E !important;
         font-weight: 700;
     }
@@ -78,24 +78,40 @@ st.markdown("""
         font-weight: 800;
     }
 
-    /* Dataframes / Tables */
+    /* Dataframes / Tables - ALL text inside */
     [data-testid="stDataFrame"] {
         border-radius: 10px;
         overflow: hidden;
         border: 1px solid #E3E8F0;
+        background-color: white !important;
+    }
+    [data-testid="stDataFrame"] * {
+        color: #1A1A2E !important;
+    }
+    [data-testid="stDataFrameResizable"] {
+        background-color: white !important;
     }
 
     /* Text inputs and number inputs */
     .stTextInput > div > div > input,
-    .stNumberInput > div > div > input {
+    .stNumberInput > div > div > input,
+    .stTextArea textarea {
         border-radius: 8px;
         border: 1px solid #D0D7E6;
         color: #1A237E !important;
+        background-color: white !important;
     }
 
-    /* Success / Error / Warning / Info boxes */
-    .stAlert {
+    /* Selectbox */
+    .stSelectbox > div > div {
+        color: #1A237E !important;
+        background-color: white !important;
+    }
+
+    /* Success / Error / Warning / Info boxes - text inside */
+    .stAlert, .stAlert p, .stAlert div {
         border-radius: 10px;
+        color: #1A1A2E !important;
     }
 
     /* Divider */
@@ -109,10 +125,19 @@ st.markdown("""
         border-radius: 10px;
         border: 1px solid #E3E8F0;
     }
+    [data-testid="stExpander"] * {
+        color: #1A1A2E !important;
+    }
 
-    /* General body text */
-    .stMarkdown, .stText, p, label {
-        color: #2A2F45 !important;
+    /* General body text - st.write, st.markdown content */
+    .stMarkdown, .stMarkdown p, .stMarkdown li, .stMarkdown div,
+    .stText, p, label, span {
+        color: #1A1A2E !important;
+    }
+
+    /* Caption text */
+    .stCaption, [data-testid="stCaptionContainer"] {
+        color: #5C6B89 !important;
     }
 </style>
 """, unsafe_allow_html=True)
