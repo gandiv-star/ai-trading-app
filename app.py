@@ -1968,3 +1968,62 @@ else:
 if "last_auto_trade_run" in st.session_state:
     st.caption(f"📅 Last Run: {st.session_state.last_auto_trade_run}")
     
+# ==========================================
+# CIRCUIT BREAKER (V44)
+# ==========================================
+st.divider()
+st.subheader("🚨 Circuit Breaker")
+st.caption("Daily Loss Limit Hit થાય તો Auto Trade Bot આપોઆપ બંધ થઈ જાય - Capital Protection")
+
+if "circuit_breaker_date" not in st.session_state:
+    st.session_state.circuit_breaker_date = None
+if "circuit_breaker_start_value" not in st.session_state:
+    st.session_state.circuit_breaker_start_value = None
+if "circuit_breaker_triggered" not in st.session_state:
+    st.session_state.circuit_breaker_triggered = False
+
+with st.expander("⚙️ Circuit Breaker Settings"):
+    cb_daily_loss_limit_pct = st.slider("Max Daily Loss Limit (%)", min_value=1.0, max_value=15.0, value=5.0, step=0.5, key="cb_daily_loss_limit_pct")
+    cb_enabled = st.checkbox("Circuit Breaker Enabled", value=True, key="cb_enabled")
+
+cb_holdings_value = 0
+for sym, pos in st.session_state.paper_portfolio.items():
+    try:
+        td = fetch_technical_data(sym)
+        cp = td["current_price"] if td else pos["avg_price"]
+    except:
+        cp = pos["avg_price"]
+    cb_holdings_value += cp * pos["qty"]
+
+cb_current_total = round(st.session_state.paper_cash + cb_holdings_value, 2)
+today_str = str(datetime.date.today())
+
+if st.session_state.circuit_breaker_date != today_str:
+    st.session_state.circuit_breaker_date = today_str
+    st.session_state.circuit_breaker_start_value = cb_current_total
+    st.session_state.circuit_breaker_triggered = False
+    save_data()
+
+day_start_value = st.session_state.circuit_breaker_start_value or cb_current_total
+day_change_pct = round(((cb_current_total - day_start_value) / day_start_value) * 100, 2) if day_start_value > 0 else 0
+
+col_cb1, col_cb2, col_cb3 = st.columns(3)
+col_cb1.metric("Today's Start Value", f"₹{day_start_value:,.2f}")
+col_cb2.metric("Current Value", f"₹{cb_current_total:,.2f}")
+col_cb3.metric("Today's Change", f"{day_change_pct}%", delta=f"{day_change_pct}%")
+
+if cb_enabled and day_change_pct <= -cb_daily_loss_limit_pct:
+    st.session_state.circuit_breaker_triggered = True
+    save_data()
+
+if st.session_state.circuit_breaker_triggered:
+    st.error(f"🚨 CIRCUIT BREAKER TRIGGERED! Today's Loss ({day_change_pct}%) એ Limit ({cb_daily_loss_limit_pct}%) વટાવી દીધી છે. Auto Trade Bot બંધ છે.")
+    st.warning("Auto Trade Bot આજે વધુ Trade નહીં કરે. કાલે આપોઆપ Reset થશે, અથવા નીચે Manual Override કરી શકો છો.")
+    if st.button("🔓 Manual Override - Resume Trading Today"):
+        st.session_state.circuit_breaker_triggered = False
+        save_data()
+        st.success("✅ Circuit Breaker Manually Reset. Trading Resumed.")
+elif cb_enabled:
+    st.success(f"✅ Circuit Breaker Active & Safe | Limit: -{cb_daily_loss_limit_pct}% | Current: {day_change_pct}%")
+else:
+    st.info("⚪ Circuit Breaker Disabled - Auto Trade Bot કોઈપણ Loss Limit વગર ચાલશે.")
