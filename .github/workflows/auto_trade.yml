@@ -30,19 +30,19 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install yfinance
+        run: pip install yfinance requests
 
       - name: Run Auto Trade Bot
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python auto_trade_bot.py
 
       - name: Commit and push updated data
         run: |
           git config --global user.name "Auto Trade Bot"
           git config --global user.email "actions@github.com"
-          
           git add gandiv_data.json
           git diff-index --quiet HEAD || git commit -m "Auto trade run: $(date)"
-          
-          # ફોર્સ પુશ જેથી કોઈ એરર ન આવે
           git push origin HEAD:main --force
           
