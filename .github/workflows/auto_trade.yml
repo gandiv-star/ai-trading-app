@@ -1,4 +1,4 @@
-name: Gandiv Auto Trade Bot
+Name: Gandiv Auto Trade Bot
 
 on:
   schedule:
@@ -35,6 +35,24 @@ jobs:
       - name: Run Auto Trade Bot
         run: python auto_trade_bot.py
 
+      - name: Commit and push updated data
+        run: |
+          git config --global user.name "Auto Trade Bot"
+          git config --global user.email "actions@github.com"
+          
+          # ૧. ગિટહબ પરથી લેટેસ્ટ કોડ પુલ કરી લો (જેથી કોઈ રિજેક્શન ન આવે)
+          git pull origin main --rebase
+          
+          # ૨. નવી ફાઈલ એડ કરો
+          git add gandiv_data.json
+          
+          # ૩. જો ફાઈલમાં કોઈ ફેરફાર થયો હોય તો જ કમિટ કરો (નહિતર એરર આવશે)
+          git diff-index --quiet HEAD || git commit -m "Auto trade run: $(date)"
+          
+          # ૪. ફરીથી એકવાર સેફ્ટી માટે લેટેસ્ટ અપડેટ ચેક કરી પુશ કરો
+          git pull origin main --rebase
+          git push origin main
+          
       - name: Commit and push updated data
         run: |
           git config --global user.name "Auto Trade Bot"
