@@ -2027,3 +2027,265 @@ elif cb_enabled:
     st.success(f"✅ Circuit Breaker Active & Safe | Limit: -{cb_daily_loss_limit_pct}% | Current: {day_change_pct}%")
 else:
     st.info("⚪ Circuit Breaker Disabled - Auto Trade Bot કોઈપણ Loss Limit વગર ચાલશે.")
+# ==========================================
+# PROFESSIONAL CHARTS (V35)
+# ==========================================
+st.divider()
+st.subheader("📊 Professional Charts")
+st.caption("Candlestick, RSI, Volume, Buy/Sell Markers, Equity Curve")
+
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+
+chart_symbol = st.text_input("Stock Symbol", value="RELIANCE.NS", key="chart_symbol")
+
+if st.button("📈 Generate Professional Chart"):
+    try:
+        with st.spinner("Chart Data Load થઈ રહ્યો છે..."):
+            stock = yf.Ticker(chart_symbol)
+            hist = stock.history(period="6mo")
+
+            if hist.empty:
+                st.error("Data મળ્યો નથી.")
+            else:
+                close = hist["Close"]
+                high = hist["High"]
+                low = hist["Low"]
+                open_ = hist["Open"]
+                volume = hist["Volume"]
+                dates = hist.index
+
+                # RSI Calculate
+                delta = close.diff()
+                gain = delta.where(delta > 0, 0).rolling(14).mean()
+                loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
+                rs = gain / loss
+                rsi = 100 - (100 / (1 + rs))
+
+                # MA Lines
+                ma20 = close.rolling(20).mean()
+                ma50 = close.rolling(50).mean()
+
+                # Buy/Sell Signals (simple MA crossover)
+                buy_signals = []
+                sell_signals = []
+                for i in range(1, len(close)):
+                    if ma20.iloc[i] > ma50.iloc[i] and ma20.iloc[i-1] <= ma50.iloc[i-1]:
+                        buy_signals.append(i)
+                    elif ma20.iloc[i] < ma50.iloc[i] and ma20.iloc[i-1] >= ma50.iloc[i-1]:
+                        sell_signals.append(i)
+
+                # Create subplots: Candlestick + Volume + RSI
+                fig = make_subplots(
+                    rows=3, cols=1,
+                    shared_xaxes=True,
+                    vertical_spacing=0.05,
+                    row_heights=[0.6, 0.2, 0.2],
+                    subplot_titles=(
+                        f"{chart_symbol} - Candlestick Chart",
+                        "Volume",
+                        "RSI (14)"
+                    )
+                )
+
+                # Candlestick
+                fig.add_trace(go.Candlestick(
+                    x=dates,
+                    open=open_,
+                    high=high,
+                    low=low,
+                    close=close,
+                    name="Price",
+                    increasing_line_color="#00C853",
+                    decreasing_line_color="#FF1744"
+                ), row=1, col=1)
+
+                # MA Lines
+                fig.add_trace(go.Scatter(
+                    x=dates, y=ma20,
+                    mode="lines",
+                    name="MA20",
+                    line=dict(color="#2962FF", width=1.5)
+                ), row=1, col=1)
+
+                fig.add_trace(go.Scatter(
+                    x=dates, y=ma50,
+                    mode="lines",
+                    name="MA50",
+                    line=dict(color="#FF6D00", width=1.5)
+                ), row=1, col=1)
+
+                # Buy Signals
+                if buy_signals:
+                    fig.add_trace(go.Scatter(
+                        x=[dates[i] for i in buy_signals],
+                        y=[low.iloc[i] * 0.99 for i in buy_signals],
+                        mode="markers",
+                        name="Buy Signal",
+                        marker=dict(
+                            symbol="triangle-up",
+                            size=12,
+                            color="#00C853"
+                        )
+                    ), row=1, col=1)
+
+                # Sell Signals
+                if sell_signals:
+                    fig.add_trace(go.Scatter(
+                        x=[dates[i] for i in sell_signals],
+                        y=[high.iloc[i] * 1.01 for i in sell_signals],
+                        mode="markers",
+                        name="Sell Signal",
+                        marker=dict(
+                            symbol="triangle-down",
+                            size=12,
+                            color="#FF1744"
+                        )
+                    ), row=1, col=1)
+
+                # Volume Bars
+                colors = ["#00C853" if close.iloc[i] >= open_.iloc[i]
+                          else "#FF1744" for i in range(len(close))]
+                fig.add_trace(go.Bar(
+                    x=dates,
+                    y=volume,
+                    name="Volume",
+                    marker_color=colors,
+                    opacity=0.7
+                ), row=2, col=1)
+
+                # RSI Line
+                fig.add_trace(go.Scatter(
+                    x=dates, y=rsi,
+                    mode="lines",
+                    name="RSI",
+                    line=dict(color="#9C27B0", width=1.5)
+                ), row=3, col=1)
+
+                # RSI Zones
+                fig.add_hline(y=70, line_dash="dash",
+                              line_color="red", opacity=0.5, row=3, col=1)
+                fig.add_hline(y=30, line_dash="dash",
+                              line_color="green", opacity=0.5, row=3, col=1)
+
+                # Layout
+                fig.update_layout(
+                    height=700,
+                    template="plotly_white",
+                    xaxis_rangeslider_visible=False,
+                    showlegend=True,
+                    legend=dict(
+                        orientation="h",
+                        yanchor="bottom",
+                        y=1.02,
+                        xanchor="right",
+                        x=1
+                    ),
+                    margin=dict(l=10, r=10, t=60, b=10)
+                )
+
+                fig.update_yaxes(title_text="Price (₹)", row=1, col=1)
+                fig.update_yaxes(title_text="Volume", row=2, col=1)
+                fig.update_yaxes(title_text="RSI", row=3, col=1)
+
+                st.plotly_chart(fig, use_container_width=True)
+
+                # Current Stats
+                current_rsi = round(rsi.iloc[-1], 2)
+                current_price = round(close.iloc[-1], 2)
+
+                col_ch1, col_ch2, col_ch3 = st.columns(3)
+                col_ch1.metric("Current Price", f"₹{current_price}")
+                col_ch2.metric("RSI", current_rsi,
+                               delta="Overbought ⚠️" if current_rsi > 70
+                               else "Oversold 🟢" if current_rsi < 30
+                               else "Normal ✅")
+                col_ch3.metric("Trend",
+                               "Bullish 🟢" if ma20.iloc[-1] > ma50.iloc[-1]
+                               else "Bearish 🔴")
+
+    except Exception as e:
+        st.error(f"Error: {e}")
+
+# ==========================================
+# PORTFOLIO EQUITY CURVE CHART (V35b)
+# ==========================================
+st.divider()
+st.subheader("📈 Portfolio Equity Curve (Interactive)")
+
+if len(st.session_state.equity_curve) >= 2:
+    try:
+        eq_df = pd.DataFrame(st.session_state.equity_curve)
+        eq_df["Date"] = pd.to_datetime(eq_df["Date"])
+        eq_df = eq_df.sort_values("Date")
+
+        starting_value = eq_df["Value"].iloc[0]
+        eq_df["Profit"] = eq_df["Value"] - starting_value
+        eq_df["Peak"] = eq_df["Value"].cummax()
+        eq_df["Drawdown"] = ((eq_df["Value"] - eq_df["Peak"]) / eq_df["Peak"]) * 100
+
+        fig2 = make_subplots(
+            rows=2, cols=1,
+            shared_xaxes=True,
+            vertical_spacing=0.1,
+            row_heights=[0.7, 0.3],
+            subplot_titles=("Portfolio Value", "Drawdown %")
+        )
+
+        # Portfolio Value Line
+        fig2.add_trace(go.Scatter(
+            x=eq_df["Date"],
+            y=eq_df["Value"],
+            mode="lines+markers",
+            name="Portfolio Value",
+            line=dict(color="#2962FF", width=2),
+            marker=dict(size=6),
+            fill="tozeroy",
+            fillcolor="rgba(41, 98, 255, 0.1)"
+        ), row=1, col=1)
+
+        # Starting value line
+        fig2.add_hline(
+            y=starting_value,
+            line_dash="dash",
+            line_color="gray",
+            opacity=0.5,
+            row=1, col=1
+        )
+
+        # Drawdown
+        fig2.add_trace(go.Scatter(
+            x=eq_df["Date"],
+            y=eq_df["Drawdown"],
+            mode="lines",
+            name="Drawdown %",
+            line=dict(color="#FF1744", width=1.5),
+            fill="tozeroy",
+            fillcolor="rgba(255, 23, 68, 0.1)"
+        ), row=2, col=1)
+
+        fig2.update_layout(
+            height=500,
+            template="plotly_white",
+            showlegend=True,
+            margin=dict(l=10, r=10, t=40, b=10)
+        )
+
+        fig2.update_yaxes(title_text="Value (₹)", row=1, col=1)
+        fig2.update_yaxes(title_text="Drawdown %", row=2, col=1)
+
+        st.plotly_chart(fig2, use_container_width=True)
+
+        total_growth = round(((eq_df["Value"].iloc[-1] - starting_value) / starting_value) * 100, 2)
+        max_drawdown = round(eq_df["Drawdown"].min(), 2)
+
+        col_eq1, col_eq2, col_eq3 = st.columns(3)
+        col_eq1.metric("Starting Value", f"₹{starting_value:,.2f}")
+        col_eq2.metric("Current Value", f"₹{eq_df['Value'].iloc[-1]:,.2f}")
+        col_eq3.metric("Total Growth", f"{total_growth}%",
+                       delta=f"Max Drawdown: {max_drawdown}%")
+
+    except Exception as e:
+        st.error(f"Chart Error: {e}")
+else:
+    st.info("Equity Curve Chart માટે ઓછામાં ઓછા 2 Snapshots જરૂરી છે. V34 માં 'Record Snapshot' ક્લિક કરો.")
