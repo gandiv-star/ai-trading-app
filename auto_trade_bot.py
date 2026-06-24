@@ -25,7 +25,7 @@ STOCK_UNIVERSE = [
 ]
 
 # ---------- AUTO TRADE SETTINGS (same defaults as app) ----------
-MAX_POSITIONS = 5
+MAX_POSITIONS = 3
 CAPITAL_PER_TRADE = 10000
 MIN_SCORE = 75
 TARGET_PCT = 8.0
