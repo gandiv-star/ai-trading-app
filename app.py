@@ -139,6 +139,25 @@ st.markdown("""
     .stCaption, [data-testid="stCaptionContainer"] {
         color: #5C6B89 !important;
     }
+/* Number input - dark mode fix */
+    .stNumberInput input {
+        color: #FFFFFF !important;
+        background-color: #2A2F45 !important;
+        border: 1px solid #4A5568 !important;
+    }
+    .stTextInput input {
+        color: #FFFFFF !important;
+        background-color: #2A2F45 !important;
+        border: 1px solid #4A5568 !important;
+    }
+    .stTextArea textarea {
+        color: #FFFFFF !important;
+        background-color: #2A2F45 !important;
+        border: 1px solid #4A5568 !important;
+    }
+    .stSlider p {
+        color: #FFFFFF !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 # ==========================================
