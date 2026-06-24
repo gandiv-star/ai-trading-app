@@ -158,6 +158,21 @@ st.markdown("""
     .stSlider p {
         color: #FFFFFF !important;
     }
+    /* Slider label and value */
+    .stSlider label p {
+        color: #1A1A2E !important;
+        font-weight: 600 !important;
+    }
+    .stSlider [data-testid="stTickBarMin"],
+    .stSlider [data-testid="stTickBarMax"] {
+        color: #1A1A2E !important;
+    }
+    div[data-testid="stSlider"] > div > div > div {
+        color: #1A1A2E !important;
+    }
+    .stSlider span {
+        color: #1A1A2E !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 # ==========================================
