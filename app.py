@@ -23,38 +23,6 @@ st.title("📈 Gandiv AI Trading Assistant")
 # PREMIUM UI STYLING (Replace entire previous CSS block with this)
 # ==========================================
 st.markdown("""
-/* Number input - dark mode fix */
-    .stNumberInput input {
-        color: #FFFFFF !important;
-        background-color: #2A2F45 !important;
-        border: 1px solid #4A5568 !important;
-    }
-    
-    /* Text input - dark mode fix */
-    .stTextInput input {
-        color: #FFFFFF !important;
-        background-color: #2A2F45 !important;
-        border: 1px solid #4A5568 !important;
-    }
-    
-    /* Text area - dark mode fix */
-    .stTextArea textarea {
-        color: #FFFFFF !important;
-        background-color: #2A2F45 !important;
-        border: 1px solid #4A5568 !important;
-    }
-    
-    /* Selectbox - dark mode fix */
-    .stSelectbox select, 
-    [data-testid="stSelectbox"] > div {
-        color: #FFFFFF !important;
-        background-color: #2A2F45 !important;
-    }
-    
-    /* Slider value text */
-    .stSlider p {
-        color: #FFFFFF !important;
-    }
 <style>
     /* Overall background */
     .stApp {
