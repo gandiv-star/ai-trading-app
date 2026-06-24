@@ -1,5 +1,5 @@
 {
-  "paper_cash": 52983.0,
+  "paper_cash": 61649.0,
   "paper_portfolio": {
     "NESTLEIND.NS": {
       "qty": 7,
@@ -8,10 +8,6 @@
     "ADANIPORTS.NS": {
       "qty": 5,
       "avg_price": 1835.3
-    },
-    "JSWSTEEL.NS": {
-      "qty": 7,
-      "avg_price": 1287.7
     },
     "INDUSINDBK.NS": {
       "qty": 10,
@@ -22,11 +18,21 @@
       "avg_price": 3149.5
     }
   },
-  "paper_trade_history": [],
+  "paper_trade_history": [
+    {
+      "Date": "2026-06-24",
+      "Stock": "JSWSTEEL.NS",
+      "Qty": 7,
+      "Buy Price": 1287.7,
+      "Sell Price": 1238.0,
+      "P&L": -347.9,
+      "P&L %": -3.86
+    }
+  ],
   "equity_curve": [],
   "trade_journal": [],
-  "last_auto_trade_run": "2026-06-23 17:23:25.037447",
-  "circuit_breaker_date": "2026-06-23",
-  "circuit_breaker_start_value": 98934.3,
+  "last_auto_trade_run": "2026-06-24 07:37:35.703669",
+  "circuit_breaker_date": "2026-06-24",
+  "circuit_breaker_start_value": 98997.2,
   "circuit_breaker_triggered": false
 }
