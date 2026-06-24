@@ -173,6 +173,21 @@ st.markdown("""
     .stSlider span {
         color: #1A1A2E !important;
     }
+    /* Slider current value bubble */
+    .stSlider [data-testid="stThumbValue"] {
+        color: #1A1A2E !important;
+        background-color: #E8EDF5 !important;
+    }
+    .stSlider div[class*="thumb"] {
+        color: #1A1A2E !important;
+    }
+    .stSlider [aria-valuenow] {
+        color: #1A1A2E !important;
+    }
+    /* Force all slider text dark */
+    .stSlider * {
+        color: #1A1A2E !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 # ==========================================
