@@ -1884,8 +1884,11 @@ with st.expander("⚙️ Auto Trade Rules (Settings)"):
     at_max_positions = st.number_input("Max Open Positions", min_value=1, max_value=15, value=5, key="at_max_positions")
     at_capital_per_trade = st.number_input("Capital Per New Trade (₹)", min_value=1000, value=10000, step=1000, key="at_capital_per_trade")
     at_min_score = st.slider("Minimum AI Score to Buy", min_value=50, max_value=100, value=75, key="at_min_score")
+    st.caption(f"Current: {at_min_score}")
     at_target_pct = st.slider("Auto-Sell Target (%)", min_value=2.0, max_value=20.0, value=8.0, step=0.5, key="at_target_pct")
+    st.caption(f"Current: {at_target_pct}%")
     at_sl_pct = st.slider("Auto-Sell Stop Loss (%)", min_value=1.0, max_value=10.0, value=5.0, step=0.5, key="at_sl_pct")
+    st.caption(f"Current: {at_sl_pct}%")
 
 if st.button("🚀 Run Auto Trade Bot Now"):
     log_messages = []
