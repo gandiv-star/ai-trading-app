@@ -1,5 +1,5 @@
 {
-  "paper_cash": 61649.0,
+  "paper_cash": 70838.5,
   "paper_portfolio": {
     "NESTLEIND.NS": {
       "qty": 7,
@@ -8,10 +8,6 @@
     "ADANIPORTS.NS": {
       "qty": 5,
       "avg_price": 1835.3
-    },
-    "INDUSINDBK.NS": {
-      "qty": 10,
-      "avg_price": 947.45
     },
     "GRASIM.NS": {
       "qty": 3,
@@ -27,12 +23,21 @@
       "Sell Price": 1238.0,
       "P&L": -347.9,
       "P&L %": -3.86
+    },
+    {
+      "Date": "2026-06-25",
+      "Stock": "INDUSINDBK.NS",
+      "Qty": 10,
+      "Buy Price": 947.45,
+      "Sell Price": 918.95,
+      "P&L": -285.0,
+      "P&L %": -3.01
     }
   ],
   "equity_curve": [],
   "trade_journal": [],
-  "last_auto_trade_run": "2026-06-24 17:23:23.582863",
-  "circuit_breaker_date": "2026-06-24",
-  "circuit_breaker_start_value": 98997.2,
+  "last_auto_trade_run": "2026-06-25 12:33:39.880848",
+  "circuit_breaker_date": "2026-06-25",
+  "circuit_breaker_start_value": 99016.5,
   "circuit_breaker_triggered": false
 }
