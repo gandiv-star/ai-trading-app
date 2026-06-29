@@ -1,17 +1,17 @@
 {
-  "paper_cash": 70838.5,
+  "paper_cash": 71748.3,
   "paper_portfolio": {
     "NESTLEIND.NS": {
       "qty": 7,
       "avg_price": 1414.8
     },
-    "ADANIPORTS.NS": {
-      "qty": 5,
-      "avg_price": 1835.3
-    },
     "GRASIM.NS": {
       "qty": 3,
       "avg_price": 3149.5
+    },
+    "ASIANPAINT.NS": {
+      "qty": 3,
+      "avg_price": 2656.9
     }
   },
   "paper_trade_history": [
@@ -32,12 +32,21 @@
       "Sell Price": 918.95,
       "P&L": -285.0,
       "P&L %": -3.01
+    },
+    {
+      "Date": "2026-06-29",
+      "Stock": "ADANIPORTS.NS",
+      "Qty": 5,
+      "Buy Price": 1835.3,
+      "Sell Price": 1776.1,
+      "P&L": -296.0,
+      "P&L %": -3.23
     }
   ],
   "equity_curve": [],
   "trade_journal": [],
-  "last_auto_trade_run": "2026-06-26 17:05:58.204805",
-  "circuit_breaker_date": "2026-06-26",
-  "circuit_breaker_start_value": 99016.5,
+  "last_auto_trade_run": "2026-06-29 16:44:11.165629",
+  "circuit_breaker_date": "2026-06-29",
+  "circuit_breaker_start_value": 98670.7,
   "circuit_breaker_triggered": false
 }
