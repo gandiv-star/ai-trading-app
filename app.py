@@ -1,195 +1,202 @@
 import datetime
+import json
+import os
 import requests
 import streamlit as st
 import google.generativeai as genai
 import yfinance as yf
 import pandas as pd
-import json
-import os
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
-# Page Configuration
+# ==========================================
+# PAGE CONFIGURATION
+# ==========================================
 st.set_page_config(
-    page_title="Gandiv AI Stock Research",
+    page_title="Gandiv AI Trading",
     page_icon="📈",
     layout="wide"
 )
 
-# AI Model Configuration
-genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-model = genai.GenerativeModel("gemini-2.5-flash")
-
-st.title("📈 Gandiv AI Trading Assistant")
 # ==========================================
-# PREMIUM UI STYLING (Replace entire previous CSS block with this)
+# DARK THEME CSS
 # ==========================================
 st.markdown("""
 <style>
-    /* Overall background */
+    /* Dark Background */
     .stApp {
-        background-color: #F7F9FC;
+        background-color: #0D1117;
     }
 
-    /* Main title */
-    h1, h1 span, .stMarkdown h1 {
-        color: #1A237E !important;
-        font-weight: 800;
-        padding-bottom: 0px;
+    /* Main Title */
+    h1 {
+        background: linear-gradient(135deg, #00FF88, #00BFFF);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 900;
+        font-size: 2rem;
     }
 
-    /* Section headers */
-    h2, h2 span, h3, h3 span, h4, h4 span {
-        color: #1A237E !important;
+    /* Headers */
+    h2, h3, h4 {
+        color: #00BFFF !important;
         font-weight: 700;
+    }
+
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] {
+        background-color: #161B22;
+        border-radius: 12px;
+        padding: 4px;
+        gap: 4px;
+    }
+    .stTabs [data-baseweb="tab"] {
+        background-color: transparent;
+        color: #8B949E !important;
+        border-radius: 8px;
+        font-weight: 600;
+        padding: 8px 16px;
+    }
+    .stTabs [aria-selected="true"] {
+        background: linear-gradient(135deg, #00FF88, #00BFFF) !important;
+        color: #0D1117 !important;
+    }
+
+    /* Metric Cards */
+    [data-testid="stMetric"] {
+        background-color: #161B22;
+        border: 1px solid #30363D;
+        border-radius: 12px;
+        padding: 1rem;
+        box-shadow: 0 0 15px rgba(0, 255, 136, 0.08);
+    }
+    [data-testid="stMetricLabel"] {
+        color: #8B949E !important;
+        font-weight: 600;
+    }
+    [data-testid="stMetricValue"] {
+        color: #00FF88 !important;
+        font-weight: 800;
     }
 
     /* Buttons */
     .stButton > button {
-        background: linear-gradient(135deg, #2962FF 0%, #1A237E 100%);
-        color: white !important;
+        background: linear-gradient(135deg, #00FF88, #00BFFF);
+        color: #0D1117 !important;
         border: none;
         border-radius: 10px;
         padding: 0.6rem 1.2rem;
-        font-weight: 600;
-        box-shadow: 0 4px 12px rgba(41, 98, 255, 0.25);
-        transition: all 0.2s ease;
+        font-weight: 700;
+        box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+        transition: all 0.3s ease;
+        width: 100%;
     }
     .stButton > button:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 16px rgba(41, 98, 255, 0.35);
+        box-shadow: 0 0 35px rgba(0, 255, 136, 0.6);
     }
     .stButton > button p {
-        color: white !important;
+        color: #0D1117 !important;
+        font-weight: 700;
     }
 
-    /* Metrics - card style */
-    [data-testid="stMetric"] {
-        background-color: white;
-        border: 1px solid #E3E8F0;
-        border-radius: 12px;
-        padding: 1rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-    }
-    [data-testid="stMetricLabel"] {
-        color: #5C6B89 !important;
-        font-weight: 600;
-    }
-    [data-testid="stMetricValue"] {
-        color: #1A237E !important;
-        font-weight: 800;
-    }
-
-    /* Dataframes / Tables - ALL text inside */
-    [data-testid="stDataFrame"] {
-        border-radius: 10px;
-        overflow: hidden;
-        border: 1px solid #E3E8F0;
-        background-color: white !important;
-    }
-    [data-testid="stDataFrame"] * {
-        color: #1A1A2E !important;
-    }
-    [data-testid="stDataFrameResizable"] {
-        background-color: white !important;
-    }
-
-    /* Text inputs and number inputs */
-    .stTextInput > div > div > input,
-    .stNumberInput > div > div > input,
+    /* Input Fields */
+    .stTextInput input,
+    .stNumberInput input,
     .stTextArea textarea {
-        border-radius: 8px;
-        border: 1px solid #D0D7E6;
-        color: #1A237E !important;
-        background-color: white !important;
+        background-color: #161B22 !important;
+        color: #E6EDF3 !important;
+        border: 1px solid #30363D !important;
+        border-radius: 8px !important;
     }
 
     /* Selectbox */
     .stSelectbox > div > div {
-        color: #1A237E !important;
-        background-color: white !important;
+        background-color: #161B22 !important;
+        color: #E6EDF3 !important;
+        border: 1px solid #30363D !important;
     }
 
-    /* Success / Error / Warning / Info boxes - text inside */
-    .stAlert, .stAlert p, .stAlert div {
+    /* Dataframe */
+    [data-testid="stDataFrame"] {
+        border: 1px solid #30363D;
         border-radius: 10px;
-        color: #1A1A2E !important;
-    }
-
-    /* Divider */
-    hr {
-        border-color: #E3E8F0;
+        overflow: hidden;
     }
 
     /* Expander */
     [data-testid="stExpander"] {
-        background-color: white;
+        background-color: #161B22;
+        border: 1px solid #30363D;
         border-radius: 10px;
-        border: 1px solid #E3E8F0;
-    }
-    [data-testid="stExpander"] * {
-        color: #1A1A2E !important;
     }
 
-    /* General body text - st.write, st.markdown content */
-    .stMarkdown, .stMarkdown p, .stMarkdown li, .stMarkdown div,
-    .stText, p, label, span {
-        color: #1A1A2E !important;
+    /* Success/Error/Warning/Info */
+    .stSuccess {
+        background-color: rgba(0, 255, 136, 0.1) !important;
+        border: 1px solid #00FF88 !important;
+        border-radius: 10px;
+    }
+    .stError {
+        background-color: rgba(255, 23, 68, 0.1) !important;
+        border: 1px solid #FF1744 !important;
+        border-radius: 10px;
+    }
+    .stWarning {
+        background-color: rgba(255, 160, 0, 0.1) !important;
+        border: 1px solid #FFA000 !important;
+        border-radius: 10px;
+    }
+    .stInfo {
+        background-color: rgba(0, 191, 255, 0.1) !important;
+        border: 1px solid #00BFFF !important;
+        border-radius: 10px;
     }
 
-    /* Caption text */
-    .stCaption, [data-testid="stCaptionContainer"] {
-        color: #5C6B89 !important;
+    /* General Text */
+    p, label, span, div {
+        color: #E6EDF3 !important;
     }
-/* Number input - dark mode fix */
-    .stNumberInput input {
-        color: #FFFFFF !important;
-        background-color: #2A2F45 !important;
-        border: 1px solid #4A5568 !important;
+
+    /* Divider */
+    hr {
+        border-color: #30363D !important;
     }
-    .stTextInput input {
-        color: #FFFFFF !important;
-        background-color: #2A2F45 !important;
-        border: 1px solid #4A5568 !important;
-    }
-    .stTextArea textarea {
-        color: #FFFFFF !important;
-        background-color: #2A2F45 !important;
-        border: 1px solid #4A5568 !important;
-    }
-    .stSlider p {
-        color: #FFFFFF !important;
-    }
-    /* Slider label and value */
+
+    /* Slider */
     .stSlider label p {
-        color: #1A1A2E !important;
+        color: #E6EDF3 !important;
         font-weight: 600 !important;
     }
-    .stSlider [data-testid="stTickBarMin"],
-    .stSlider [data-testid="stTickBarMax"] {
-        color: #1A1A2E !important;
+
+    /* Caption */
+    .stCaption {
+        color: #8B949E !important;
     }
-    div[data-testid="stSlider"] > div > div > div {
-        color: #1A1A2E !important;
+
+    /* Checkbox */
+    .stCheckbox label p {
+        color: #E6EDF3 !important;
     }
-    .stSlider span {
-        color: #1A1A2E !important;
+
+    /* Radio */
+    .stRadio label p {
+        color: #E6EDF3 !important;
     }
-    /* Slider current value bubble */
-    .stSlider [data-testid="stThumbValue"] {
-        color: #1A1A2E !important;
-        background-color: #E8EDF5 !important;
-    }
-    .stSlider div[class*="thumb"] {
-        color: #1A1A2E !important;
-    }
-    .stSlider [aria-valuenow] {
-        color: #1A1A2E !important;
-    }
-    /* Force all slider text dark */
-    .stSlider * {
-        color: #1A1A2E !important;
+
+    /* Markdown text */
+    .stMarkdown p {
+        color: #E6EDF3 !important;
     }
 </style>
 """, unsafe_allow_html=True)
+
+# ==========================================
+# AI MODEL
+# ==========================================
+genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+model = genai.GenerativeModel("gemini-2.5-flash")
+
 # ==========================================
 # DATA PERSISTENCE
 # ==========================================
@@ -236,37 +243,8 @@ if "data_loaded" not in st.session_state:
     load_data()
     st.session_state.data_loaded = True
 
-# Helper function to prevent redundant code and excessive API calling
-def fetch_technical_data(symbol, period="1y"):
-    stock = yf.Ticker(symbol)
-    hist = stock.history(period=period)
-    if hist.empty:
-        return None
-    
-    close = hist["Close"]
-    current_price = round(close.iloc[-1], 2)
-    
-    ma50 = close.rolling(50).mean().iloc[-1] if len(close) >= 50 else close.mean()
-    ma200 = close.rolling(200).mean().iloc[-1] if len(close) >= 200 else close.mean()
-    
-    delta = close.diff()
-    gain = delta.where(delta > 0, 0).rolling(14).mean()
-    loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
-    rs = gain / loss
-    rsi = (100 - (100 / (1 + rs))).iloc[-1]
-    
-    trend = "Bullish" if ma50 > ma200 else "Bearish"
-    
-    return {
-        "current_price": current_price,
-        "ma50": round(ma50, 2),
-        "ma200": round(ma200, 2),
-        "rsi": round(rsi, 2),
-        "trend": trend,
-        "hist": hist
-    }
 # ==========================================
-# SHARED STOCK UNIVERSE & SECTOR MAP
+# SHARED DATA
 # ==========================================
 STOCK_UNIVERSE = [
     "RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", "ICICIBANK.NS",
@@ -277,7 +255,7 @@ STOCK_UNIVERSE = [
     "ADANIPORTS.NS", "TATASTEEL.NS", "JSWSTEEL.NS", "HCLTECH.NS",
     "TECHM.NS", "INDUSINDBK.NS", "COALINDIA.NS", "BAJAJFINSV.NS",
     "DRREDDY.NS", "CIPLA.NS", "GRASIM.NS", "HEROMOTOCO.NS",
-    "EICHERMOT.NS", "DIVISLAB.NS", "TATAMOTORS.NS", "M&M.NS", "BPCL.NS"
+    "EICHERMOT.NS", "DIVISLAB.NS", "M&M.NS", "BPCL.NS", "TATAMOTORS.NS"
 ]
 
 SECTOR_MAP = {
@@ -289,2055 +267,1185 @@ SECTOR_MAP = {
     "Metal": ["TATASTEEL.NS", "JSWSTEEL.NS"],
     "Energy": ["RELIANCE.NS", "ONGC.NS", "BPCL.NS", "NTPC.NS", "POWERGRID.NS", "COALINDIA.NS"],
     "Finance": ["BAJFINANCE.NS", "BAJAJFINSV.NS"],
-    "Infra/Cement": ["LT.NS", "ULTRACEMCO.NS", "GRASIM.NS", "ADANIPORTS.NS"],
+    "Infra": ["LT.NS", "ULTRACEMCO.NS", "GRASIM.NS", "ADANIPORTS.NS"],
     "Telecom": ["BHARTIARTL.NS"],
     "Paints": ["ASIANPAINT.NS"],
     "Consumer": ["TITAN.NS"]
 }
-# ==========================================
-# BEST STOCKS SCANNER
-# ==========================================
-st.divider()
-
-if st.button("🔥 Best Stocks Scanner"):
-    stocks = [
-        "RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", "ICICIBANK.NS",
-        "SBIN.NS", "LT.NS", "BHARTIARTL.NS", "ITC.NS", "HINDUNILVR.NS",
-        "KOTAKBANK.NS", "AXISBANK.NS", "BAJFINANCE.NS", "MARUTI.NS",
-        "ASIANPAINT.NS", "SUNPHARMA.NS", "TITAN.NS", "ULTRACEMCO.NS",
-        "WIPRO.NS", "NESTLEIND.NS", "POWERGRID.NS", "NTPC.NS", "ONGC.NS",
-        "ADANIPORTS.NS", "TATASTEEL.NS", "JSWSTEEL.NS", "HCLTECH.NS",
-        "TECHM.NS", "INDUSINDBK.NS", "COALINDIA.NS"
-    ]
-
-    results = []
-
-    with st.spinner("Stocks Scan થઈ રહ્યા છે..."):
-        for symbol in stocks:
-            try:
-                tech_data = fetch_technical_data(symbol)
-                if not tech_data: continue
-                
-                stock = yf.Ticker(symbol)
-                info = stock.info
-
-                pe = info.get("trailingPE", 999)
-                market_cap = info.get("marketCap", 0)
-                
-                rsi = tech_data["rsi"]
-                trend = tech_data["trend"]
-                score = 100
-
-                if pe and pe != 999:
-                    if pe > 40: score -= 20
-                    elif pe > 30: score -= 10
-
-                if market_cap < 100000000000:
-                    score -= 10
-
-                if trend == "Bullish": score += 10
-                else: score -= 10
-
-                if rsi > 70: score -= 10
-                elif rsi < 30: score += 5
-                else: score += 10
-
-                results.append((symbol, score, rsi, trend))
-            except:
-                pass
-
-    results.sort(key=lambda x: x[1], reverse=True)
-
-    st.subheader("🏆 Top Stocks Today")
-    for rank, (symbol, score, rsi, trend) in enumerate(results, start=1):
-        if score >= 100: rating = "🔥 Strong Buy"
-        elif score >= 90: rating = "✅ Buy"
-        elif score >= 75: rating = "🟡 Hold"
-        else: rating = "🔴 Avoid"
-
-        st.write(f"{rank}. {symbol} | {rating} | Score: {score}/100 | RSI: {rsi} | Trend: {trend}")
-        
-    st.success("🤖 AI Premium Scanner Completed")
 
 # ==========================================
-# STOCK ANALYSIS
+# HELPER FUNCTIONS
 # ==========================================
-st.divider()
-
-symbol = st.text_input("Stock Symbol લખો (ઉદાહરણ: RELIANCE.NS)")
-
-if st.button("🔍 Analyze"):
-    if symbol:
-        try:
-            with st.spinner("Data Fetch થઈ રહ્યો છે..."):
-                tech_data = fetch_technical_data(symbol)
-                stock = yf.Ticker(symbol)
-                info = stock.info
-
-            if tech_data:
-                current_price = info.get("currentPrice", tech_data["current_price"])
-                market_cap = info.get("marketCap", "N/A")
-                pe_ratio = info.get("trailingPE", "N/A")
-                ma50 = tech_data["ma50"]
-                ma200 = tech_data["ma200"]
-                rsi = tech_data["rsi"]
-                trend = tech_data["trend"]
-
-                st.subheader("📊 Live Market Data")
-                st.write(f"💰 Current Price: {current_price}")
-                st.write(f"🏢 Market Cap: {market_cap}")
-                st.write(f"📈 P/E Ratio: {pe_ratio}")
-                st.write(f"📊 50 DMA: {ma50}")
-                st.write(f"📊 200 DMA: {ma200}")
-                st.write(f"⚡ RSI: {rsi}")
-                st.write(f"📍 Trend: {trend}")
-
-                prompt = f"""
-તમે Professional Stock Market Analyst છો.
-Stock: {symbol}
-Current Price: {current_price}
-Market Cap: {market_cap}
-PE Ratio: {pe_ratio}
-50 DMA: {ma50}
-200 DMA: {ma200}
-RSI: {rsi}
-Trend: {trend}
-
-ગુજરાતીમાં જવાબ આપો.
-1. કંપનીનું વિશ્લેષણ
-2. મુખ્ય તકો
-3. મુખ્ય જોખમો
-4. લાંબા ગાળાનો અભિપ્રાય
-5. Score /100
-6. BUY / HOLD / AVOID
-7. RSI નું અર્થઘટન
-8. Trend Bullish છે કે Bearish?
-9. Technical Score /100
-
-છેલ્લે લખો: 'આ નાણાકીય સલાહ નથી.'
-"""
-                with st.spinner("AI Analysis કરી રહ્યું છે..."):
-                    response = model.generate_content(prompt)
-
-                st.markdown(response.text)
-            else:
-                st.error("આ સિમ્બોલ માટે ડેટા મળ્યો નથી.")
-        except Exception as e:
-            st.error(f"Error: {e}")
-    else:
-        st.warning("કૃપા કરીને Stock Symbol લખો")
-
-# ==========================================
-# AI PORTFOLIO & ALLOCATOR
-# ==========================================
-st.divider()
-
-if st.button("💼 Create AI Portfolio"):
-    capital = 100000
-    portfolio = [("RELIANCE.NS", 40000), ("TCS.NS", 35000), ("HDFCBANK.NS", 25000)]
-    st.subheader("🤖 AI Portfolio")
-    for stock, amount in portfolio:
-        st.write(f"{stock} → ₹{amount:,}")
-    st.success(f"Total Capital Invested: ₹{capital:,}")
-
-st.divider()
-st.subheader("💼 AI Portfolio Allocator")
-
-capital_input = st.number_input("Investment Amount (₹)", min_value=10000, value=100000, step=10000)
-
-if st.button("🚀 Generate AI Portfolio"):
-    allocation = {
-        "RELIANCE.NS": 0.25, "TCS.NS": 0.20, "HDFCBANK.NS": 0.20,
-        "ICICIBANK.NS": 0.15, "INFY.NS": 0.10, "ITC.NS": 0.10
-    }
-    st.subheader("📊 AI Recommended Portfolio")
-    total = 0
-    for stock, weight in allocation.items():
-        amount = round(capital_input * weight)
-        total += amount
-        st.write(f"✅ {stock} → ₹{amount:,} ({weight*100:.0f}%)")
-    st.success(f"💰 Total Allocated: ₹{total:,}")
-
-# ==========================================
-# UPSTOX INTEGRATION
-# ==========================================
-st.divider()
-
-if st.button("🏦 Check Upstox Account"):
-    token = st.secrets["UPSTOX_ACCESS_TOKEN"]
-    headers = {"Accept": "application/json", "Authorization": f"Bearer {token}"}
-    try:
-        response = requests.get("https://api.upstox.com/v2/user/profile", headers=headers)
-        st.success("✅ Upstox Connected Successfully")
-        st.json(response.json())
-    except Exception as e:
-        st.error(f"Connection Error: {e}")
-
-if st.button("📂 My Holdings"):
-    token = st.secrets["UPSTOX_ACCESS_TOKEN"]
-    headers = {"Accept": "application/json", "Authorization": f"Bearer {token}"}
-    try:
-        response = requests.get("https://api.upstox.com/v2/portfolio/long-term-holdings", headers=headers)
-        st.subheader("📊 My Holdings")
-        st.json(response.json())
-    except Exception as e:
-        st.error(f"Error: {e}")
-                    
-st.write("Token Loaded:", st.secrets["UPSTOX_ACCESS_TOKEN"][:15] + "...")
-
-# ==========================================
-# MARKET INSIGHTS & WATCHLIST
-# ==========================================
-st.divider()
-
-if st.button("🚀 Find Best Opportunities"):
-    opportunities = []
-    stocks = ["RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", "ICICIBANK.NS", "ITC.NS", "LT.NS", "BHARTIARTL.NS", "SUNPHARMA.NS", "TITAN.NS"]
-    
-    with st.spinner("AI Opportunities શોધી રહ્યું છે..."):
-        for symbol in stocks:
-            try:
-                tech_data = fetch_technical_data(symbol)
-                if tech_data:
-                    trend = tech_data["trend"]
-                    score = 90 if trend == "Bullish" else 60
-                    opportunities.append((symbol, score, trend))
-            except:
-                pass
-
-    opportunities.sort(key=lambda x: x[1], reverse=True)
-    st.subheader("🔥 Top Market Opportunities")
-    for rank, (symbol, score, trend) in enumerate(opportunities[:5], start=1):
-        st.write(f"{rank}. {symbol} | Score: {score}/100 | Trend: {trend}")
-    st.success("🤖 AI Opportunity Scan Complete")         
-
-st.divider()
-st.subheader("📊 AI Market Dashboard")
-col1, col2, col3 = st.columns(3)
-col1.metric("Nifty Mood", "Bullish 🟢")
-col2.metric("AI Risk", "Low 🟢")
-col3.metric("Market Trend", "Uptrend 📈")
-st.success("🤖 AI Dashboard Active")
-
-st.divider()
-st.subheader("⭐ AI Watchlist")
-watchlist = st.text_area("Stocks લખો (Comma Separated)", "RELIANCE.NS,TCS.NS,HDFCBANK.NS")
-
-if st.button("📋 Analyze Watchlist"):
-    symbols = watchlist.split(",")
-    for symbol in symbols:
-        try:
-            symbol = symbol.strip()
-            tech_data = fetch_technical_data(symbol)
-            if tech_data:
-                current_price = tech_data["current_price"]
-                trend_status = "Bullish 🟢" if tech_data["trend"] == "Bullish" else "Bearish 🔴"
-                score = 90 if tech_data["trend"] == "Bullish" else 60
-                rating = "🔥 Strong Buy" if score >= 85 else "✅ Buy" if score >= 75 else "🟡 Hold"
-                st.write(f"{symbol} | ₹{current_price} | {trend_status} | {rating}")
-            else:
-                st.warning(f"{symbol} Data Not Available")
-        except:
-            st.warning(f"{symbol} Data Not Available")
-    st.success("🤖 Watchlist Analysis Complete")
-
-st.divider()
-st.subheader("💪 Portfolio Health Score")
-if st.button("📊 Check Portfolio Health"):
-    st.metric("Portfolio Health", "87/100")
-    st.write("Risk Level: Low 🟢")
-    st.write("Diversification: Good ✅")
-    st.success("AI Verdict: Strong Portfolio 🚀")
-
-# ==========================================
-# SWING TRADING & BACKTESTING
-# ==========================================
-st.divider()
-st.subheader("📈 AI Swing Trade Finder")
-
-if st.button("🚀 Find Swing Trades"):
-    swing_trades = []
-    stocks = ["RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", "ICICIBANK.NS", "ITC.NS"]
-
-    with st.spinner("Swing Trades શોધી રહ્યા છીએ..."):
-        for symbol in stocks:
-            try:
-                tech_data = fetch_technical_data(symbol, period="6mo")
-                if tech_data and tech_data["trend"] == "Bullish":
-                    current_price = tech_data["current_price"]
-                    target = round(current_price * 1.05, 2)
-                    stoploss = round(current_price * 0.97, 2)
-                    swing_trades.append((symbol, current_price, target, stoploss))
-            except:
-                pass
-
-    st.subheader("🔥 Top Swing Trades")
-    for symbol, entry, target, stoploss in swing_trades:
-        rr = round((target - entry) / (entry - stoploss), 2)
-        st.write(f"✅ **{symbol}**\n\nEntry: ₹{entry}\n\nTarget: ₹{target}\n\nStop Loss: ₹{stoploss}\n\nRisk/Reward: {rr}")
-    st.success("🤖 Swing Trade Scan Complete")
-
-st.divider()
-st.subheader("📊 Strategy Backtesting Engine")
-
-if st.button("🧪 Run Backtest"):
-    symbol = "RELIANCE.NS"
+def fetch_technical_data(symbol, period="1y"):
     try:
         stock = yf.Ticker(symbol)
-        hist = stock.history(period="3y")
+        hist = stock.history(period=period)
+        if hist.empty:
+            return None
         close = hist["Close"]
-        ma50 = close.rolling(50).mean()
-        ma200 = close.rolling(200).mean()
-
+        current_price = round(close.iloc[-1], 2)
+        ma50 = close.rolling(50).mean().iloc[-1] if len(close) >= 50 else close.mean()
+        ma200 = close.rolling(200).mean().iloc[-1] if len(close) >= 200 else close.mean()
         delta = close.diff()
         gain = delta.where(delta > 0, 0).rolling(14).mean()
         loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
-        rsi_series = 100 - (100 / (1 + (gain / loss)))
-
-        volume = hist["Volume"]
-        avg_volume = volume.rolling(20).mean()
-
-        position, entry_price = False, 0
-        trades, wins, losses, total_profit = 0, 0, 0, 0
-
-        for i in range(200, len(close)):
-            if not position:
-                if (ma50.iloc[i] > ma200.iloc[i] and 45 <= rsi_series.iloc[i] <= 65 and 
-                    volume.iloc[i] > avg_volume.iloc[i] and close.iloc[i] > ma200.iloc[i]):
-                    entry_price = close.iloc[i]
-                    position = True
-            else:
-                profit_pct = ((close.iloc[i] - entry_price) / entry_price) * 100
-                if profit_pct >= 8:
-                    wins += 1; trades += 1; total_profit += profit_pct; position = False
-                elif profit_pct <= -4:
-                    losses += 1; trades += 1; total_profit += profit_pct; position = False
-
-        win_rate = round((wins / trades) * 100, 2) if trades > 0 else 0
-        st.metric("Total Trades", trades)
-        st.metric("Win Rate", f"{win_rate}%")
-        st.metric("Total Return", f"{round(total_profit, 2)}%")
-        st.write(f"✅ Wins: {wins}")
-        st.write(f"❌ Losses: {losses}")
-        
-        verdict = "🔥 Excellent Strategy" if win_rate >= 60 else "✅ Good Strategy" if win_rate >= 50 else "⚠️ Needs Improvement"
-        st.success(f"AI Verdict: {verdict}")
-        st.info("V19 Multi-Filter Strategy Active 🚀")
-    except Exception as e:
-        st.error(f"Backtest Error: {e}")
-                
-st.divider()
-st.subheader("🚀 Momentum Breakout Backtest")
-
-if st.button("🔥 Run Momentum Backtest"):
-    symbol = "ITC.NS"
-    try:
-        stock = yf.Ticker(symbol)
-        hist = stock.history(period="3y")
-        close = hist["Close"]
-        volume = hist["Volume"]
-        ma50 = close.rolling(50).mean()
-        ma200 = close.rolling(200).mean()
-        avg_volume = volume.rolling(20).mean()
-
-        trades, wins, losses, total_profit = 0, 0, 0, 0
-        position, entry_price = False, 0
-
-        for i in range(200, len(close)):
-            breakout_high = close.iloc[i-20:i].max()
-            if not position:
-                if (close.iloc[i] > ma50.iloc[i] and close.iloc[i] > ma200.iloc[i] and 
-                    close.iloc[i] > breakout_high and volume.iloc[i] > avg_volume.iloc[i]):
-                    entry_price = close.iloc[i]
-                    position = True
-            else:
-                profit_pct = ((close.iloc[i] - entry_price) / entry_price) * 100
-                if profit_pct >= 10:
-                    wins += 1; trades += 1; total_profit += profit_pct; position = False
-                elif profit_pct <= -5:
-                    losses += 1; trades += 1; total_profit += profit_pct; position = False
-
-        win_rate = round((wins / trades) * 100, 2) if trades > 0 else 0
-        st.metric("Trades", trades)
-        st.metric("Win Rate", f"{win_rate}%")
-        st.metric("Total Return", f"{round(total_profit, 2)}%")
-        st.write(f"✅ Wins: {wins}")
-        st.write(f"❌ Losses: {losses}")
-        
-        verdict = "🔥 Excellent" if win_rate >= 60 else "✅ Good" if win_rate >= 50 else "⚠️ Weak"
-        st.success(f"Momentum Verdict: {verdict}")
-    except Exception as e:
-        st.error(f"Error: {e}")
-
-st.divider()
-st.subheader("📉 RSI Pullback Backtest")
-
-if st.button("🚀 Run RSI Pullback Backtest"):
-    symbol = "ITC.NS"
-    try:
-        stock = yf.Ticker(symbol)
-        hist = stock.history(period="3y")
-        close = hist["Close"]
-        ma50 = close.rolling(50).mean()
-        ma200 = close.rolling(200).mean()
-
-        delta = close.diff()
-        gain = delta.where(delta > 0, 0).rolling(14).mean()
-        loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
-        rsi = 100 - (100 / (1 + (gain / loss)))
-
-        trades, wins, losses, total_profit = 0, 0, 0, 0
-        position, entry_price = False, 0
-
-        for i in range(200, len(close)):
-            if not position:
-                if ma50.iloc[i] > ma200.iloc[i] and rsi.iloc[i] < 35:
-                    entry_price = close.iloc[i]
-                    position = True
-            else:
-                profit_pct = ((close.iloc[i] - entry_price) / entry_price) * 100
-                if profit_pct >= 8:
-                    wins += 1; trades += 1; total_profit += profit_pct; position = False
-                elif profit_pct <= -4:
-                    losses += 1; trades += 1; total_profit += profit_pct; position = False
-
-        win_rate = round((wins / trades) * 100, 2) if trades > 0 else 0
-        st.metric("Trades", trades)
-        st.metric("Win Rate", f"{win_rate}%")
-        st.metric("Total Return", f"{round(total_profit, 2)}%")
-        st.write(f"✅ Wins: {wins}")
-        st.write(f"❌ Losses: {losses}")
-    except Exception as e:
-        st.error(f"Error: {e}")
-                
-# ==========================================
-# AI TRADE ADVISOR (V24)
-# ==========================================
-st.divider()
-st.subheader("🤖 AI Trade Advisor")
-
-trade_symbol = st.text_input(
-    "Stock Symbol for AI Advice",
-    value="RELIANCE.NS"
-)
-
-if "trade_journal" not in st.session_state:
-    st.session_state.trade_journal = []
-
-if st.button("🚀 Generate AI Trade Setup"):
-    try:
-        tech_data = fetch_technical_data(trade_symbol)
-        if tech_data:
-            current_price = tech_data["current_price"]
-            ma50 = tech_data["ma50"]
-            ma200 = tech_data["ma200"]
-            rsi = tech_data["rsi"]
-
-            score = 50
-            if ma50 > ma200: score += 20
-            if rsi > 55: score += 15
-            elif rsi < 30: score += 10
-            if current_price > ma50: score += 15
-
-            if score >= 80: advice = "🔥 BUY"
-            elif score >= 65: advice = "🟡 HOLD"
-            else: advice = "🔴 AVOID"
-
-            entry = current_price
-            target = round(current_price * 1.08, 2)
-            stoploss = round(current_price * 0.95, 2)
-
-            st.success(f"Recommendation: {advice}")
-            st.write(f"AI Score: {score}/100")
-            st.write(f"RSI: {rsi}")
-            st.write(f"🎯 Entry: ₹{entry}")
-            st.write(f"🚀 Target: ₹{target}")
-            st.write(f"🛑 Stop Loss: ₹{stoploss}")
-
-            st.session_state.last_trade = {
-                "Date": str(datetime.date.today()),
-                "Stock": trade_symbol,
-                "Score": score,
-                "Advice": advice,
-                "Entry": entry
-            }
-    except Exception as e:
-        st.error(f"Error: {e}")
-
-if "last_trade" in st.session_state:
-    if st.button("💾 Save Latest Trade"):
-        st.session_state.trade_journal.append(st.session_state.last_trade)
-        st.success("✅ Trade Saved Successfully")
-        del st.session_state.last_trade
-
-# ==========================================
-# TRADE JOURNAL (V25)
-# ==========================================
-st.divider()
-st.subheader("📒 Trade Journal")
-
-if len(st.session_state.trade_journal) > 0:
-    journal_df = pd.DataFrame(st.session_state.trade_journal)
-    st.dataframe(journal_df, use_container_width=True)
-    st.metric("Saved Trades", len(st.session_state.trade_journal))
-    avg_score = round(journal_df["Score"].mean(), 2)
-    st.metric("Average AI Score", avg_score)
-    
-# ==========================================
-# PAPER TRADING SIMULATOR (V26)
-# ==========================================
-st.divider()
-st.subheader("💰 Paper Trading Simulator")
-
-st.metric("Available Cash", f"₹{st.session_state.paper_cash:,.2f}")
-
-col_pt1, col_pt2, col_pt3 = st.columns(3)
-with col_pt1:
-    pt_symbol = st.text_input("Symbol (Buy)", value="RELIANCE.NS", key="pt_buy_symbol")
-with col_pt2:
-    pt_qty = st.number_input("Quantity", min_value=1, value=1, step=1, key="pt_buy_qty")
-with col_pt3:
-    st.write("")
-    st.write("")
-    pt_buy_btn = st.button("✅ Buy")
-
-if pt_buy_btn:
-    try:
-        tech_data = fetch_technical_data(pt_symbol)
-        if tech_data:
-            price = tech_data["current_price"]
-            cost = price * pt_qty
-            if cost > st.session_state.paper_cash:
-                st.error("❌ Insufficient Cash for this Trade")
-            else:
-                st.session_state.paper_cash -= cost
-                if pt_symbol in st.session_state.paper_portfolio:
-                    existing = st.session_state.paper_portfolio[pt_symbol]
-                    total_qty = existing["qty"] + pt_qty
-                    total_cost = (existing["qty"] * existing["avg_price"]) + cost
-                    new_avg = total_cost / total_qty
-                    st.session_state.paper_portfolio[pt_symbol] = {"qty": total_qty, "avg_price": new_avg}
-                else:
-                    st.session_state.paper_portfolio[pt_symbol] = {"qty": pt_qty, "avg_price": price}
-                save_data()
-                st.success(f"✅ Bought {pt_qty} of {pt_symbol} @ ₹{price}")
-        else:
-            st.error("ડેટા મળ્યો નથી")
-    except Exception as e:
-        st.error(f"Error: {e}")
-
-# ==========================================
-# SELL POSITION (V27)
-# ==========================================
-st.divider()
-st.subheader("📤 Sell Position")
-
-if st.session_state.paper_portfolio:
-    sell_symbol = st.selectbox("Stock વેચવા માટે પસંદ કરો", list(st.session_state.paper_portfolio.keys()), key="sell_symbol")
-    holding = st.session_state.paper_portfolio[sell_symbol]
-    st.write(f"Held Quantity: {holding['qty']} | Avg Price: ₹{round(holding['avg_price'],2)}")
-
-    sell_qty = st.number_input("Sell Quantity", min_value=1, max_value=int(holding["qty"]), value=int(holding["qty"]), step=1, key="sell_qty")
-
-    if st.button("🔴 Sell Position"):
-        try:
-            tech_data = fetch_technical_data(sell_symbol)
-            if tech_data:
-                current_price = tech_data["current_price"]
-                proceeds = current_price * sell_qty
-                profit = (current_price - holding["avg_price"]) * sell_qty
-                profit_pct = round(((current_price - holding["avg_price"]) / holding["avg_price"]) * 100, 2)
-
-                st.session_state.paper_cash += proceeds
-
-                st.session_state.paper_trade_history.append({
-                    "Date": str(datetime.date.today()),
-                    "Stock": sell_symbol,
-                    "Qty": sell_qty,
-                    "Buy Price": round(holding["avg_price"], 2),
-                    "Sell Price": current_price,
-                    "P&L": round(profit, 2),
-                    "P&L %": profit_pct
-                })
-
-                remaining_qty = holding["qty"] - sell_qty
-                if remaining_qty <= 0:
-                    del st.session_state.paper_portfolio[sell_symbol]
-                else:
-                    st.session_state.paper_portfolio[sell_symbol]["qty"] = remaining_qty
-
-                save_data()
-
-                if profit >= 0:
-                    st.success(f"✅ Sold {sell_qty} {sell_symbol} @ ₹{current_price} | Profit: ₹{round(profit,2)} ({profit_pct}%)")
-                else:
-                    st.error(f"🔴 Sold {sell_qty} {sell_symbol} @ ₹{current_price} | Loss: ₹{round(profit,2)} ({profit_pct}%)")
-            else:
-                st.error("ડેટા મળ્યો નથી")
-        except Exception as e:
-            st.error(f"Error: {e}")
-else:
-    st.info("હાલમાં તમારી પાસે કોઈ Holdings નથી.")
-
-# ==========================================
-# LIVE PORTFOLIO TRACKER (V28)
-# ==========================================
-st.divider()
-st.subheader("📡 Live Portfolio Tracker")
-
-if st.session_state.paper_portfolio:
-    if st.button("🔄 Refresh Live Prices"):
-        rows = []
-        total_invested = 0
-        total_current = 0
-
-        with st.spinner("Live Prices ફેચ થઈ રહ્યા છે..."):
-            for sym, pos in st.session_state.paper_portfolio.items():
-                try:
-                    tech_data = fetch_technical_data(sym)
-                    cp = tech_data["current_price"] if tech_data else pos["avg_price"]
-                except:
-                    cp = pos["avg_price"]
-
-                invested = pos["qty"] * pos["avg_price"]
-                current_val = pos["qty"] * cp
-                pnl = current_val - invested
-                pnl_pct = round((pnl / invested) * 100, 2) if invested > 0 else 0
-
-                total_invested += invested
-                total_current += current_val
-
-                rows.append({
-                    "Stock": sym,
-                    "Qty": pos["qty"],
-                    "Avg Price": round(pos["avg_price"], 2),
-                    "Current Price": cp,
-                    "Invested": round(invested, 2),
-                    "Current Value": round(current_val, 2),
-                    "Unrealized P&L": round(pnl, 2),
-                    "P&L %": pnl_pct
-                })
-
-        live_df = pd.DataFrame(rows)
-        st.dataframe(live_df, use_container_width=True)
-
-        total_pnl = total_current - total_invested
-        total_pnl_pct = round((total_pnl / total_invested) * 100, 2) if total_invested > 0 else 0
-
-        col_lp1, col_lp2, col_lp3 = st.columns(3)
-        col_lp1.metric("Total Invested", f"₹{total_invested:,.2f}")
-        col_lp2.metric("Current Value", f"₹{total_current:,.2f}")
-        col_lp3.metric("Unrealized P&L", f"₹{total_pnl:,.2f}", f"{total_pnl_pct}%")
-
-        st.metric("Total Portfolio Value (Cash + Holdings)", f"₹{(st.session_state.paper_cash + total_current):,.2f}")
-else:
-    st.info("Portfolio Empty છે. પહેલા Stocks ખરીદો.")
-    # ==========================================
-# PAPER PORTFOLIO HOLDINGS TABLE (V29)
-# ==========================================
-st.divider()
-st.subheader("📋 Current Holdings")
-
-if st.session_state.paper_portfolio:
-    holdings_rows = []
-    for sym, pos in st.session_state.paper_portfolio.items():
-        holdings_rows.append({
-            "Stock": sym,
-            "Qty": pos["qty"],
-            "Avg Price": round(pos["avg_price"], 2),
-            "Invested Amount": round(pos["qty"] * pos["avg_price"], 2)
-        })
-    holdings_df = pd.DataFrame(holdings_rows)
-    st.dataframe(holdings_df, use_container_width=True)
-else:
-    st.info("કોઈ Holdings નથી.")
-
-# ==========================================
-# RESET PAPER TRADING (V30)
-# ==========================================
-st.divider()
-st.subheader("♻️ Reset Paper Trading Account")
-
-if st.button("🔄 Reset Account"):
-    st.session_state.paper_cash = 100000.0
-    st.session_state.paper_portfolio = {}
-    st.session_state.paper_trade_history = []
-    save_data()
-    st.success("✅ Paper Trading Account Reset Done. Cash: ₹1,00,000")
-
-# ==========================================
-# AI MARKET SENTIMENT (V33)
-# ==========================================
-st.divider()
-st.subheader("🧠 AI Market Sentiment")
-
-if st.button("🌐 Get AI Market Sentiment"):
-    try:
-        nifty_data = fetch_technical_data("^NSEI", period="6mo")
-
-        if nifty_data:
-            nifty_trend = nifty_data["trend"]
-            nifty_rsi = nifty_data["rsi"]
-            nifty_price = nifty_data["current_price"]
-
-            mood = "Bullish 🟢" if nifty_trend == "Bullish" else "Bearish 🔴"
-
-            col_s1, col_s2, col_s3 = st.columns(3)
-            col_s1.metric("Nifty Price", nifty_price)
-            col_s2.metric("Nifty RSI", nifty_rsi)
-            col_s3.metric("Market Mood", mood)
-
-            sentiment_prompt = f"""
-તમે Professional Market Strategist છો.
-Nifty 50 Current Price: {nifty_price}
-Nifty Trend: {nifty_trend}
-Nifty RSI: {nifty_rsi}
-
-ગુજરાતીમાં Short Summary આપો (5-6 lines):
-1. Overall Market Sentiment - Bullish/Bearish/Neutral
-2. શા માટે
-3. Traders માટે ટૂંકી Strategy Suggestion
-4. Caution Points
-
-છેલ્લે લખો: 'આ નાણાકીય સલાહ નથી.'
-"""
-            with st.spinner("AI Market Sentiment Analyze કરી રહ્યું છે..."):
-                sentiment_response = model.generate_content(sentiment_prompt)
-
-            st.markdown("### 🤖 AI Market Mood Summary")
-            st.markdown(sentiment_response.text)
-        else:
-            st.error("Nifty Data Fetch ન થયો.")
-    except Exception as e:
-        st.error(f"Error: {e}")
-
-# ==========================================
-# EQUITY CURVE (V34)
-# ==========================================
-st.divider()
-st.subheader("📈 Equity Curve & Drawdown")
-
-current_holdings_value = 0
-for sym, pos in st.session_state.paper_portfolio.items():
-    try:
-        tech_data = fetch_technical_data(sym)
-        cp = tech_data["current_price"] if tech_data else pos["avg_price"]
+        rs = gain / loss
+        rsi = (100 - (100 / (1 + rs))).iloc[-1]
+        trend = "Bullish" if ma50 > ma200 else "Bearish"
+        return {
+            "current_price": current_price,
+            "ma50": round(ma50, 2),
+            "ma200": round(ma200, 2),
+            "rsi": round(rsi, 2),
+            "trend": trend,
+            "hist": hist
+        }
     except:
-        cp = pos["avg_price"]
-    current_holdings_value += cp * pos["qty"]
+        return None
 
-current_total_value = round(st.session_state.paper_cash + current_holdings_value, 2)
+def calculate_charges(buy_price, sell_price, qty, slippage_pct=0.02):
+    buy_value = buy_price * qty
+    sell_value = sell_price * qty
+    gross_pnl = sell_value - buy_value
 
-col_eq1, col_eq2 = st.columns(2)
-with col_eq1:
-    st.metric("Current Portfolio Value", f"₹{current_total_value:,.2f}")
-with col_eq2:
-    if st.button("📸 Record Snapshot (Today)"):
-        today_str = str(datetime.date.today())
-        existing_dates = [e["Date"] for e in st.session_state.equity_curve]
-        if today_str in existing_dates:
-            for e in st.session_state.equity_curve:
-                if e["Date"] == today_str:
-                    e["Value"] = current_total_value
+    # Upstox Equity Delivery - Official Charges
+    brokerage = 0  # Free delivery
+    stt = (buy_value + sell_value) * 0.001
+    exchange_charges = (buy_value + sell_value) * 0.0000335
+    sebi_charges = (buy_value + sell_value) * 0.000001
+    gst = (brokerage + exchange_charges + sebi_charges) * 0.18
+    stamp_duty = buy_value * 0.00015
+    slippage = (buy_value + sell_value) * (slippage_pct / 100)
+
+    total_charges = round(stt + exchange_charges + sebi_charges + gst + stamp_duty + slippage, 2)
+    net_pnl = round(gross_pnl - total_charges, 2)
+    net_pnl_pct = round((net_pnl / buy_value) * 100, 2) if buy_value > 0 else 0
+
+    return {
+        "buy_value": round(buy_value, 2),
+        "sell_value": round(sell_value, 2),
+        "gross_pnl": round(gross_pnl, 2),
+        "brokerage": 0,
+        "stt": round(stt, 2),
+        "exchange_charges": round(exchange_charges, 4),
+        "sebi_charges": round(sebi_charges, 4),
+        "gst": round(gst, 4),
+        "stamp_duty": round(stamp_duty, 2),
+        "slippage": round(slippage, 2),
+        "total_charges": total_charges,
+        "net_pnl": net_pnl,
+        "net_pnl_pct": net_pnl_pct
+    }
+
+# ==========================================
+# TITLE + TABS
+# ==========================================
+st.title("📈 Gandiv AI Trading Terminal")
+
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    "🏠 Dashboard",
+    "💰 Trading",
+    "🔍 Scanners",
+    "🤖 AI Tools",
+    "📊 Analytics"
+])
+# ==========================================
+# TAB 1: DASHBOARD
+# ==========================================
+with tab1:
+    st.subheader("🏠 Market Dashboard")
+
+    # Portfolio Summary
+    dash_holdings_value = 0
+    for sym, pos in st.session_state.paper_portfolio.items():
+        try:
+            td = fetch_technical_data(sym)
+            cp = td["current_price"] if td else pos["avg_price"]
+        except:
+            cp = pos["avg_price"]
+        dash_holdings_value += cp * pos["qty"]
+
+    dash_total = round(st.session_state.paper_cash + dash_holdings_value, 2)
+    dash_invested = sum(pos["qty"] * pos["avg_price"] for pos in st.session_state.paper_portfolio.values())
+    dash_pnl = round(dash_holdings_value - dash_invested, 2)
+    dash_pnl_pct = round((dash_pnl / dash_invested) * 100, 2) if dash_invested > 0 else 0
+
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("💰 Total Value", f"₹{dash_total:,.2f}")
+    col2.metric("📈 Holdings", f"₹{dash_holdings_value:,.2f}")
+    col3.metric("💵 Cash", f"₹{st.session_state.paper_cash:,.2f}")
+    if dash_pnl >= 0:
+        col4.metric("📊 Unrealized P&L", f"₹{dash_pnl:,.2f}", f"+{dash_pnl_pct}%")
+    else:
+        col4.metric("📊 Unrealized P&L", f"₹{dash_pnl:,.2f}", f"{dash_pnl_pct}%")
+
+    st.divider()
+
+    col_d1, col_d2 = st.columns(2)
+
+    with col_d1:
+        st.markdown("#### 🌐 Market Pulse")
+        if st.button("📡 Check Nifty", key="dash_nifty"):
+            try:
+                nifty = fetch_technical_data("^NSEI", period="6mo")
+                if nifty:
+                    mood = "🟢 Bullish" if nifty["trend"] == "Bullish" else "🔴 Bearish"
+                    n1, n2, n3 = st.columns(3)
+                    n1.metric("Nifty", f"{nifty['current_price']}")
+                    n2.metric("RSI", f"{nifty['rsi']}")
+                    n3.metric("Trend", mood)
+            except Exception as e:
+                st.error(f"Error: {e}")
+
+    with col_d2:
+        st.markdown("#### 🤖 Bot Status")
+        pos_count = len(st.session_state.paper_portfolio)
+        if pos_count >= 5:
+            st.error(f"🔴 Portfolio Full ({pos_count}/5)")
+        elif pos_count >= 3:
+            st.warning(f"🟡 {pos_count}/5 Positions Open")
         else:
-            st.session_state.equity_curve.append({"Date": today_str, "Value": current_total_value})
-        save_data()
-        st.success(f"✅ Snapshot Saved: ₹{current_total_value:,.2f} on {today_str}")
+            st.success(f"🟢 {pos_count}/5 - Ready to Trade")
+        if "last_auto_trade_run" in st.session_state:
+            st.caption(f"Last Bot Run: {st.session_state.last_auto_trade_run}")
 
-if len(st.session_state.equity_curve) >= 1:
-    eq_df = pd.DataFrame(st.session_state.equity_curve)
-    eq_df["Date"] = pd.to_datetime(eq_df["Date"])
-    eq_df = eq_df.sort_values("Date")
-    eq_df = eq_df.set_index("Date")
+    st.divider()
 
-    st.markdown("#### 📊 Portfolio Growth Chart")
-    st.line_chart(eq_df["Value"])
-
-    starting_value = eq_df["Value"].iloc[0]
-    eq_df["Profit"] = eq_df["Value"] - starting_value
-    st.markdown("#### 💰 Profit Curve")
-    st.line_chart(eq_df["Profit"])
-
-    eq_df["Peak"] = eq_df["Value"].cummax()
-    eq_df["Drawdown %"] = ((eq_df["Value"] - eq_df["Peak"]) / eq_df["Peak"]) * 100
-    st.markdown("#### 📉 Drawdown")
-    st.line_chart(eq_df["Drawdown %"])
-
-    max_drawdown = round(eq_df["Drawdown %"].min(), 2)
-    total_growth = round(((eq_df["Value"].iloc[-1] - starting_value) / starting_value) * 100, 2) if starting_value > 0 else 0
-
-    col_eq3, col_eq4, col_eq5 = st.columns(3)
-    col_eq3.metric("Starting Value", f"₹{starting_value:,.2f}")
-    col_eq4.metric("Total Growth", f"{total_growth}%")
-    col_eq5.metric("Max Drawdown", f"{max_drawdown}%")
-
-    with st.expander("📋 Snapshot History"):
-        st.dataframe(eq_df[["Value", "Profit", "Drawdown %"]].reset_index(), use_container_width=True)
-
-    if st.button("🗑️ Clear Equity History"):
-        st.session_state.equity_curve = []
-        save_data()
-        st.success("✅ Equity History Cleared")
-else:
-    st.info("હજુ સુધી કોઈ Snapshot નથી. 'Record Snapshot' button click કરી દરરોજ Portfolio Value Save કરો - Equity Curve બનાવવા માટે.")
-
-# ==========================================
-# HEDGE FUND DASHBOARD (V35)
-# ==========================================
-st.divider()
-st.subheader("🏦 Hedge Fund Dashboard")
-st.caption("એક નજરમાં તમારું Portfolio, Market Mood, Risk અને AI Confidence")
-
-if st.button("🔄 Generate Dashboard"):
-    with st.spinner("Dashboard Data Tayar થઈ રહ્યો છે..."):
-        dash_holdings_value = 0
-        position_count = len(st.session_state.paper_portfolio)
+    # Open Positions
+    st.markdown("#### 📋 Open Positions")
+    if st.session_state.paper_portfolio:
         for sym, pos in st.session_state.paper_portfolio.items():
             try:
-                tech_data = fetch_technical_data(sym)
-                cp = tech_data["current_price"] if tech_data else pos["avg_price"]
+                td = fetch_technical_data(sym)
+                cp = td["current_price"] if td else pos["avg_price"]
             except:
                 cp = pos["avg_price"]
-            dash_holdings_value += cp * pos["qty"]
+            pnl = round((cp - pos["avg_price"]) * pos["qty"], 2)
+            pnl_pct = round(((cp - pos["avg_price"]) / pos["avg_price"]) * 100, 2)
+            color = "🟢" if pnl >= 0 else "🔴"
+            c1, c2, c3, c4, c5 = st.columns(5)
+            c1.write(f"**{sym.replace('.NS','')}**")
+            c2.write(f"₹{cp}")
+            c3.write(f"Qty: {pos['qty']}")
+            c4.write(f"{color} ₹{pnl}")
+            c5.write(f"{pnl_pct}%")
+    else:
+        st.info("કોઈ Open Positions નથી.")
 
-        dash_total_value = round(st.session_state.paper_cash + dash_holdings_value, 2)
+    st.divider()
 
-        try:
-            nifty_data = fetch_technical_data("^NSEI", period="6mo")
-            if nifty_data:
-                market_mood = "Bullish 🟢" if nifty_data["trend"] == "Bullish" else "Bearish 🔴"
-                nifty_rsi = nifty_data["rsi"]
+    # Circuit Breaker
+    st.markdown("#### 🚨 Circuit Breaker")
+    if "circuit_breaker_triggered" not in st.session_state:
+        st.session_state.circuit_breaker_triggered = False
+    if "circuit_breaker_date" not in st.session_state:
+        st.session_state.circuit_breaker_date = None
+    if "circuit_breaker_start_value" not in st.session_state:
+        st.session_state.circuit_breaker_start_value = None
+
+    today_str = str(datetime.date.today())
+    if st.session_state.circuit_breaker_date != today_str:
+        st.session_state.circuit_breaker_date = today_str
+        st.session_state.circuit_breaker_start_value = dash_total
+        st.session_state.circuit_breaker_triggered = False
+
+    day_start = st.session_state.circuit_breaker_start_value or dash_total
+    day_change = round(((dash_total - day_start) / day_start) * 100, 2) if day_start > 0 else 0
+
+    cb1, cb2, cb3 = st.columns(3)
+    cb1.metric("Today Start", f"₹{day_start:,.2f}")
+    cb2.metric("Current", f"₹{dash_total:,.2f}")
+    cb3.metric("Today Change", f"{day_change}%")
+
+    if day_change <= -5.0:
+        st.session_state.circuit_breaker_triggered = True
+        st.error("🚨 CIRCUIT BREAKER! Daily -5% exceeded. Trading Blocked.")
+        if st.button("🔓 Override", key="cb_override"):
+            st.session_state.circuit_breaker_triggered = False
+            st.success("✅ Resumed")
+    else:
+        st.success(f"✅ Safe | Today: {day_change}% | Limit: -5.0%")
+
+# ==========================================
+# TAB 2: TRADING
+# ==========================================
+with tab2:
+    st.subheader("💰 Paper Trading Terminal")
+    st.metric("💵 Available Cash", f"₹{st.session_state.paper_cash:,.2f}")
+
+    trade_tab1, trade_tab2, trade_tab3, trade_tab4 = st.tabs([
+        "✅ Buy/Sell", "📡 Live Tracker", "📒 History", "🧮 Calculator"
+    ])
+
+    with trade_tab1:
+        col_buy, col_sell = st.columns(2)
+
+        with col_buy:
+            st.markdown("#### ✅ Buy Stock")
+            pt_symbol = st.text_input("Symbol", value="RELIANCE.NS", key="pt_buy_symbol")
+            pt_qty = st.number_input("Quantity", min_value=1, value=1, step=1, key="pt_buy_qty")
+            st.caption("Upstox Delivery = 0% Brokerage")
+
+            if st.button("✅ Buy Now", key="buy_btn"):
+                try:
+                    td = fetch_technical_data(pt_symbol)
+                    if td:
+                        price = td["current_price"]
+                        cost = round(price * pt_qty, 2)
+                        stamp = round(cost * 0.00015, 2)
+                        total_cost = round(cost + stamp, 2)
+
+                        if total_cost > st.session_state.paper_cash:
+                            st.error(f"❌ Cash ઓછું! જોઈએ: ₹{total_cost:,.2f}")
+                        else:
+                            st.session_state.paper_cash -= total_cost
+                            if pt_symbol in st.session_state.paper_portfolio:
+                                ex = st.session_state.paper_portfolio[pt_symbol]
+                                total_qty = ex["qty"] + pt_qty
+                                new_avg = ((ex["qty"] * ex["avg_price"]) + cost) / total_qty
+                                st.session_state.paper_portfolio[pt_symbol] = {
+                                    "qty": total_qty, "avg_price": round(new_avg, 2)
+                                }
+                            else:
+                                st.session_state.paper_portfolio[pt_symbol] = {
+                                    "qty": pt_qty, "avg_price": price
+                                }
+                            save_data()
+                            st.success(f"✅ BOUGHT {pt_qty}x {pt_symbol} @ ₹{price}")
+                            st.caption(f"Stamp Duty: ₹{stamp} | Total Cost: ₹{total_cost}")
+                    else:
+                        st.error("Data મળ્યો નથી")
+                except Exception as e:
+                    st.error(f"Error: {e}")
+
+        with col_sell:
+            st.markdown("#### 🔴 Sell Stock")
+            if st.session_state.paper_portfolio:
+                sell_symbol = st.selectbox(
+                    "Stock", list(st.session_state.paper_portfolio.keys()), key="sell_sym"
+                )
+                holding = st.session_state.paper_portfolio[sell_symbol]
+                st.caption(f"Held: {holding['qty']} | Avg: ₹{round(holding['avg_price'],2)}")
+                sell_qty = st.number_input(
+                    "Qty", min_value=1, max_value=int(holding["qty"]),
+                    value=int(holding["qty"]), key="sell_qty"
+                )
+                slip_pct = st.slider("Slippage %", 0.0, 0.1, 0.02, 0.01, key="slip_pct")
+                st.caption(f"Slippage: {slip_pct}%")
+
+                if st.button("🔴 Sell Now", key="sell_btn"):
+                    try:
+                        td = fetch_technical_data(sell_symbol)
+                        if td:
+                            cp = td["current_price"]
+                            charges = calculate_charges(
+                                holding["avg_price"], cp, sell_qty, slip_pct
+                            )
+                            proceeds = cp * sell_qty
+                            st.session_state.paper_cash += proceeds
+
+                            st.session_state.paper_trade_history.append({
+                                "Date": str(datetime.date.today()),
+                                "Stock": sell_symbol.replace(".NS",""),
+                                "Qty": sell_qty,
+                                "Buy ₹": round(holding["avg_price"], 2),
+                                "Sell ₹": cp,
+                                "Gross P&L": charges["gross_pnl"],
+                                "Charges": charges["total_charges"],
+                                "Net P&L": charges["net_pnl"],
+                                "Net %": charges["net_pnl_pct"]
+                            })
+
+                            remaining = holding["qty"] - sell_qty
+                            if remaining <= 0:
+                                del st.session_state.paper_portfolio[sell_symbol]
+                            else:
+                                st.session_state.paper_portfolio[sell_symbol]["qty"] = remaining
+
+                            save_data()
+
+                            if charges["net_pnl"] >= 0:
+                                st.success(f"🟢 SOLD {sell_qty}x {sell_symbol} @ ₹{cp}")
+                            else:
+                                st.error(f"🔴 SOLD {sell_qty}x {sell_symbol} @ ₹{cp}")
+
+                            r1, r2, r3 = st.columns(3)
+                            r1.metric("Gross P&L", f"₹{charges['gross_pnl']}")
+                            r2.metric("Total Charges", f"₹{charges['total_charges']}")
+                            r3.metric("Net P&L", f"₹{charges['net_pnl']}",
+                                     f"{charges['net_pnl_pct']}%")
+
+                            with st.expander("📋 Charge Breakdown"):
+                                st.write(f"🏦 Brokerage: ₹0 (Upstox Free)")
+                                st.write(f"📊 STT: ₹{charges['stt']}")
+                                st.write(f"🏛️ Exchange: ₹{charges['exchange_charges']}")
+                                st.write(f"📋 SEBI: ₹{charges['sebi_charges']}")
+                                st.write(f"🧾 GST: ₹{charges['gst']}")
+                                st.write(f"📮 Stamp Duty: ₹{charges['stamp_duty']}")
+                                st.write(f"⚡ Slippage ({slip_pct}%): ₹{charges['slippage']}")
+                                st.write(f"**💰 Total: ₹{charges['total_charges']}**")
+                        else:
+                            st.error("Data મળ્યો નથી")
+                    except Exception as e:
+                        st.error(f"Error: {e}")
             else:
-                market_mood = "Unknown ⚪"
-                nifty_rsi = 50
-        except:
-            market_mood = "Unknown ⚪"
-            nifty_rsi = 50
-
-        if position_count == 0:
-            risk_level = "No Open Positions ⚪"
-        elif position_count <= 2:
-            risk_level = "High (Low Diversification) 🔴"
-        elif position_count <= 4:
-            risk_level = "Medium 🟡"
-        else:
-            risk_level = "Low (Well Diversified) 🟢"
-
-        if nifty_rsi > 70:
-            risk_level += " | Market Overbought ⚠️"
-        elif nifty_rsi < 30:
-            risk_level += " | Market Oversold ⚠️"
-
-        best_opportunity = "Scanning..."
-        opp_stocks = ["RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "ICICIBANK.NS", "INFY.NS", "ITC.NS", "LT.NS", "SUNPHARMA.NS"]
-        best_score = -999
-        for sym in opp_stocks:
-            try:
-                td = fetch_technical_data(sym)
-                if td:
-                    sc = 50
-                    if td["trend"] == "Bullish": sc += 25
-                    if 45 <= td["rsi"] <= 65: sc += 15
-                    if td["current_price"] > td["ma50"]: sc += 10
-                    if sc > best_score:
-                        best_score = sc
-                        best_opportunity = f"{sym} (Score: {sc}/100)"
-            except:
-                pass
-
-        ai_confidence = 50
-        if "Bullish" in market_mood:
-            ai_confidence += 20
-        else:
-            ai_confidence -= 10
-        if best_score >= 75:
-            ai_confidence += 20
-        elif best_score >= 60:
-            ai_confidence += 10
-        ai_confidence = max(0, min(100, ai_confidence))
-
-        col_h1, col_h2, col_h3 = st.columns(3)
-        col_h1.metric("💰 Portfolio Value", f"₹{dash_total_value:,.2f}")
-        col_h2.metric("🌐 Market Mood", market_mood)
-        col_h3.metric("🤖 AI Confidence", f"{ai_confidence}/100")
-
-        col_h4, col_h5 = st.columns(2)
-        col_h4.metric("🔥 Best Opportunity", best_opportunity)
-        col_h5.metric("🛡️ Risk Level", risk_level)
+                st.info("કોઈ Holdings નથી.")
 
         st.divider()
-        st.write(f"📊 Open Positions: {position_count}")
-        st.write(f"💵 Available Cash: ₹{st.session_state.paper_cash:,.2f}")
-        st.write(f"📈 Holdings Value: ₹{dash_holdings_value:,.2f}")
-        st.write(f"⚡ Nifty RSI: {nifty_rsi}")
+        st.markdown("#### ♻️ Reset Account")
+        if st.button("🔄 Reset Paper Trading", key="reset_btn"):
+            st.session_state.paper_cash = 100000.0
+            st.session_state.paper_portfolio = {}
+            st.session_state.paper_trade_history = []
+            save_data()
+            st.success("✅ Reset! Cash: ₹1,00,000")
 
-        if ai_confidence >= 70:
-            st.success("🤖 AI Verdict: Favorable Conditions for Trading 🚀")
-        elif ai_confidence >= 50:
-            st.warning("🤖 AI Verdict: Neutral - Trade with Caution 🟡")
+    with trade_tab2:
+        st.markdown("#### 📡 Live Portfolio Tracker")
+        if st.session_state.paper_portfolio:
+            if st.button("🔄 Refresh Prices", key="refresh_btn"):
+                rows = []
+                total_inv = 0
+                total_cur = 0
+                with st.spinner("Live prices..."):
+                    for sym, pos in st.session_state.paper_portfolio.items():
+                        try:
+                            td = fetch_technical_data(sym)
+                            cp = td["current_price"] if td else pos["avg_price"]
+                        except:
+                            cp = pos["avg_price"]
+                        inv = pos["qty"] * pos["avg_price"]
+                        cur = pos["qty"] * cp
+                        pnl = cur - inv
+                        pnl_pct = round((pnl/inv)*100, 2) if inv > 0 else 0
+                        charges = calculate_charges(pos["avg_price"], cp, pos["qty"])
+                        total_inv += inv
+                        total_cur += cur
+                        rows.append({
+                            "Stock": sym.replace(".NS",""),
+                            "Qty": pos["qty"],
+                            "Avg ₹": round(pos["avg_price"],2),
+                            "Current ₹": cp,
+                            "Invested": f"₹{round(inv,2):,}",
+                            "Value": f"₹{round(cur,2):,}",
+                            "Gross P&L": f"₹{round(pnl,2)}",
+                            "Charges": f"₹{charges['total_charges']}",
+                            "Net P&L": f"₹{charges['net_pnl']}",
+                            "Net %": f"{charges['net_pnl_pct']}%"
+                        })
+
+                st.dataframe(rows, use_container_width=True)
+                total_pnl = total_cur - total_inv
+                t1, t2, t3 = st.columns(3)
+                t1.metric("Invested", f"₹{total_inv:,.2f}")
+                t2.metric("Current", f"₹{total_cur:,.2f}")
+                t3.metric("Total P&L", f"₹{round(total_pnl,2):,.2f}")
         else:
-            st.error("🤖 AI Verdict: Unfavorable - Defensive Stance Recommended 🔴")
-else:
-    st.info("Dashboard Data જોવા માટે 'Generate Dashboard' button click કરો.")
-# ==========================================
-# AUTO WATCHLIST SCANNER (V36)
-# ==========================================
-st.divider()
-st.subheader("🔍 Auto Watchlist Scanner")
-st.caption("દરરોજ Top Breakout, Swing અને Momentum Stocks Scan કરો")
+            st.info("Portfolio Empty")
 
-if st.button("🚀 Run Auto Scanner (Top 5 Each)"):
+    with trade_tab3:
+        st.markdown("#### 📒 Trade History (Net of Charges)")
+        if st.session_state.paper_trade_history:
+            hist_df = pd.DataFrame(st.session_state.paper_trade_history)
+            st.dataframe(hist_df, use_container_width=True)
 
-    breakout_results = []
-    swing_results = []
-    momentum_results = []
+            if "Net P&L" in hist_df.columns:
+                total_net = hist_df["Net P&L"].sum()
+                total_charges = hist_df["Charges"].sum() if "Charges" in hist_df.columns else 0
+                wins = len(hist_df[hist_df["Net P&L"] > 0])
+                losses = len(hist_df[hist_df["Net P&L"] <= 0])
+                wr = round((wins/len(hist_df))*100, 2) if len(hist_df) > 0 else 0
 
-    with st.spinner(f"{len(STOCK_UNIVERSE)} Stocks Scan થઈ રહ્યા છે... થોડો સમય લાગશે"):
-        for symbol in STOCK_UNIVERSE:
-            try:
-                td = fetch_technical_data(symbol, period="6mo")
-                if not td:
-                    continue
-
-                hist = td["hist"]
-                close = hist["Close"]
-                volume = hist["Volume"]
-
-                current_price = td["current_price"]
-                ma50 = td["ma50"]
-                ma200 = td["ma200"]
-                rsi = td["rsi"]
-                trend = td["trend"]
-
-                avg_volume = volume.rolling(20).mean().iloc[-1]
-                current_volume = volume.iloc[-1]
-
-                recent_high = close.iloc[-21:-1].max()
-                if current_price > recent_high and current_volume > avg_volume:
-                    breakout_strength = round(((current_price - recent_high) / recent_high) * 100, 2)
-                    breakout_results.append({
-                        "Stock": symbol,
-                        "Price": current_price,
-                        "Breakout %": breakout_strength,
-                        "Volume vs Avg": round(current_volume / avg_volume, 2) if avg_volume > 0 else 0
-                    })
-
-                if trend == "Bullish" and 45 <= rsi <= 65 and current_price > ma50:
-                    target = round(current_price * 1.05, 2)
-                    stoploss = round(current_price * 0.97, 2)
-                    swing_results.append({
-                        "Stock": symbol,
-                        "Entry": current_price,
-                        "Target": target,
-                        "Stop Loss": stoploss,
-                        "RSI": rsi
-                    })
-
-                if current_price > ma50 and current_price > ma200 and rsi > 60 and current_volume > avg_volume:
-                    momentum_score = round(rsi + (current_volume / avg_volume if avg_volume > 0 else 1) * 10, 2)
-                    momentum_results.append({
-                        "Stock": symbol,
-                        "Price": current_price,
-                        "RSI": rsi,
-                        "Momentum Score": momentum_score
-                    })
-
-            except:
-                pass
-
-    breakout_results.sort(key=lambda x: x["Breakout %"], reverse=True)
-    swing_results.sort(key=lambda x: x["RSI"], reverse=True)
-    momentum_results.sort(key=lambda x: x["Momentum Score"], reverse=True)
-
-    top_breakouts = breakout_results[:5]
-    top_swings = swing_results[:5]
-    top_momentum = momentum_results[:5]
-
-    st.markdown("### 🚀 Top 5 Breakout Stocks")
-    if top_breakouts:
-        st.dataframe(pd.DataFrame(top_breakouts), use_container_width=True)
-    else:
-        st.info("આજે કોઈ Breakout Setup મળ્યું નથી.")
-
-    st.markdown("### 📈 Top 5 Swing Trades")
-    if top_swings:
-        st.dataframe(pd.DataFrame(top_swings), use_container_width=True)
-    else:
-        st.info("આજે કોઈ Swing Setup મળ્યું નથી.")
-
-    st.markdown("### 🔥 Top 5 Momentum Stocks")
-    if top_momentum:
-        st.dataframe(pd.DataFrame(top_momentum), use_container_width=True)
-    else:
-        st.info("આજે કોઈ Momentum Setup મળ્યું નથી.")
-
-    st.success(f"✅ Scan Complete | Total Stocks Scanned: {len(STOCK_UNIVERSE)}")
-    st.caption("⚠️ આ ફક્ત Technical Scan છે, Financial Advice નથી. પોતાનું Research કરો.")
-
-    st.session_state.last_scan = {
-        "Date": str(datetime.date.today()),
-        "Breakouts": top_breakouts,
-        "Swings": top_swings,
-        "Momentum": top_momentum
-    }
-else:
-    st.info(f"'Run Auto Scanner' button click કરો - {len(STOCK_UNIVERSE)} NSE Stocks Scan થશે.")
-
-if "last_scan" in st.session_state:
-    with st.expander(f"📅 Last Scan Date: {st.session_state.last_scan['Date']}"):
-        st.write(f"Breakouts Found: {len(st.session_state.last_scan['Breakouts'])}")
-        st.write(f"Swing Setups Found: {len(st.session_state.last_scan['Swings'])}")
-        st.write(f"Momentum Setups Found: {len(st.session_state.last_scan['Momentum'])}")
-
-# ==========================================
-# SECTOR ROTATION AI (V37)
-# ==========================================
-st.divider()
-st.subheader("🔄 Sector Rotation AI")
-st.caption("કયો Sector Strong છે, કયો Weak - Sector-wise Trend Scan")
-
-if st.button("🔄 Scan All Sectors"):
-    sector_results = []
-
-    with st.spinner("તમામ Sectors Scan થઈ રહ્યા છે..."):
-        for sector, stocks in SECTOR_MAP.items():
-            bullish_count = 0
-            total_count = 0
-            rsi_sum = 0
-
-            for symbol in stocks:
-                try:
-                    td = fetch_technical_data(symbol, period="6mo")
-                    if not td:
-                        continue
-                    total_count += 1
-                    rsi_sum += td["rsi"]
-                    if td["trend"] == "Bullish":
-                        bullish_count += 1
-                except:
-                    pass
-
-            if total_count > 0:
-                bullish_pct = round((bullish_count / total_count) * 100, 1)
-                avg_rsi = round(rsi_sum / total_count, 1)
-
-                if bullish_pct >= 65:
-                    status = "🟢 Strong"
-                elif bullish_pct >= 35:
-                    status = "🟡 Neutral"
-                else:
-                    status = "🔴 Weak"
-
-                sector_results.append({
-                    "Sector": sector,
-                    "Status": status,
-                    "Bullish Stocks": f"{bullish_count}/{total_count}",
-                    "Bullish %": bullish_pct,
-                    "Avg RSI": avg_rsi
-                })
-
-    sector_results.sort(key=lambda x: x["Bullish %"], reverse=True)
-
-    st.markdown("### 📊 Sector Strength Ranking")
-    st.dataframe(pd.DataFrame(sector_results), use_container_width=True)
-
-    if sector_results:
-        top_sector_name = sector_results[0]["Sector"]
-        top_stocks = SECTOR_MAP[top_sector_name]
-
-        best_stock = None
-        best_score = -999
-        for symbol in top_stocks:
-            try:
-                td = fetch_technical_data(symbol, period="6mo")
-                if td and td["trend"] == "Bullish":
-                    score = td["rsi"] + (10 if td["current_price"] > td["ma50"] else 0)
-                    if score > best_score:
-                        best_score = score
-                        best_stock = symbol
-            except:
-                pass
-
-        st.divider()
-        st.markdown("### 🏆 Best Opportunity Today")
-        if best_stock:
-            st.success(f"**Strongest Sector:** {top_sector_name} {sector_results[0]['Status']}")
-            st.success(f"**Top Pick:** {best_stock}")
+                h1, h2, h3, h4 = st.columns(4)
+                h1.metric("Net P&L", f"₹{round(total_net,2)}")
+                h2.metric("Charges Paid", f"₹{round(total_charges,2)}")
+                h3.metric("Win Rate", f"{wr}%")
+                h4.metric("Trades", len(hist_df))
         else:
-            st.info(f"Strongest Sector: {top_sector_name}, પણ હાલ કોઈ Strong Individual Stock નથી મળ્યો.")
+            st.info("હજુ Closed Trades નથી.")
 
-    st.success("✅ Sector Rotation Scan Complete")
-    st.caption("⚠️ આ Technical Scan છે, Financial Advice નથી.")
-else:
-    st.info("'Scan All Sectors' button click કરો - 12 Sectors, 40 Stocks Scan થશે.")
+    with trade_tab4:
+        st.markdown("#### 🧮 Brokerage Calculator (Upstox + Slippage)")
+        st.caption("Trade confirm કરતા પહેલા exact cost check કરો")
 
-# ==========================================
-# RELATIVE STRENGTH SCANNER (V38)
-# ==========================================
-st.divider()
-st.subheader("💪 Relative Strength Scanner")
-st.caption("Nifty કરતાં વધુ Strong Stocks શોધે છે (Last 3 Months Performance)")
+        c1, c2 = st.columns(2)
+        with c1:
+            calc_buy = st.number_input("Buy Price (₹)", min_value=0.01, value=1000.0, key="calc_buy")
+            calc_qty = st.number_input("Quantity", min_value=1, value=10, key="calc_qty")
+        with c2:
+            calc_sell = st.number_input("Sell Price (₹)", min_value=0.01, value=1050.0, key="calc_sell")
+            calc_slip = st.slider("Slippage %", 0.0, 0.1, 0.02, 0.01, key="calc_slip")
+            st.caption(f"Slippage: {calc_slip}%")
 
-if st.button("💪 Run Relative Strength Scan"):
-    with st.spinner("Nifty અને તમામ Stocks ની Performance Compare થઈ રહી છે..."):
-        nifty_hist = yf.Ticker("^NSEI").history(period="3mo")
-        if nifty_hist.empty:
-            st.error("Nifty Data Fetch ન થયો.")
-        else:
-            nifty_return = round(((nifty_hist["Close"].iloc[-1] - nifty_hist["Close"].iloc[0]) / nifty_hist["Close"].iloc[0]) * 100, 2)
+        if st.button("🧮 Calculate", key="calc_btn"):
+            ch = calculate_charges(calc_buy, calc_sell, calc_qty, calc_slip)
 
-            rs_results = []
-            for symbol in STOCK_UNIVERSE:
-                try:
-                    hist = yf.Ticker(symbol).history(period="3mo")
-                    if hist.empty or len(hist) < 2:
-                        continue
+            st.markdown("---")
+            r1, r2 = st.columns(2)
+            with r1:
+                st.markdown("**📊 Trade Summary**")
+                st.write(f"Buy Value: ₹{ch['buy_value']:,}")
+                st.write(f"Sell Value: ₹{ch['sell_value']:,}")
+                st.write(f"Gross P&L: ₹{ch['gross_pnl']}")
 
-                    stock_return = round(((hist["Close"].iloc[-1] - hist["Close"].iloc[0]) / hist["Close"].iloc[0]) * 100, 2)
-                    rs_score = round(stock_return - nifty_return, 2)
-
-                    current_price = round(hist["Close"].iloc[-1], 2)
-
-                    rs_results.append({
-                        "Stock": symbol,
-                        "Price": current_price,
-                        "3M Return %": stock_return,
-                        "Nifty Return %": nifty_return,
-                        "Relative Strength": rs_score
-                    })
-                except:
-                    pass
-
-            rs_results.sort(key=lambda x: x["Relative Strength"], reverse=True)
-
-            outperformers = [r for r in rs_results if r["Relative Strength"] > 0]
-            underperformers = [r for r in rs_results if r["Relative Strength"] <= 0]
-
-            st.metric("📊 Nifty 3-Month Return", f"{nifty_return}%")
-
-            st.markdown("### 🏆 Stocks Outperforming Nifty")
-            if outperformers:
-                st.dataframe(pd.DataFrame(outperformers), use_container_width=True)
-            else:
-                st.info("હાલ કોઈ Stock Nifty કરતાં Outperform નથી કરી રહ્યું.")
-
-            st.markdown("### 📉 Stocks Underperforming Nifty")
-            if underperformers:
-                with st.expander(f"જુઓ ({len(underperformers)} Stocks)"):
-                    st.dataframe(pd.DataFrame(underperformers), use_container_width=True)
+            with r2:
+                st.markdown("**💸 Charges Breakdown**")
+                st.write(f"Brokerage: ₹0 (Free)")
+                st.write(f"STT: ₹{ch['stt']}")
+                st.write(f"Exchange: ₹{ch['exchange_charges']}")
+                st.write(f"SEBI: ₹{ch['sebi_charges']}")
+                st.write(f"GST: ₹{ch['gst']}")
+                st.write(f"Stamp Duty: ₹{ch['stamp_duty']}")
+                st.write(f"Slippage: ₹{ch['slippage']}")
+                st.write(f"**Total Charges: ₹{ch['total_charges']}**")
 
             st.divider()
-            st.markdown("### 🔥 Best Opportunity (Top RS + Bullish Trend)")
-            best_pick = None
-            for r in outperformers[:10]:
-                try:
-                    td = fetch_technical_data(r["Stock"])
-                    if td and td["trend"] == "Bullish":
-                        best_pick = {**r, "RSI": td["rsi"], "Trend": td["trend"]}
-                        break
-                except:
-                    pass
-
-            if best_pick:
-                st.success(f"**{best_pick['Stock']}** | Price: ₹{best_pick['Price']} | RS Score: {best_pick['Relative Strength']} | RSI: {best_pick['RSI']} | Trend: Bullish 🟢")
-            elif outperformers:
-                top = outperformers[0]
-                st.warning(f"Top RS Stock: **{top['Stock']}** (RS: {top['Relative Strength']}), પણ હાલ Bullish Trend Confirm નથી.")
+            if ch["net_pnl"] >= 0:
+                st.success(f"🟢 Net P&L: ₹{ch['net_pnl']} ({ch['net_pnl_pct']}%)")
             else:
-                st.info("હાલ કોઈ Strong Opportunity નથી મળ્યો.")
+                st.error(f"🔴 Net P&L: ₹{ch['net_pnl']} ({ch['net_pnl_pct']}%)")
 
-            st.success(f"✅ Scan Complete | Total Scanned: {len(rs_results)} Stocks")
-            st.caption("⚠️ આ Technical Scan છે, Financial Advice નથી.")
-else:
-    st.info(f"'Run Relative Strength Scan' click કરો - {len(STOCK_UNIVERSE)} Stocks vs Nifty Compare થશે.")
-
+            breakeven = round(calc_buy + (ch["total_charges"] / calc_qty), 2)
+            st.info(f"📌 Breakeven Price: ₹{breakeven} (આ price પર જ Zero P&L)")
+            # ==========================================
+# TAB 3: SCANNERS
 # ==========================================
-# SMART MONEY TRACKER (V39)
+with tab3:
+    st.subheader("🔍 Market Scanners")
+
+    scan_tab1, scan_tab2, scan_tab3, scan_tab4 = st.tabs([
+        "🚀 Auto Scanner", "🔄 Sector", "💪 Rel. Strength", "🐋 Smart Money"
+    ])
+
+    with scan_tab1:
+        st.markdown("#### 🚀 Auto Watchlist Scanner")
+        st.caption("Top Breakout, Swing અને Momentum Stocks")
+
+        tf_option = st.radio(
+            "Timeframe",
+            ["Daily (Swing)", "Weekly (Positional)"],
+            horizontal=True,
+            key="scan_tf"
+        )
+        period_map = {"Daily (Swing)": "6mo", "Weekly (Positional)": "1y"}
+        scan_period = period_map[tf_option]
+
+        if st.button("🚀 Run Scanner", key="auto_scan"):
+            breakout_results = []
+            swing_results = []
+            momentum_results = []
+
+            with st.spinner(f"{len(STOCK_UNIVERSE)} Stocks Scan ({tf_option})..."):
+                for symbol in STOCK_UNIVERSE:
+                    try:
+                        td = fetch_technical_data(symbol, period=scan_period)
+                        if not td:
+                            continue
+                        hist = td["hist"]
+                        close = hist["Close"]
+                        volume = hist["Volume"]
+                        cp = td["current_price"]
+                        ma50 = td["ma50"]
+                        ma200 = td["ma200"]
+                        rsi = td["rsi"]
+                        trend = td["trend"]
+                        avg_vol = volume.rolling(20).mean().iloc[-1]
+                        cur_vol = volume.iloc[-1]
+                        recent_high = close.iloc[-21:-1].max()
+
+                        # Breakout
+                        if cp > recent_high and cur_vol > avg_vol:
+                            breakout_results.append({
+                                "Stock": symbol.replace(".NS",""),
+                                "Price": cp,
+                                "Breakout %": round(((cp-recent_high)/recent_high)*100, 2),
+                                "Vol Ratio": round(cur_vol/avg_vol, 2) if avg_vol > 0 else 0
+                            })
+
+                        # Swing
+                        if trend == "Bullish" and 45 <= rsi <= 65 and cp > ma50:
+                            swing_results.append({
+                                "Stock": symbol.replace(".NS",""),
+                                "Entry": cp,
+                                "Target (5%)": round(cp*1.05, 2),
+                                "SL (3%)": round(cp*0.97, 2),
+                                "RSI": rsi,
+                                "R:R": round((cp*1.05-cp)/(cp-cp*0.97), 2)
+                            })
+
+                        # Momentum
+                        if cp > ma50 and cp > ma200 and rsi > 60 and cur_vol > avg_vol:
+                            momentum_results.append({
+                                "Stock": symbol.replace(".NS",""),
+                                "Price": cp,
+                                "RSI": rsi,
+                                "MA50": ma50,
+                                "Score": round(rsi + (cur_vol/avg_vol if avg_vol > 0 else 1)*10, 2)
+                            })
+                    except:
+                        pass
+
+            breakout_results.sort(key=lambda x: x["Breakout %"], reverse=True)
+            swing_results.sort(key=lambda x: x["RSI"], reverse=True)
+            momentum_results.sort(key=lambda x: x["Score"], reverse=True)
+
+            st.markdown("### 🚀 Top 5 Breakouts")
+            if breakout_results[:5]:
+                st.dataframe(pd.DataFrame(breakout_results[:5]), use_container_width=True)
+            else:
+                st.info("કોઈ Breakout નથી.")
+
+            st.markdown("### 📈 Top 5 Swing Trades")
+            if swing_results[:5]:
+                st.dataframe(pd.DataFrame(swing_results[:5]), use_container_width=True)
+            else:
+                st.info("કોઈ Swing Setup નથી.")
+
+            st.markdown("### 🔥 Top 5 Momentum")
+            if momentum_results[:5]:
+                st.dataframe(pd.DataFrame(momentum_results[:5]), use_container_width=True)
+            else:
+                st.info("કોઈ Momentum Setup નથી.")
+
+            st.success(f"✅ Scan Complete | {len(STOCK_UNIVERSE)} Stocks | {tf_option}")
+            st.caption("⚠️ Technical Scan - Financial Advice નથી.")
+
+    with scan_tab2:
+        st.markdown("#### 🔄 Sector Rotation AI")
+        st.caption("કયો Sector Strong/Weak છે")
+
+        sector_tf = st.radio(
+            "Timeframe",
+            ["Daily", "Weekly"],
+            horizontal=True,
+            key="sector_tf"
+        )
+        sector_period = "6mo" if sector_tf == "Daily" else "1y"
+
+        if st.button("🔄 Scan Sectors", key="sector_scan"):
+            sector_results = []
+            with st.spinner("Sectors Scan..."):
+                for sector, stocks in SECTOR_MAP.items():
+                    bullish = 0
+                    total = 0
+                    rsi_sum = 0
+                    for sym in stocks:
+                        try:
+                            td = fetch_technical_data(sym, period=sector_period)
+                            if td:
+                                total += 1
+                                rsi_sum += td["rsi"]
+                                if td["trend"] == "Bullish":
+                                    bullish += 1
+                        except:
+                            pass
+                    if total > 0:
+                        pct = round((bullish/total)*100, 1)
+                        avg_rsi = round(rsi_sum/total, 1)
+                        sector_results.append({
+                            "Sector": sector,
+                            "Status": "🟢 Strong" if pct >= 65 else "🟡 Neutral" if pct >= 35 else "🔴 Weak",
+                            "Bullish": f"{bullish}/{total}",
+                            "Bullish %": pct,
+                            "Avg RSI": avg_rsi
+                        })
+
+            sector_results.sort(key=lambda x: x["Bullish %"], reverse=True)
+            st.dataframe(pd.DataFrame(sector_results), use_container_width=True)
+
+            if sector_results:
+                top = sector_results[0]
+                st.success(f"🏆 Strongest: {top['Sector']} ({top['Status']}) | {top['Bullish %']}% Bullish")
+
+                # Best stock from top sector
+                top_stocks = SECTOR_MAP[top["Sector"]]
+                best_stock = None
+                best_score = -999
+                for sym in top_stocks:
+                    try:
+                        td = fetch_technical_data(sym, period=sector_period)
+                        if td and td["trend"] == "Bullish":
+                            score = td["rsi"] + (10 if td["current_price"] > td["ma50"] else 0)
+                            if score > best_score:
+                                best_score = score
+                                best_stock = sym
+                    except:
+                        pass
+                if best_stock:
+                    st.info(f"🎯 Top Pick from {top['Sector']}: **{best_stock.replace('.NS','')}**")
+
+    with scan_tab3:
+        st.markdown("#### 💪 Relative Strength vs Nifty")
+        st.caption("Nifty કરતાં વધુ strong stocks")
+
+        rs_period = st.radio(
+            "Compare Period",
+            ["1 Month", "3 Months", "6 Months"],
+            horizontal=True,
+            key="rs_period"
+        )
+        rs_period_map = {"1 Month": "1mo", "3 Months": "3mo", "6 Months": "6mo"}
+        rs_p = rs_period_map[rs_period]
+
+        if st.button("💪 Run RS Scan", key="rs_scan"):
+            with st.spinner("Nifty vs Stocks..."):
+                nifty_hist = yf.Ticker("^NSEI").history(period=rs_p)
+                if not nifty_hist.empty:
+                    nifty_ret = round(((nifty_hist["Close"].iloc[-1] - nifty_hist["Close"].iloc[0]) / nifty_hist["Close"].iloc[0]) * 100, 2)
+                    rs_results = []
+                    for sym in STOCK_UNIVERSE:
+                        try:
+                            h = yf.Ticker(sym).history(period=rs_p)
+                            if not h.empty and len(h) >= 2:
+                                ret = round(((h["Close"].iloc[-1] - h["Close"].iloc[0]) / h["Close"].iloc[0]) * 100, 2)
+                                rs_results.append({
+                                    "Stock": sym.replace(".NS",""),
+                                    "Return %": ret,
+                                    "Nifty %": nifty_ret,
+                                    "RS Score": round(ret - nifty_ret, 2)
+                                })
+                        except:
+                            pass
+
+                    rs_results.sort(key=lambda x: x["RS Score"], reverse=True)
+                    out = [r for r in rs_results if r["RS Score"] > 0]
+                    under = [r for r in rs_results if r["RS Score"] <= 0]
+
+                    st.metric(f"Nifty {rs_period} Return", f"{nifty_ret}%")
+
+                    st.markdown("### 🏆 Outperformers")
+                    if out:
+                        st.dataframe(pd.DataFrame(out), use_container_width=True)
+                    else:
+                        st.info("કોઈ Outperformer નથી.")
+
+                    with st.expander(f"📉 Underperformers ({len(under)})"):
+                        if under:
+                            st.dataframe(pd.DataFrame(under), use_container_width=True)
+
+                    # Best opportunity
+                    for r in out[:5]:
+                        sym_full = r["Stock"] + ".NS"
+                        td = fetch_technical_data(sym_full)
+                        if td and td["trend"] == "Bullish":
+                            st.success(f"🎯 Best: **{r['Stock']}** | RS: {r['RS Score']} | RSI: {td['rsi']} | 🟢 Bullish")
+                            break
+
+    with scan_tab4:
+        st.markdown("#### 🐋 Smart Money Tracker")
+        st.caption("Volume Spikes - Smart Money ક્યાં Active છે")
+
+        if st.button("🐋 Run Smart Money Scan", key="sm_scan"):
+            smart_results = []
+            with st.spinner("Volume Spikes Scan..."):
+                for sym in STOCK_UNIVERSE:
+                    try:
+                        h = yf.Ticker(sym).history(period="3mo")
+                        if h.empty or len(h) < 21:
+                            continue
+                        close = h["Close"]
+                        volume = h["Volume"]
+                        cp = round(close.iloc[-1], 2)
+                        cv = volume.iloc[-1]
+                        avg_v = volume.iloc[-21:-1].mean()
+                        if avg_v == 0:
+                            continue
+                        vr = round(cv/avg_v, 2)
+                        chg = round(((close.iloc[-1]-close.iloc[-2])/close.iloc[-2])*100, 2)
+                        rh = close.iloc[-21:-1].max()
+                        rl = close.iloc[-21:-1].min()
+
+                        signal = None
+                        if cp > rh and vr >= 1.5:
+                            signal = "🚀 Breakout + Volume"
+                        elif cp < rl and vr >= 1.5:
+                            signal = "🔻 Breakdown + Volume"
+                        elif vr >= 2.0 and chg > 0:
+                            signal = "📈 Accumulation"
+                        elif vr >= 2.0 and chg < 0:
+                            signal = "📉 Distribution"
+                        elif vr >= 1.5:
+                            signal = "⚡ Unusual Volume"
+
+                        if signal:
+                            smart_results.append({
+                                "Stock": sym.replace(".NS",""),
+                                "Price": cp,
+                                "Change %": chg,
+                                "Vol Ratio": vr,
+                                "Signal": signal
+                            })
+                    except:
+                        pass
+
+            smart_results.sort(key=lambda x: x["Vol Ratio"], reverse=True)
+
+            if smart_results:
+                st.dataframe(pd.DataFrame(smart_results), use_container_width=True)
+                best = [r for r in smart_results if "Breakout" in r["Signal"] or "Accumulation" in r["Signal"]]
+                if best:
+                    st.success(f"🏆 Best: **{best[0]['Stock']}** | {best[0]['Signal']} | Vol: {best[0]['Vol Ratio']}x")
+            else:
+                st.info("કોઈ Unusual Activity નથી.")
+            st.caption("⚠️ Technical Scan - Financial Advice નથી.")
+            # ==========================================
+# TAB 4: AI TOOLS
 # ==========================================
-st.divider()
-st.subheader("🐋 Smart Money Tracker")
-st.caption("Volume Spikes, Breakout Detection - Smart Money ક્યાં Active છે")
+with tab4:
+    st.subheader("🤖 AI Tools")
 
-if st.button("🐋 Run Smart Money Scan"):
-    smart_money_results = []
+    ai_tab1, ai_tab2, ai_tab3, ai_tab4 = st.tabs([
+        "🔍 Analysis", "🧑‍🏫 AI Coach", "📋 Portfolio Review", "⚖️ Rebalancer"
+    ])
 
-    with st.spinner("Volume Spikes અને Breakouts Scan થઈ રહ્યા છે..."):
-        for symbol in STOCK_UNIVERSE:
-            try:
-                stock = yf.Ticker(symbol)
-                hist = stock.history(period="3mo")
-                if hist.empty or len(hist) < 21:
-                    continue
+    with ai_tab1:
+        st.markdown("#### 🔍 AI Stock Analysis")
+        symbol = st.text_input("Stock Symbol", value="RELIANCE.NS", key="analysis_symbol")
 
-                close = hist["Close"]
-                volume = hist["Volume"]
+        if st.button("🔍 Analyze", key="analyze_btn"):
+            if symbol:
+                try:
+                    with st.spinner("Analyzing..."):
+                        td = fetch_technical_data(symbol)
+                        info = yf.Ticker(symbol).info
 
-                current_price = round(close.iloc[-1], 2)
-                current_volume = volume.iloc[-1]
-                avg_volume_20 = volume.iloc[-21:-1].mean()
+                    if td:
+                        cp = info.get("currentPrice", td["current_price"])
+                        mc = info.get("marketCap", "N/A")
+                        pe = info.get("trailingPE", "N/A")
 
-                if avg_volume_20 == 0:
-                    continue
+                        c1, c2, c3, c4 = st.columns(4)
+                        c1.metric("Price", f"₹{cp}")
+                        c2.metric("RSI", td["rsi"])
+                        c3.metric("Trend", "🟢" if td["trend"]=="Bullish" else "🔴")
+                        c4.metric("PE Ratio", pe)
 
-                volume_ratio = round(current_volume / avg_volume_20, 2)
+                        c5, c6 = st.columns(2)
+                        c5.metric("50 DMA", f"₹{td['ma50']}")
+                        c6.metric("200 DMA", f"₹{td['ma200']}")
 
-                price_change_pct = round(((close.iloc[-1] - close.iloc[-2]) / close.iloc[-2]) * 100, 2)
+                        prompt = f"""Professional Stock Analyst છો.
+Stock: {symbol}
+Price: ₹{cp}, PE: {pe}, Market Cap: {mc}
+MA50: {td['ma50']}, MA200: {td['ma200']}, RSI: {td['rsi']}, Trend: {td['trend']}
 
-                recent_high_20 = close.iloc[-21:-1].max()
-                recent_low_20 = close.iloc[-21:-1].min()
+ગુજરાતીમાં analysis આપો:
+1. Company Analysis
+2. મુખ્ય તકો
+3. મુખ્ય જોખમો
+4. Score /100
+5. BUY / HOLD / AVOID
+6. RSI Interpretation
+7. Technical Score /100
 
-                signal = None
-                if current_price > recent_high_20 and volume_ratio >= 1.5:
-                    signal = "🚀 Breakout + Volume Spike"
-                elif current_price < recent_low_20 and volume_ratio >= 1.5:
-                    signal = "🔻 Breakdown + Volume Spike"
-                elif volume_ratio >= 2.0 and price_change_pct > 0:
-                    signal = "📈 Accumulation (High Volume Buying)"
-                elif volume_ratio >= 2.0 and price_change_pct < 0:
-                    signal = "📉 Distribution (High Volume Selling)"
-                elif volume_ratio >= 1.5:
-                    signal = "⚡ Unusual Volume Activity"
+છેલ્લે: 'આ નાણાકીય સલાહ નથી.'"""
 
-                if signal:
-                    smart_money_results.append({
-                        "Stock": symbol,
-                        "Price": current_price,
-                        "Change %": price_change_pct,
-                        "Volume vs 20D Avg": volume_ratio,
-                        "Signal": signal
-                    })
-            except:
-                pass
-
-    smart_money_results.sort(key=lambda x: x["Volume vs 20D Avg"], reverse=True)
-
-    st.markdown("### 🐋 Smart Money Activity Detected")
-    if smart_money_results:
-        st.dataframe(pd.DataFrame(smart_money_results), use_container_width=True)
-
-        priority_signals = ["🚀 Breakout + Volume Spike", "📈 Accumulation (High Volume Buying)"]
-        best_picks = [r for r in smart_money_results if r["Signal"] in priority_signals]
+                        with st.spinner("AI Analysis..."):
+                            resp = model.generate_content(prompt)
+                        st.markdown(resp.text)
+                except Exception as e:
+                    st.error(f"Error: {e}")
 
         st.divider()
-        st.markdown("### 🏆 Top Smart Money Opportunity")
-        if best_picks:
-            top = best_picks[0]
-            st.success(f"**{top['Stock']}** | Price: ₹{top['Price']} | {top['Signal']} | Volume: {top['Volume vs 20D Avg']}x Avg | Change: {top['Change %']}%")
-        else:
-            st.info("હાલ કોઈ Strong Buying Signal નથી - Distribution/Breakdown Signals વધારે છે, સાવધાન રહો.")
-    else:
-        st.info("આજે કોઈ Unusual Volume Activity મળી નથી.")
+        st.markdown("#### 📈 AI Swing Trade Finder")
+        swing_tf = st.radio("Period", ["3 Months", "6 Months"], horizontal=True, key="swing_tf")
+        swing_p = "3mo" if swing_tf == "3 Months" else "6mo"
 
-    st.success(f"✅ Scan Complete | Total Scanned: {len(STOCK_UNIVERSE)} Stocks | Signals Found: {len(smart_money_results)}")
-    st.caption("⚠️ આ Technical Scan છે, Financial Advice નથી. Volume Spike Confirmation માટે Delivery % Data Broker Platform પર ચેક કરો.")
-else:
-    st.info(f"'Run Smart Money Scan' click કરો - {len(STOCK_UNIVERSE)} Stocks માં Volume Spikes/Breakouts Scan થશે.")
+        if st.button("🚀 Find Swing Trades", key="swing_btn"):
+            swing_list = []
+            with st.spinner("Scanning..."):
+                for sym in STOCK_UNIVERSE:
+                    try:
+                        td = fetch_technical_data(sym, period=swing_p)
+                        if td and td["trend"] == "Bullish" and 45 <= td["rsi"] <= 65:
+                            cp = td["current_price"]
+                            target = round(cp * 1.05, 2)
+                            sl = round(cp * 0.97, 2)
+                            charges_est = calculate_charges(cp, target, 1)
+                            swing_list.append({
+                                "Stock": sym.replace(".NS",""),
+                                "Entry": cp,
+                                "Target": target,
+                                "SL": sl,
+                                "RSI": td["rsi"],
+                                "R:R": round((target-cp)/(cp-sl), 2),
+                                "Est.Net P&L(1qty)": f"₹{charges_est['net_pnl']}"
+                            })
+                    except:
+                        pass
+            swing_list.sort(key=lambda x: x["RSI"], reverse=True)
+            if swing_list[:8]:
+                st.dataframe(pd.DataFrame(swing_list[:8]), use_container_width=True)
+                st.caption("Est. Net P&L = Upstox charges + Slippage after deduction")
+            else:
+                st.info("કોઈ Swing Setup નથી.")
 
-# ==========================================
-# AI TRADE COACH (V40)
-# ==========================================
-st.divider()
-st.subheader("🧑‍🏫 Gemini AI Trade Coach")
-st.caption("ઉદાહરણ: 'Should I buy Reliance?' અથવા 'TCS માં Entry આપો'")
-
-coach_question = st.text_input("તમારો Trading Question લખો", value="Should I buy Reliance?", key="coach_question")
-
-if st.button("🤖 Ask AI Coach"):
-    if coach_question.strip():
-        try:
-            COMMON_NAMES = {
-                "reliance": "RELIANCE.NS", "tcs": "TCS.NS", "infosys": "INFY.NS", "infy": "INFY.NS",
-                "hdfc": "HDFCBANK.NS", "hdfcbank": "HDFCBANK.NS", "icici": "ICICIBANK.NS",
-                "sbi": "SBIN.NS", "lt": "LT.NS", "airtel": "BHARTIARTL.NS", "bharti": "BHARTIARTL.NS",
-                "itc": "ITC.NS", "hul": "HINDUNILVR.NS", "kotak": "KOTAKBANK.NS", "axis": "AXISBANK.NS",
-                "bajajfinance": "BAJFINANCE.NS", "maruti": "MARUTI.NS", "asianpaint": "ASIANPAINT.NS",
-                "sunpharma": "SUNPHARMA.NS", "titan": "TITAN.NS", "ultratech": "ULTRACEMCO.NS",
-                "wipro": "WIPRO.NS", "nestle": "NESTLEIND.NS", "powergrid": "POWERGRID.NS",
-                "ntpc": "NTPC.NS", "ongc": "ONGC.NS", "adaniports": "ADANIPORTS.NS",
-                "tatasteel": "TATASTEEL.NS", "jswsteel": "JSWSTEEL.NS", "hcltech": "HCLTECH.NS",
-                "techm": "TECHM.NS", "indusind": "INDUSINDBK.NS", "coalindia": "COALINDIA.NS",
-                "drreddy": "DRREDDY.NS", "cipla": "CIPLA.NS", "grasim": "GRASIM.NS",
-                "heromotoco": "HEROMOTOCO.NS", "eichermotors": "EICHERMOT.NS", "divislab": "DIVISLAB.NS",
-                "tatamotors": "TATAMOTORS.NS", "mahindra": "M&M.NS", "bpcl": "BPCL.NS"
-            }
-
-            question_lower = coach_question.lower()
-            detected_symbol = None
-            for name, sym in COMMON_NAMES.items():
-                if name in question_lower:
-                    detected_symbol = sym
-                    break
-
-            tech_context = ""
-            if detected_symbol:
-                td = fetch_technical_data(detected_symbol)
-                if td:
-                    current_price = td["current_price"]
-                    ma50 = td["ma50"]
-                    ma200 = td["ma200"]
-                    rsi = td["rsi"]
-                    trend = td["trend"]
-
-                    suggested_target = round(current_price * 1.08, 2)
-                    suggested_sl = round(current_price * 0.95, 2)
-
-                    tech_context = f"""
-Detected Stock: {detected_symbol}
-Current Price: ₹{current_price}
-50 DMA: ₹{ma50}
-200 DMA: ₹{ma200}
-RSI: {rsi}
-Trend: {trend}
-Suggested Target (8%): ₹{suggested_target}
-Suggested Stop Loss (5%): ₹{suggested_sl}
-"""
-                    st.markdown("#### 📊 Live Technical Snapshot")
-                    col_c1, col_c2, col_c3, col_c4 = st.columns(4)
-                    col_c1.metric("Price", f"₹{current_price}")
-                    col_c2.metric("RSI", rsi)
-                    col_c3.metric("Trend", trend)
-                    col_c4.metric("50/200 DMA", f"{ma50}/{ma200}")
-
-            coach_prompt = f"""
-તમે Professional Trading Coach છો. User નો Question નીચે છે.
-
-User Question: "{coach_question}"
-
-{tech_context if tech_context else "Note: કોઈ specific stock detect નથી થયો, general guidance આપો."}
-
-ગુજરાતીમાં જવાબ આપો, નીચેના Format માં (જો Stock Specific Question હોય):
-1. **Recommendation**: BUY / WAIT / AVOID
-2. **Entry**: ₹ (specific level)
-3. **Target**: ₹ (specific level)
-4. **Stop Loss**: ₹ (specific level)
-5. **Risk**: Low / Medium / High અને કેમ
-6. **Probability**: Approximate success probability % અને reasoning
-7. **Reasoning**: 2-3 lines માં Technical Logic
-
-જો Question Stock-Specific ન હોય, તો General Trading Guidance આપો.
-
-છેલ્લે અચૂક લખો: 'આ નાણાકીય સલાહ નથી, પોતાનું Research કરો.'
-"""
-            with st.spinner("AI Coach Analyze કરી રહ્યું છે..."):
-                coach_response = model.generate_content(coach_prompt)
-
-            st.markdown("### 🤖 AI Coach Response")
-            st.markdown(coach_response.text)
-
-        except Exception as e:
-            st.error(f"Error: {e}")
-    else:
-        st.warning("કૃપા કરીને Question લખો.")
-# ==========================================
-# PORTFOLIO REVIEW AI (V41)
-# ==========================================
-st.divider()
-st.subheader("📋 AI Portfolio Review")
-st.caption("તમારું આખું Paper Portfolio AI Analyze કરશે - Diversification, Risk, Suggestions")
-
-if st.button("🤖 Review My Portfolio"):
-    if not st.session_state.paper_portfolio:
-        st.info("Portfolio Empty છે. પહેલા Stocks Buy કરો (Paper Trading Section).")
-    else:
-        with st.spinner("Portfolio Data Tayar થઈ રહ્યો છે..."):
-            portfolio_rows = []
-            total_invested = 0
-            total_current = 0
-            sector_exposure = {}
-
-            for sym, pos in st.session_state.paper_portfolio.items():
-                try:
-                    td = fetch_technical_data(sym)
-                    cp = td["current_price"] if td else pos["avg_price"]
-                    rsi = td["rsi"] if td else "N/A"
-                    trend = td["trend"] if td else "N/A"
-                except:
-                    cp = pos["avg_price"]
-                    rsi = "N/A"
-                    trend = "N/A"
-
-                invested = pos["qty"] * pos["avg_price"]
-                current_val = pos["qty"] * cp
-                pnl = current_val - invested
-                pnl_pct = round((pnl / invested) * 100, 2) if invested > 0 else 0
-
-                total_invested += invested
-                total_current += current_val
-
-                sector_name = "Other"
-                for sec, stocks in SECTOR_MAP.items():
-                    if sym in stocks:
-                        sector_name = sec
-                        break
-                sector_exposure[sector_name] = sector_exposure.get(sector_name, 0) + current_val
-
-                portfolio_rows.append({
-                    "Stock": sym,
-                    "Qty": pos["qty"],
-                    "Avg Price": round(pos["avg_price"], 2),
-                    "Current Price": cp,
-                    "Current Value": round(current_val, 2),
-                    "P&L": round(pnl, 2),
-                    "P&L %": pnl_pct,
-                    "RSI": rsi,
-                    "Trend": trend,
-                    "Sector": sector_name
-                })
-
-            port_df = pd.DataFrame(portfolio_rows)
-            st.dataframe(port_df, use_container_width=True)
-
-            total_pnl = round(total_current - total_invested, 2)
-            total_pnl_pct = round((total_pnl / total_invested) * 100, 2) if total_invested > 0 else 0
-
-            col_pr1, col_pr2, col_pr3 = st.columns(3)
-            col_pr1.metric("Total Invested", f"₹{total_invested:,.2f}")
-            col_pr2.metric("Current Value", f"₹{total_current:,.2f}")
-            col_pr3.metric("Total P&L", f"₹{total_pnl:,.2f}", f"{total_pnl_pct}%")
-
-            st.markdown("#### 🏭 Sector Exposure")
-            sector_df = pd.DataFrame([
-                {"Sector": s, "Value": round(v, 2), "Allocation %": round((v/total_current)*100, 1) if total_current > 0 else 0}
-                for s, v in sector_exposure.items()
-            ])
-            sector_df = sector_df.sort_values("Allocation %", ascending=False)
-            st.dataframe(sector_df, use_container_width=True)
-
-            portfolio_summary = port_df.to_string(index=False)
-            sector_summary = sector_df.to_string(index=False)
-
-            review_prompt = f"""
-તમે Professional Portfolio Manager છો. નીચે User નું Portfolio છે.
-
-Total Invested: ₹{total_invested:,.2f}
-Current Value: ₹{total_current:,.2f}
-Total P&L: ₹{total_pnl:,.2f} ({total_pnl_pct}%)
-
-Holdings:
-{portfolio_summary}
-
-Sector Exposure:
-{sector_summary}
-
-ગુજરાતીમાં Analysis આપો:
-1. **Overall Portfolio Health** - Score /100
-2. **Diversification** - Good/Poor, કયા Sector માં વધારે Exposure છે
-3. **Risk Concentration** - કોઈ ખાસ Risk છે?
-4. **Underperforming Stocks** - કયા Stocks Review કરવાની જરૂર છે
-5. **Strong Holdings** - કયા Stocks સારા છે
-6. **Action Suggestions** - 2-3 specific સૂચનો (Hold/Trim/Add)
-
-છેલ્લે લખો: 'આ નાણાકીય સલાહ નથી, પોતાનું Research કરો.'
-"""
-            with st.spinner("AI Portfolio Review કરી રહ્યું છે..."):
-                review_response = model.generate_content(review_prompt)
-
-            st.markdown("### 🤖 AI Portfolio Review")
-            st.markdown(review_response.text)
-else:
-    st.info("'Review My Portfolio' button click કરો.")
-
-# ==========================================
-# AI REBALANCER (V42)
-# ==========================================
-st.divider()
-st.subheader("⚖️ AI Portfolio Rebalancer")
-st.caption("કયા Stocks વેચવા, કયા Stocks માં વધારે Invest કરવું - AI Suggestions")
-
-if st.button("⚖️ Get Rebalancing Suggestions"):
-    if not st.session_state.paper_portfolio:
-        st.info("Portfolio Empty છે. પહેલા Stocks Buy કરો (Paper Trading Section).")
-    else:
-        with st.spinner("Portfolio Rebalancing Analyze થઈ રહ્યું છે..."):
-            holding_rows = []
-            total_current = 0
-
-            for sym, pos in st.session_state.paper_portfolio.items():
+        st.divider()
+        st.markdown("#### ⭐ AI Watchlist")
+        watchlist = st.text_area(
+            "Stocks (Comma Separated)",
+            "RELIANCE.NS,TCS.NS,HDFCBANK.NS",
+            key="watchlist_input"
+        )
+        if st.button("📋 Analyze Watchlist", key="watchlist_btn"):
+            for sym in watchlist.split(","):
+                sym = sym.strip().upper()
                 try:
                     td = fetch_technical_data(sym)
                     if td:
-                        cp = td["current_price"]
-                        rsi = td["rsi"]
-                        trend = td["trend"]
-                        ma50 = td["ma50"]
-                        ma200 = td["ma200"]
+                        trend = "🟢 Bullish" if td["trend"] == "Bullish" else "🔴 Bearish"
+                        score = 50
+                        if td["trend"] == "Bullish": score += 20
+                        if 45 <= td["rsi"] <= 65: score += 20
+                        if td["current_price"] > td["ma50"]: score += 10
+                        rating = "🔥 Strong" if score >= 85 else "✅ Buy" if score >= 75 else "🟡 Hold" if score >= 60 else "🔴 Avoid"
+                        w1, w2, w3, w4, w5 = st.columns(5)
+                        w1.write(f"**{sym.replace('.NS','')}**")
+                        w2.write(f"₹{td['current_price']}")
+                        w3.write(trend)
+                        w4.write(f"RSI: {td['rsi']}")
+                        w5.write(rating)
                     else:
-                        cp = pos["avg_price"]
-                        rsi, trend, ma50, ma200 = 50, "N/A", cp, cp
+                        st.warning(f"{sym} - Data નથી")
                 except:
-                    cp = pos["avg_price"]
-                    rsi, trend, ma50, ma200 = 50, "N/A", cp, cp
+                    st.warning(f"{sym} - Error")
 
-                invested = pos["qty"] * pos["avg_price"]
-                current_val = pos["qty"] * cp
-                pnl_pct = round(((cp - pos["avg_price"]) / pos["avg_price"]) * 100, 2) if pos["avg_price"] > 0 else 0
-                total_current += current_val
+        st.divider()
+        st.markdown("#### 🤖 AI Trade Advisor")
+        trade_sym = st.text_input("Symbol", value="RELIANCE.NS", key="advisor_sym")
 
-                score = 50
-                if trend == "Bullish": score += 20
-                else: score -= 10
-                if 40 <= rsi <= 65: score += 15
-                elif rsi > 75: score -= 15
-                elif rsi < 25: score += 5
-                if cp > ma50: score += 10
-                if cp > ma200: score += 5
-                score = max(0, min(100, score))
-
-                if score >= 70:
-                    action = "🟢 HOLD / ADD MORE"
-                elif score >= 45:
-                    action = "🟡 HOLD"
-                else:
-                    action = "🔴 CONSIDER TRIM/EXIT"
-
-                holding_rows.append({
-                    "Stock": sym,
-                    "Qty": pos["qty"],
-                    "Current Value": round(current_val, 2),
-                    "P&L %": pnl_pct,
-                    "RSI": rsi,
-                    "Trend": trend,
-                    "Health Score": score,
-                    "Suggested Action": action
-                })
-
-            hold_df = pd.DataFrame(holding_rows)
-            hold_df["Allocation %"] = round((hold_df["Current Value"] / total_current) * 100, 1) if total_current > 0 else 0
-            hold_df = hold_df.sort_values("Health Score", ascending=False)
-
-            st.dataframe(hold_df, use_container_width=True)
-
-            weak = hold_df[hold_df["Health Score"] < 45]
-            strong = hold_df[hold_df["Health Score"] >= 70]
-
-            candidate_pool = ["RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "ICICIBANK.NS", "INFY.NS",
-                              "LT.NS", "SUNPHARMA.NS", "TITAN.NS", "BAJFINANCE.NS", "ITC.NS"]
-            new_ideas = []
-            existing_symbols = set(st.session_state.paper_portfolio.keys())
-            for sym in candidate_pool:
-                if sym in existing_symbols:
-                    continue
-                try:
-                    td = fetch_technical_data(sym)
-                    if td and td["trend"] == "Bullish" and 45 <= td["rsi"] <= 65:
-                        new_ideas.append(sym)
-                except:
-                    pass
-                if len(new_ideas) >= 3:
-                    break
-
-            col_rb1, col_rb2 = st.columns(2)
-            with col_rb1:
-                st.markdown("#### 🔴 Trim/Exit Candidates")
-                if not weak.empty:
-                    for _, row in weak.iterrows():
-                        st.write(f"• **{row['Stock']}** | Score: {row['Health Score']}/100 | P&L: {row['P&L %']}%")
-                else:
-                    st.write("કોઈ Weak Holding નથી ✅")
-
-            with col_rb2:
-                st.markdown("#### 🟢 Strong / Add More")
-                if not strong.empty:
-                    for _, row in strong.iterrows():
-                        st.write(f"• **{row['Stock']}** | Score: {row['Health Score']}/100 | Allocation: {row['Allocation %']}%")
-                else:
-                    st.write("હાલ કોઈ Strong Add-More Candidate નથી")
-
-            st.markdown("#### 💡 New Ideas (Not in Portfolio)")
-            if new_ideas:
-                st.write(", ".join(new_ideas))
-            else:
-                st.write("હાલ કોઈ નવો Bullish Setup નથી મળ્યો")
-
-            rebalance_prompt = f"""
-તમે Professional Portfolio Manager છો. નીચે Holdings ની Health Analysis છે:
-
-{hold_df.to_string(index=False)}
-
-Trim/Exit Candidates: {', '.join(weak['Stock'].tolist()) if not weak.empty else 'કોઈ નહીં'}
-Strong Holdings: {', '.join(strong['Stock'].tolist()) if not strong.empty else 'કોઈ નહીં'}
-New Bullish Ideas (Not Held): {', '.join(new_ideas) if new_ideas else 'કોઈ નહીં'}
-
-ગુજરાતીમાં ટૂંકમાં (6-8 lines):
-1. Overall Rebalancing Strategy
-2. કયા Stock વેચીને કયા માં Shift કરવું (specific)
-3. Allocation Concentration નું Risk (જો કોઈ Stock 30%+ Allocation હોય)
-4. Priority Order - શું પહેલા કરવું
-
-છેલ્લે લખો: 'આ નાણાકીય સલાહ નથી, પોતાનું Research કરો.'
-"""
-            with st.spinner("AI Rebalancing Strategy તૈયાર કરી રહ્યું છે..."):
-                rebalance_response = model.generate_content(rebalance_prompt)
-
-            st.markdown("### 🤖 AI Rebalancing Strategy")
-            st.markdown(rebalance_response.text)
-else:
-    st.info("'Get Rebalancing Suggestions' button click કરો.")
-# ==========================================
-# AUTO TRADE BOT (V43) - Manual Trigger
-# ==========================================
-st.divider()
-st.subheader("🤖 Auto Trade Bot")
-st.caption("એક Click માં: Scan → Auto Buy (Rules પ્રમાણે) → Existing Holdings Check → Auto Sell (Target/SL Hit)")
-
-with st.expander("⚙️ Auto Trade Rules (Settings)"):
-    at_max_positions = st.number_input("Max Open Positions", min_value=1, max_value=15, value=5, key="at_max_positions")
-    at_capital_per_trade = st.number_input("Capital Per New Trade (₹)", min_value=1000, value=10000, step=1000, key="at_capital_per_trade")
-    at_min_score = st.slider("Minimum AI Score to Buy", min_value=50, max_value=100, value=75, key="at_min_score")
-    st.caption(f"Current: {at_min_score}")
-    at_target_pct = st.slider("Auto-Sell Target (%)", min_value=2.0, max_value=20.0, value=8.0, step=0.5, key="at_target_pct")
-    st.caption(f"Current: {at_target_pct}%")
-    at_sl_pct = st.slider("Auto-Sell Stop Loss (%)", min_value=1.0, max_value=10.0, value=5.0, step=0.5, key="at_sl_pct")
-    st.caption(f"Current: {at_sl_pct}%")
-
-if st.button("🚀 Run Auto Trade Bot Now"):
-    log_messages = []
-
-    # ---------- STEP 1: CHECK EXISTING HOLDINGS FOR TARGET/SL ----------
-    st.markdown("#### 🔍 Step 1: Checking Existing Holdings (Target/Stop Loss)")
-    positions_to_sell = []
-
-    for sym, pos in list(st.session_state.paper_portfolio.items()):
-        try:
-            td = fetch_technical_data(sym)
-            if not td:
-                continue
-            cp = td["current_price"]
-            avg = pos["avg_price"]
-            change_pct = ((cp - avg) / avg) * 100
-
-            if change_pct >= at_target_pct:
-                positions_to_sell.append((sym, pos["qty"], cp, "🎯 Target Hit", change_pct))
-            elif change_pct <= -at_sl_pct:
-                positions_to_sell.append((sym, pos["qty"], cp, "🛑 Stop Loss Hit", change_pct))
-        except:
-            pass
-
-    if positions_to_sell:
-        for sym, qty, cp, reason, change_pct in positions_to_sell:
-            holding = st.session_state.paper_portfolio[sym]
-            proceeds = cp * qty
-            profit = (cp - holding["avg_price"]) * qty
-            profit_pct = round(((cp - holding["avg_price"]) / holding["avg_price"]) * 100, 2)
-
-            st.session_state.paper_cash += proceeds
-            st.session_state.paper_trade_history.append({
-                "Date": str(datetime.date.today()),
-                "Stock": sym,
-                "Qty": qty,
-                "Buy Price": round(holding["avg_price"], 2),
-                "Sell Price": cp,
-                "P&L": round(profit, 2),
-                "P&L %": profit_pct
-            })
-            del st.session_state.paper_portfolio[sym]
-
-            log_messages.append(f"{reason}: SOLD {qty} {sym} @ ₹{cp} | P&L: ₹{round(profit,2)} ({profit_pct}%)")
-
-        for msg in log_messages:
-            if "Target" in msg:
-                st.success(msg)
-            else:
-                st.error(msg)
-        save_data()
-    else:
-        st.info("કોઈ Holding એ Target/Stop Loss Hit નથી કર્યો.")
-
-    # ---------- STEP 2: SCAN FOR NEW BUY OPPORTUNITIES ----------
-    st.markdown("#### 🔍 Step 2: Scanning for New Buy Opportunities")
-
-    current_positions = len(st.session_state.paper_portfolio)
-    slots_available = at_max_positions - current_positions
-
-    if slots_available <= 0:
-        st.warning(f"⚠️ Max Positions ({at_max_positions}) પહેલેથી Full છે. નવો Buy નહીં થાય.")
-    else:
-        candidates = []
-        with st.spinner(f"{len(STOCK_UNIVERSE)} Stocks Scan થઈ રહ્યા છે..."):
-            for symbol in STOCK_UNIVERSE:
-                if symbol in st.session_state.paper_portfolio:
-                    continue
-                try:
-                    td = fetch_technical_data(symbol)
-                    if not td:
-                        continue
-
-                    rsi = td["rsi"]
-                    trend = td["trend"]
+        if st.button("🚀 Get Trade Setup", key="advisor_btn"):
+            try:
+                td = fetch_technical_data(trade_sym)
+                if td:
                     cp = td["current_price"]
-                    ma50 = td["ma50"]
-
                     score = 50
-                    if trend == "Bullish": score += 20
-                    if 45 <= rsi <= 65: score += 20
-                    elif rsi < 30: score += 5
-                    if cp > ma50: score += 10
+                    if td["ma50"] > td["ma200"]: score += 20
+                    if td["rsi"] > 55: score += 15
+                    elif td["rsi"] < 30: score += 10
+                    if cp > td["ma50"]: score += 15
 
-                    if score >= at_min_score:
-                        candidates.append({"Stock": symbol, "Score": score, "Price": cp, "RSI": rsi})
-                except:
-                    pass
+                    advice = "🔥 BUY" if score >= 80 else "🟡 HOLD" if score >= 65 else "🔴 AVOID"
+                    target = round(cp * 1.08, 2)
+                    sl = round(cp * 0.95, 2)
+                    charges_est = calculate_charges(cp, target, 1)
 
-        candidates.sort(key=lambda x: x["Score"], reverse=True)
-        top_candidates = candidates[:slots_available]
+                    a1, a2, a3, a4 = st.columns(4)
+                    a1.metric("Score", f"{score}/100")
+                    a2.metric("Entry", f"₹{cp}")
+                    a3.metric("Target", f"₹{target}")
+                    a4.metric("SL", f"₹{sl}")
 
-        if top_candidates:
-            st.markdown("##### 🟢 Auto-Buying These Stocks:")
-            for c in top_candidates:
-                qty = int(at_capital_per_trade / c["Price"])
-                if qty < 1:
-                    st.warning(f"{c['Stock']}: Capital Per Trade (₹{at_capital_per_trade}) Price (₹{c['Price']}) કરતા ઓછું છે, Skip.")
-                    continue
+                    st.success(f"Recommendation: {advice}")
+                    st.caption(f"Est. Net P&L if Target hit (1 qty): ₹{charges_est['net_pnl']}")
 
-                cost = qty * c["Price"]
-                if cost > st.session_state.paper_cash:
-                    st.warning(f"{c['Stock']}: Insufficient Cash, Skip.")
-                    continue
+                    if st.button("💾 Save to Journal", key="save_j"):
+                        if "trade_journal" not in st.session_state:
+                            st.session_state.trade_journal = []
+                        st.session_state.trade_journal.append({
+                            "Date": str(datetime.date.today()),
+                            "Stock": trade_sym,
+                            "Score": score,
+                            "Advice": advice,
+                            "Entry": cp,
+                            "Target": target,
+                            "SL": sl
+                        })
+                        save_data()
+                        st.success("✅ Saved!")
+            except Exception as e:
+                st.error(f"Error: {e}")
 
-                st.session_state.paper_cash -= cost
-                st.session_state.paper_portfolio[c["Stock"]] = {"qty": qty, "avg_price": c["Price"]}
+        st.divider()
+        st.markdown("#### 📒 Trade Journal")
+        if "trade_journal" not in st.session_state:
+            st.session_state.trade_journal = []
+        if st.session_state.trade_journal:
+            st.dataframe(
+                pd.DataFrame(st.session_state.trade_journal),
+                use_container_width=True
+            )
 
-                st.success(f"✅ BOUGHT {qty} x {c['Stock']} @ ₹{c['Price']} | Score: {c['Score']}/100 | RSI: {c['RSI']}")
+    with ai_tab2:
+        st.markdown("#### 🧑‍🏫 Gemini AI Trade Coach")
+        st.caption("'Should I buy Reliance?' 'TCS entry ક્યારે?'")
 
-            save_data()
-        else:
-            st.info(f"કોઈ Stock Minimum Score ({at_min_score}) Match નથી થયો. આજે કોઈ નવો Buy નહીં.")
+        coach_q = st.text_input(
+            "Question",
+            value="Should I buy Reliance?",
+            key="coach_q"
+        )
 
-    # ---------- STEP 3: SUMMARY ----------
-    st.divider()
-    st.markdown("#### 📊 Auto Trade Run Summary")
-    final_holdings = len(st.session_state.paper_portfolio)
-    col_at1, col_at2 = st.columns(2)
-    col_at1.metric("Open Positions Now", final_holdings)
-    col_at2.metric("Available Cash", f"₹{st.session_state.paper_cash:,.2f}")
+        if st.button("🤖 Ask AI Coach", key="coach_btn"):
+            if coach_q.strip():
+                try:
+                    NAMES = {
+                        "reliance": "RELIANCE.NS", "tcs": "TCS.NS",
+                        "infosys": "INFY.NS", "infy": "INFY.NS",
+                        "hdfc": "HDFCBANK.NS", "hdfcbank": "HDFCBANK.NS",
+                        "icici": "ICICIBANK.NS", "sbi": "SBIN.NS",
+                        "itc": "ITC.NS", "wipro": "WIPRO.NS",
+                        "titan": "TITAN.NS", "sunpharma": "SUNPHARMA.NS",
+                        "maruti": "MARUTI.NS", "lt": "LT.NS",
+                        "airtel": "BHARTIARTL.NS", "bharti": "BHARTIARTL.NS",
+                        "kotak": "KOTAKBANK.NS", "axis": "AXISBANK.NS",
+                        "ntpc": "NTPC.NS", "ongc": "ONGC.NS",
+                        "tatamotors": "TATAMOTORS.NS", "mahindra": "M&M.NS",
+                        "bajaj": "BAJFINANCE.NS", "hcl": "HCLTECH.NS",
+                        "techm": "TECHM.NS", "adani": "ADANIPORTS.NS",
+                        "tatasteel": "TATASTEEL.NS", "jsw": "JSWSTEEL.NS"
+                    }
 
-    st.session_state.last_auto_trade_run = str(datetime.datetime.now())
-    save_data()
-    st.success(f"✅ Auto Trade Bot Run Complete at {datetime.datetime.now().strftime('%H:%M:%S')}")
-else:
-    st.info("'Run Auto Trade Bot Now' click કરો - Bot જાતે Scan, Buy, Sell કરશે (Rules પ્રમાણે).")
+                    detected = None
+                    for name, sym in NAMES.items():
+                        if name in coach_q.lower():
+                            detected = sym
+                            break
 
-if "last_auto_trade_run" in st.session_state:
-    st.caption(f"📅 Last Run: {st.session_state.last_auto_trade_run}")
-    
-# ==========================================
-# CIRCUIT BREAKER (V44)
-# ==========================================
-st.divider()
-st.subheader("🚨 Circuit Breaker")
-st.caption("Daily Loss Limit Hit થાય તો Auto Trade Bot આપોઆપ બંધ થઈ જાય - Capital Protection")
+                    context = ""
+                    if detected:
+                        td = fetch_technical_data(detected)
+                        if td:
+                            cp = td["current_price"]
+                            target = round(cp * 1.08, 2)
+                            sl = round(cp * 0.95, 2)
+                            charges_est = calculate_charges(cp, target, 1)
 
-if "circuit_breaker_date" not in st.session_state:
-    st.session_state.circuit_breaker_date = None
-if "circuit_breaker_start_value" not in st.session_state:
-    st.session_state.circuit_breaker_start_value = None
-if "circuit_breaker_triggered" not in st.session_state:
-    st.session_state.circuit_breaker_triggered = False
+                            c1, c2, c3, c4 = st.columns(4)
+                            c1.metric("Price", f"₹{cp}")
+                            c2.metric("RSI", td["rsi"])
+                            c3.metric("Trend", "🟢" if td["trend"]=="Bullish" else "🔴")
+                            c4.metric("Est.Net P&L", f"₹{charges_est['net_pnl']}")
 
-with st.expander("⚙️ Circuit Breaker Settings"):
-    cb_daily_loss_limit_pct = st.slider("Max Daily Loss Limit (%)", min_value=1.0, max_value=15.0, value=5.0, step=0.5, key="cb_daily_loss_limit_pct")
-    cb_enabled = st.checkbox("Circuit Breaker Enabled", value=True, key="cb_enabled")
+                            context = f"""
+Detected: {detected}
+Price: ₹{cp}, RSI: {td['rsi']}, Trend: {td['trend']}
+MA50: {td['ma50']}, MA200: {td['ma200']}
+Suggested Target: ₹{target}, SL: ₹{sl}
+Est. Net P&L (charges+slippage after): ₹{charges_est['net_pnl']}
+"""
 
-cb_holdings_value = 0
-for sym, pos in st.session_state.paper_portfolio.items():
-    try:
-        td = fetch_technical_data(sym)
-        cp = td["current_price"] if td else pos["avg_price"]
-    except:
-        cp = pos["avg_price"]
-    cb_holdings_value += cp * pos["qty"]
+                    prompt = f"""Professional Trading Coach છો.
+Question: "{coach_q}"
+{context if context else "General trading question"}
 
-cb_current_total = round(st.session_state.paper_cash + cb_holdings_value, 2)
-today_str = str(datetime.date.today())
+ગુજરાતીમાં answer આપો:
+1. Recommendation: BUY/WAIT/AVOID
+2. Entry: ₹
+3. Target: ₹
+4. Stop Loss: ₹
+5. Risk: Low/Medium/High
+6. Probability: %
+7. Reasoning (2-3 lines)
 
-if st.session_state.circuit_breaker_date != today_str:
-    st.session_state.circuit_breaker_date = today_str
-    st.session_state.circuit_breaker_start_value = cb_current_total
-    st.session_state.circuit_breaker_triggered = False
-    save_data()
+છેલ્લે: 'આ નાણાકીય સલાહ નથી.'"""
 
-day_start_value = st.session_state.circuit_breaker_start_value or cb_current_total
-day_change_pct = round(((cb_current_total - day_start_value) / day_start_value) * 100, 2) if day_start_value > 0 else 0
+                    with st.spinner("AI Coach thinking..."):
+                        resp = model.generate_content(prompt)
+                    st.markdown(resp.text)
+                except Exception as e:
+                    st.error(f"Error: {e}")
 
-col_cb1, col_cb2, col_cb3 = st.columns(3)
-col_cb1.metric("Today's Start Value", f"₹{day_start_value:,.2f}")
-col_cb2.metric("Current Value", f"₹{cb_current_total:,.2f}")
-col_cb3.metric("Today's Change", f"{day_change_pct}%", delta=f"{day_change_pct}%")
+    with ai_tab3:
+        st.markdown("#### 📋 AI Portfolio Review")
 
-if cb_enabled and day_change_pct <= -cb_daily_loss_limit_pct:
-    st.session_state.circuit_breaker_triggered = True
-    save_data()
-
-if st.session_state.circuit_breaker_triggered:
-    st.error(f"🚨 CIRCUIT BREAKER TRIGGERED! Today's Loss ({day_change_pct}%) એ Limit ({cb_daily_loss_limit_pct}%) વટાવી દીધી છે. Auto Trade Bot બંધ છે.")
-    st.warning("Auto Trade Bot આજે વધુ Trade નહીં કરે. કાલે આપોઆપ Reset થશે, અથવા નીચે Manual Override કરી શકો છો.")
-    if st.button("🔓 Manual Override - Resume Trading Today"):
-        st.session_state.circuit_breaker_triggered = False
-        save_data()
-        st.success("✅ Circuit Breaker Manually Reset. Trading Resumed.")
-elif cb_enabled:
-    st.success(f"✅ Circuit Breaker Active & Safe | Limit: -{cb_daily_loss_limit_pct}% | Current: {day_change_pct}%")
-else:
-    st.info("⚪ Circuit Breaker Disabled - Auto Trade Bot કોઈપણ Loss Limit વગર ચાલશે.")
-# ==========================================
-# PROFESSIONAL CHARTS (V35)
-# ==========================================
-st.divider()
-st.subheader("📊 Professional Charts")
-st.caption("Candlestick, RSI, Volume, Buy/Sell Markers, Equity Curve")
-
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-
-chart_symbol = st.text_input("Stock Symbol", value="RELIANCE.NS", key="chart_symbol")
-
-if st.button("📈 Generate Professional Chart"):
-    try:
-        with st.spinner("Chart Data Load થઈ રહ્યો છે..."):
-            stock = yf.Ticker(chart_symbol)
-            hist = stock.history(period="6mo")
-
-            if hist.empty:
-                st.error("Data મળ્યો નથી.")
+        if st.button("🤖 Review My Portfolio", key="review_btn"):
+            if not st.session_state.paper_portfolio:
+                st.info("Portfolio Empty - Stocks Buy કરો.")
             else:
-                close = hist["Close"]
-                high = hist["High"]
-                low = hist["Low"]
-                open_ = hist["Open"]
-                volume = hist["Volume"]
-                dates = hist.index
+                with st.spinner("Portfolio Analyzing..."):
+                    rows = []
+                    total_inv = 0
+                    total_cur = 0
+                    sector_exp = {}
 
-                # RSI Calculate
-                delta = close.diff()
-                gain = delta.where(delta > 0, 0).rolling(14).mean()
-                loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
-                rs = gain / loss
-                rsi = 100 - (100 / (1 + rs))
+                    for sym, pos in st.session_state.paper_portfolio.items():
+                        try:
+                            td = fetch_technical_data(sym)
+                            cp = td["current_price"] if td else pos["avg_price"]
+                            rsi = td["rsi"] if td else "N/A"
+                            trend = td["trend"] if td else "N/A"
+                        except:
+                            cp = pos["avg_price"]
+                            rsi = trend = "N/A"
 
-                # MA Lines
-                ma20 = close.rolling(20).mean()
-                ma50 = close.rolling(50).mean()
+                        inv = pos["qty"] * pos["avg_price"]
+                        cur = pos["qty"] * cp
+                        pnl = cur - inv
+                        pnl_pct = round((pnl/inv)*100, 2) if inv > 0 else 0
+                        charges = calculate_charges(pos["avg_price"], cp, pos["qty"])
+                        total_inv += inv
+                        total_cur += cur
 
-                # Buy/Sell Signals (simple MA crossover)
-                buy_signals = []
-                sell_signals = []
-                for i in range(1, len(close)):
-                    if ma20.iloc[i] > ma50.iloc[i] and ma20.iloc[i-1] <= ma50.iloc[i-1]:
-                        buy_signals.append(i)
-                    elif ma20.iloc[i] < ma50.iloc[i] and ma20.iloc[i-1] >= ma50.iloc[i-1]:
-                        sell_signals.append(i)
+                        sec = "Other"
+                        for s, stocks in SECTOR_MAP.items():
+                            if sym in stocks:
+                                sec = s
+                                break
+                        sector_exp[sec] = sector_exp.get(sec, 0) + cur
 
-                # Create subplots: Candlestick + Volume + RSI
-                fig = make_subplots(
-                    rows=3, cols=1,
-                    shared_xaxes=True,
-                    vertical_spacing=0.05,
-                    row_heights=[0.6, 0.2, 0.2],
-                    subplot_titles=(
-                        f"{chart_symbol} - Candlestick Chart",
-                        "Volume",
-                        "RSI (14)"
-                    )
-                )
+                        rows.append({
+                            "Stock": sym.replace(".NS",""),
+                            "Qty": pos["qty"],
+                            "Avg ₹": round(pos["avg_price"], 2),
+                            "Current ₹": cp,
+                            "Gross P&L": f"₹{round(pnl,2)}",
+                            "Net P&L": f"₹{charges['net_pnl']}",
+                            "Net %": f"{charges['net_pnl_pct']}%",
+                            "RSI": rsi,
+                            "Trend": trend,
+                            "Sector": sec
+                        })
 
-                # Candlestick
-                fig.add_trace(go.Candlestick(
-                    x=dates,
-                    open=open_,
-                    high=high,
-                    low=low,
-                    close=close,
-                    name="Price",
-                    increasing_line_color="#00C853",
-                    decreasing_line_color="#FF1744"
-                ), row=1, col=1)
+                    port_df = pd.DataFrame(rows)
+                    st.dataframe(port_df, use_container_width=True)
 
-                # MA Lines
-                fig.add_trace(go.Scatter(
-                    x=dates, y=ma20,
-                    mode="lines",
-                    name="MA20",
-                    line=dict(color="#2962FF", width=1.5)
-                ), row=1, col=1)
+                    total_pnl = round(total_cur - total_inv, 2)
+                    p1, p2, p3 = st.columns(3)
+                    p1.metric("Invested", f"₹{total_inv:,.2f}")
+                    p2.metric("Current", f"₹{total_cur:,.2f}")
+                    p3.metric("P&L", f"₹{total_pnl:,.2f}")
 
-                fig.add_trace(go.Scatter(
-                    x=dates, y=ma50,
-                    mode="lines",
-                    name="MA50",
-                    line=dict(color="#FF6D00", width=1.5)
-                ), row=1, col=1)
+                    st.markdown("#### 🏭 Sector Exposure")
+                    sec_df = pd.DataFrame([
+                        {
+                            "Sector": s,
+                            "Value": round(v, 2),
+                            "Allocation %": round((v/total_cur)*100, 1) if total_cur > 0 else 0
+                        }
+                        for s, v in sector_exp.items()
+                    ]).sort_values("Allocation %", ascending=False)
+                    st.dataframe(sec_df, use_container_width=True)
 
-                # Buy Signals
-                if buy_signals:
-                    fig.add_trace(go.Scatter(
-                        x=[dates[i] for i in buy_signals],
-                        y=[low.iloc[i] * 0.99 for i in buy_signals],
-                        mode="markers",
-                        name="Buy Signal",
-                        marker=dict(
-                            symbol="triangle-up",
-                            size=12,
-                            color="#00C853"
-                        )
-                    ), row=1, col=1)
+                    prompt = f"""Portfolio Manager છો.
+Invested: ₹{total_inv:.2f}
+Current: ₹{total_cur:.2f}
+P&L: ₹{total_pnl:.2f}
+Holdings: {port_df[['Stock','Net P&L','Net %','RSI','Trend','Sector']].to_string(index=False)}
+Sector Exposure: {sec_df.to_string(index=False)}
 
-                # Sell Signals
-                if sell_signals:
-                    fig.add_trace(go.Scatter(
-                        x=[dates[i] for i in sell_signals],
-                        y=[high.iloc[i] * 1.01 for i in sell_signals],
-                        mode="markers",
-                        name="Sell Signal",
-                        marker=dict(
-                            symbol="triangle-down",
-                            size=12,
-                            color="#FF1744"
-                        )
-                    ), row=1, col=1)
+ગુજરાતીમાં:
+1. Portfolio Health Score /100
+2. Diversification
+3. Risk Concentration
+4. Underperforming Stocks
+5. Strong Holdings
+6. Action Suggestions (Hold/Trim/Add)
 
-                # Volume Bars
-                colors = ["#00C853" if close.iloc[i] >= open_.iloc[i]
-                          else "#FF1744" for i in range(len(close))]
-                fig.add_trace(go.Bar(
-                    x=dates,
-                    y=volume,
-                    name="Volume",
-                    marker_color=colors,
-                    opacity=0.7
-                ), row=2, col=1)
+છેલ્લે: 'આ નાણાકીય સલાહ નથી.'"""
 
-                # RSI Line
-                fig.add_trace(go.Scatter(
-                    x=dates, y=rsi,
-                    mode="lines",
-                    name="RSI",
-                    line=dict(color="#9C27B0", width=1.5)
-                ), row=3, col=1)
+                    with st.spinner("AI Review..."):
+                        resp = model.generate_content(prompt)
+                    st.markdown(resp.text)
 
-                # RSI Zones
-                fig.add_hline(y=70, line_dash="dash",
-                              line_color="red", opacity=0.5, row=3, col=1)
-                fig.add_hline(y=30, line_dash="dash",
-                              line_color="green", opacity=0.5, row=3, col=1)
+    with ai_tab4:
+        st.markdown("#### ⚖️ AI Portfolio Rebalancer")
 
-                # Layout
-                fig.update_layout(
-                    height=700,
-                    template="plotly_white",
-                    xaxis_rangeslider_visible=False,
-                    showlegend=True,
-                    legend=dict(
-                        orientation="h",
-                        yanchor="bottom",
-                        y=1.02,
-                        xanchor="right",
-                        x=1
-                    ),
-                    margin=dict(l=10, r=10, t=60, b=10)
-                )
+        if st.button("⚖️ Get Suggestions", key="rebal_btn"):
+            if not st.session_state.paper_portfolio:
+                st.info("Portfolio Empty")
+            else:
+                with st.spinner("Analyzing..."):
+                    rows = []
+                    total_cur = 0
 
-                fig.update_yaxes(title_text="Price (₹)", row=1, col=1)
-                fig.update_yaxes(title_text="Volume", row=2, col=1)
-                fig.update_yaxes(title_text="RSI", row=3, col=1)
+                    for sym, pos in st.session_state.paper_portfolio.items():
+                        try:
+                            td = fetch_technical_data(sym)
+                            cp = td["current_price"] if td else pos["avg_price"]
+                            rsi = td["rsi"] if td else 50
+                            trend = td["trend"] if td else "N/A"
+                            ma50 = td["ma50"] if td else cp
+                            ma200 = td["ma200"] if td else cp
+                        except:
+                            cp = pos["avg_price"]
+                            rsi, trend, ma50, ma200 = 50, "N/A", cp, cp
 
-                st.plotly_chart(fig, use_container_width=True)
+                        cur = pos["qty"] * cp
+                        pnl_pct = round(((cp - pos["avg_price"]) / pos["avg_price"]) * 100, 2)
+                        total_cur += cur
 
-                # Current Stats
-                current_rsi = round(rsi.iloc[-1], 2)
-                current_price = round(close.iloc[-1], 2)
+                        score = 50
+                        if trend == "Bullish": score += 20
+                        else: score -= 10
+                        if 40 <= rsi <= 65: score += 15
+                        elif rsi > 75: score -= 15
+                        elif rsi < 25: score += 5
+                        if cp > ma50: score += 10
+                        if cp > ma200: score += 5
+                        score = max(0, min(100, score))
 
-                col_ch1, col_ch2, col_ch3 = st.columns(3)
-                col_ch1.metric("Current Price", f"₹{current_price}")
-                col_ch2.metric("RSI", current_rsi,
-                               delta="Overbought ⚠️" if current_rsi > 70
-                               else "Oversold 🟢" if current_rsi < 30
-                               else "Normal ✅")
-                col_ch3.metric("Trend",
-                               "Bullish 🟢" if ma20.iloc[-1] > ma50.iloc[-1]
-                               else "Bearish 🔴")
+                        action = "🟢 HOLD/ADD" if score >= 70 else "🟡 HOLD" if score >= 45 else "🔴 TRIM/EXIT"
+                        rows.append({
+                            "Stock": sym.replace(".NS",""),
+                            "Current ₹": cp,
+                            "P&L %": pnl_pct,
+                            "Score": score,
+                            "Action": action
+                        })
 
-    except Exception as e:
-        st.error(f"Error: {e}")
+                    hold_df = pd.DataFrame(rows)
+                    if total_cur > 0:
+                        values = [
+                            st.session_state.paper_portfolio[sym]["qty"] * st.session_state.paper_portfolio[sym]["avg_price"]
+                            for sym in st.session_state.paper_portfolio.keys()
+                        ]
+                        hold_df["Alloc %"] = [round((v/total_cur)*100, 1) for v in values]
 
-# ==========================================
-# PORTFOLIO EQUITY CURVE CHART (V35b)
-# ==========================================
-st.divider()
-st.subheader("📈 Portfolio Equity Curve (Interactive)")
+                    hold_df = hold_df.sort_values("Score", ascending=False)
+                    st.dataframe(hold_df, use_container_width=True)
 
-if len(st.session_state.equity_curve) >= 2:
-    try:
-        eq_df = pd.DataFrame(st.session_state.equity_curve)
-        eq_df["Date"] = pd.to_datetime(eq_df["Date"])
-        eq_df = eq_df.sort_values("Date")
+                    weak = hold_df[hold_df["Score"] < 45]["Stock"].tolist()
+                    strong = hold_df[hold_df["Score"] >= 70]["Stock"].tolist()
 
-        starting_value = eq_df["Value"].iloc[0]
-        eq_df["Profit"] = eq_df["Value"] - starting_value
-        eq_df["Peak"] = eq_df["Value"].cummax()
-        eq_df["Drawdown"] = ((eq_df["Value"] - eq_df["Peak"]) / eq_df["Peak"]) * 100
+                    r1, r2 = st.columns(2)
+                    with r1:
+                        st.markdown("**🔴 Exit Candidates:**")
+                        for s in weak:
+                            st.write(f"• {s}")
+                        if not weak:
+                            st.success("None - All holdings healthy ✅")
+                    with r2:
+                        st.markdown("**🟢 Strong Holdings:**")
+                        for s in strong:
+                            st.write(f"• {s}")
 
-        fig2 = make_subplots(
-            rows=2, cols=1,
-            shared_xaxes=True,
-            vertical_spacing=0.1,
-            row_heights=[0.7, 0.3],
-            subplot_titles=("Portfolio Value", "Drawdown %")
-        )
+                    # New ideas
+                    new_ideas = []
+                    existing = set(st.session_state.paper_portfolio.keys())
+                    for sym in STOCK_UNIVERSE:
+                        if sym in existing:
+                            continue
+                        try:
+                            td = fetch_technical_data(sym)
+                            if td and td["trend"] == "Bullish" and 45 <= td["rsi"] <= 65:
+                                new_ideas.append(sym.replace(".NS",""))
+                        except:
+                            pass
+                        if len(new_ideas) >= 3:
+                            break
 
-        # Portfolio Value Line
-        fig2.add_trace(go.Scatter(
-            x=eq_df["Date"],
-            y=eq_df["Value"],
-            mode="lines+markers",
-            name="Portfolio Value",
-            line=dict(color="#2962FF", width=2),
-            marker=dict(size=6),
-            fill="tozeroy",
-            fillcolor="rgba(41, 98, 255, 0.1)"
-        ), row=1, col=1)
+                    st.markdown("**💡 New Ideas:**")
+                    if new_ideas:
+                        st.write(", ".join(new_ideas))
+                    else:
+                        st.write("હાલ કોઈ new bullish setup નથી.")
 
-        # Starting value line
-        fig2.add_hline(
-            y=starting_value,
-            line_dash="dash",
-            line_color="gray",
-            opacity=0.5,
-            row=1, col=1
-        )
+                    prompt = f"""Portfolio Manager છો.
+Holdings Analysis:
+{hold_df.to_string(index=False)}
+Exit Candidates: {', '.join(weak) if weak else 'None'}
+Strong: {', '.join(strong) if strong else 'None'}
+New Ideas: {', '.join(new_ideas) if new_ideas else 'None'}
 
-        # Drawdown
-        fig2.add_trace(go.Scatter(
-            x=eq_df["Date"],
-            y=eq_df["Drawdown"],
-            mode="lines",
-            name="Drawdown %",
-            line=dict(color="#FF1744", width=1.5),
-            fill="tozeroy",
-            fillcolor="rgba(255, 23, 68, 0.1)"
-        ), row=2, col=1)
+ગુજરાતીમાં (6-8 lines):
+1. Rebalancing Strategy
+2. Specific shifts (sell X, buy Y)
+3. Concentration risk
+4. Priority order
 
-        fig2.update_layout(
-            height=500,
-            template="plotly_white",
-            showlegend=True,
-            margin=dict(l=10, r=10, t=40, b=10)
-        )
+છેલ્લે: 'આ નાણાકીય સલાહ નથી.'"""
 
-        fig2.update_yaxes(title_text="Value (₹)", row=1, col=1)
-        fig2.update_yaxes(title_text="Drawdown %", row=2, col=1)
-
-        st.plotly_chart(fig2, use_container_width=True)
-
-        total_growth = round(((eq_df["Value"].iloc[-1] - starting_value) / starting_value) * 100, 2)
-        max_drawdown = round(eq_df["Drawdown"].min(), 2)
-
-        col_eq1, col_eq2, col_eq3 = st.columns(3)
-        col_eq1.metric("Starting Value", f"₹{starting_value:,.2f}")
-        col_eq2.metric("Current Value", f"₹{eq_df['Value'].iloc[-1]:,.2f}")
-        col_eq3.metric("Total Growth", f"{total_growth}%",
-                       delta=f"Max Drawdown: {max_drawdown}%")
-
-    except Exception as e:
-        st.error(f"Chart Error: {e}")
-else:
-    st.info("Equity Curve Chart માટે ઓછામાં ઓછા 2 Snapshots જરૂરી છે. V34 માં 'Record Snapshot' ક્લિક કરો.")
+                    with st.spinner("AI Strategy..."):
+                        resp = model.generate_content(prompt)
+                    st.markdown(resp.text)
