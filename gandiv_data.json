@@ -45,7 +45,7 @@
   ],
   "equity_curve": [],
   "trade_journal": [],
-  "last_auto_trade_run": "2026-06-29 17:58:43.751136",
+  "last_auto_trade_run": "2026-06-29 18:01:22.808216",
   "circuit_breaker_date": "2026-06-29",
   "circuit_breaker_start_value": 98670.7,
   "circuit_breaker_triggered": false
