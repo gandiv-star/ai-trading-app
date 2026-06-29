@@ -1449,3 +1449,653 @@ New Ideas: {', '.join(new_ideas) if new_ideas else 'None'}
                     with st.spinner("AI Strategy..."):
                         resp = model.generate_content(prompt)
                     st.markdown(resp.text)
+# ==========================================
+# TAB 5: ANALYTICS
+# ==========================================
+with tab5:
+    st.subheader("📊 Analytics & Performance")
+
+    an_tab1, an_tab2, an_tab3, an_tab4 = st.tabs([
+        "📈 Charts", "📊 Portfolio Stats", "🧪 Backtesting", "🛡️ Risk & Bot"
+    ])
+
+    with an_tab1:
+        st.markdown("#### 📈 Professional Chart")
+
+        chart_symbol = st.text_input("Symbol", value="RELIANCE.NS", key="chart_sym")
+        chart_period = st.radio(
+            "Period",
+            ["3 Months", "6 Months", "1 Year"],
+            horizontal=True,
+            key="chart_period"
+        )
+        chart_period_map = {"3 Months": "3mo", "6 Months": "6mo", "1 Year": "1y"}
+        c_period = chart_period_map[chart_period]
+
+        if st.button("📈 Generate Chart", key="chart_btn"):
+            try:
+                with st.spinner("Loading chart..."):
+                    hist = yf.Ticker(chart_symbol).history(period=c_period)
+
+                if not hist.empty:
+                    close = hist["Close"]
+                    high = hist["High"]
+                    low = hist["Low"]
+                    open_ = hist["Open"]
+                    volume = hist["Volume"]
+                    dates = hist.index
+
+                    ma20 = close.rolling(20).mean()
+                    ma50 = close.rolling(50).mean()
+
+                    delta = close.diff()
+                    gain = delta.where(delta > 0, 0).rolling(14).mean()
+                    loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
+                    rsi = 100 - (100 / (1 + gain/loss))
+
+                    # Buy/Sell signals
+                    buy_sig = []
+                    sell_sig = []
+                    for i in range(1, len(close)):
+                        if ma20.iloc[i] > ma50.iloc[i] and ma20.iloc[i-1] <= ma50.iloc[i-1]:
+                            buy_sig.append(i)
+                        elif ma20.iloc[i] < ma50.iloc[i] and ma20.iloc[i-1] >= ma50.iloc[i-1]:
+                            sell_sig.append(i)
+
+                    fig = make_subplots(
+                        rows=3, cols=1,
+                        shared_xaxes=True,
+                        vertical_spacing=0.04,
+                        row_heights=[0.6, 0.2, 0.2],
+                        subplot_titles=(
+                            f"{chart_symbol} - Candlestick",
+                            "Volume",
+                            "RSI (14)"
+                        )
+                    )
+
+                    # Candlestick
+                    fig.add_trace(go.Candlestick(
+                        x=dates, open=open_, high=high, low=low, close=close,
+                        increasing_line_color="#00FF88",
+                        decreasing_line_color="#FF1744",
+                        name="Price"
+                    ), row=1, col=1)
+
+                    # MA Lines
+                    fig.add_trace(go.Scatter(
+                        x=dates, y=ma20,
+                        line=dict(color="#00BFFF", width=1.5),
+                        name="MA20"
+                    ), row=1, col=1)
+
+                    fig.add_trace(go.Scatter(
+                        x=dates, y=ma50,
+                        line=dict(color="#FFA000", width=1.5),
+                        name="MA50"
+                    ), row=1, col=1)
+
+                    # Buy signals
+                    if buy_sig:
+                        fig.add_trace(go.Scatter(
+                            x=[dates[i] for i in buy_sig],
+                            y=[low.iloc[i] * 0.99 for i in buy_sig],
+                            mode="markers",
+                            marker=dict(symbol="triangle-up", size=12, color="#00FF88"),
+                            name="Buy Signal"
+                        ), row=1, col=1)
+
+                    # Sell signals
+                    if sell_sig:
+                        fig.add_trace(go.Scatter(
+                            x=[dates[i] for i in sell_sig],
+                            y=[high.iloc[i] * 1.01 for i in sell_sig],
+                            mode="markers",
+                            marker=dict(symbol="triangle-down", size=12, color="#FF1744"),
+                            name="Sell Signal"
+                        ), row=1, col=1)
+
+                    # Volume
+                    vol_colors = [
+                        "#00FF88" if close.iloc[i] >= open_.iloc[i] else "#FF1744"
+                        for i in range(len(close))
+                    ]
+                    fig.add_trace(go.Bar(
+                        x=dates, y=volume,
+                        marker_color=vol_colors,
+                        name="Volume",
+                        opacity=0.7
+                    ), row=2, col=1)
+
+                    # RSI
+                    fig.add_trace(go.Scatter(
+                        x=dates, y=rsi,
+                        line=dict(color="#9C27B0", width=1.5),
+                        name="RSI"
+                    ), row=3, col=1)
+
+                    fig.add_hline(y=70, line_dash="dash", line_color="#FF1744", opacity=0.5, row=3, col=1)
+                    fig.add_hline(y=30, line_dash="dash", line_color="#00FF88", opacity=0.5, row=3, col=1)
+                    fig.add_hline(y=50, line_dash="dot", line_color="#8B949E", opacity=0.3, row=3, col=1)
+
+                    fig.update_layout(
+                        height=700,
+                        template="plotly_dark",
+                        paper_bgcolor="#0D1117",
+                        plot_bgcolor="#161B22",
+                        font=dict(color="#E6EDF3"),
+                        xaxis_rangeslider_visible=False,
+                        showlegend=True,
+                        legend=dict(
+                            orientation="h",
+                            yanchor="bottom", y=1.02,
+                            xanchor="right", x=1,
+                            font=dict(color="#E6EDF3")
+                        ),
+                        margin=dict(l=10, r=10, t=60, b=10)
+                    )
+                    fig.update_yaxes(
+                        gridcolor="#21262D",
+                        title_font=dict(color="#8B949E")
+                    )
+                    fig.update_xaxes(gridcolor="#21262D")
+
+                    st.plotly_chart(fig, use_container_width=True)
+
+                    ch1, ch2, ch3, ch4 = st.columns(4)
+                    ch1.metric("Price", f"₹{round(close.iloc[-1],2)}")
+                    ch2.metric("RSI", round(rsi.iloc[-1], 2))
+                    ch3.metric("MA20", f"₹{round(ma20.iloc[-1],2)}")
+                    ch4.metric("Trend", "🟢 Bullish" if ma20.iloc[-1] > ma50.iloc[-1] else "🔴 Bearish")
+                else:
+                    st.error("Data મળ્યો નથી.")
+            except Exception as e:
+                st.error(f"Error: {e}")
+
+        st.divider()
+        st.markdown("#### 📈 Portfolio Equity Curve")
+
+        # Current value calculation
+        eq_hv = 0
+        for sym, pos in st.session_state.paper_portfolio.items():
+            try:
+                td = fetch_technical_data(sym)
+                cp = td["current_price"] if td else pos["avg_price"]
+            except:
+                cp = pos["avg_price"]
+            eq_hv += cp * pos["qty"]
+
+        eq_total = round(st.session_state.paper_cash + eq_hv, 2)
+        st.metric("Current Portfolio Value", f"₹{eq_total:,.2f}")
+
+        if st.button("📸 Record Snapshot", key="snap_btn"):
+            today_str = str(datetime.date.today())
+            existing = [e["Date"] for e in st.session_state.equity_curve]
+            if today_str in existing:
+                for e in st.session_state.equity_curve:
+                    if e["Date"] == today_str:
+                        e["Value"] = eq_total
+            else:
+                st.session_state.equity_curve.append({
+                    "Date": today_str, "Value": eq_total
+                })
+            save_data()
+            st.success(f"✅ Snapshot: ₹{eq_total:,.2f} on {today_str}")
+
+        if len(st.session_state.equity_curve) >= 2:
+            eq_df = pd.DataFrame(st.session_state.equity_curve)
+            eq_df["Date"] = pd.to_datetime(eq_df["Date"])
+            eq_df = eq_df.sort_values("Date").set_index("Date")
+            start_val = eq_df["Value"].iloc[0]
+            eq_df["Profit"] = eq_df["Value"] - start_val
+            eq_df["Peak"] = eq_df["Value"].cummax()
+            eq_df["Drawdown %"] = ((eq_df["Value"] - eq_df["Peak"]) / eq_df["Peak"]) * 100
+
+            fig2 = make_subplots(
+                rows=2, cols=1,
+                shared_xaxes=True,
+                vertical_spacing=0.08,
+                row_heights=[0.7, 0.3],
+                subplot_titles=("Portfolio Value", "Drawdown %")
+            )
+
+            fig2.add_trace(go.Scatter(
+                x=eq_df.index, y=eq_df["Value"],
+                mode="lines+markers",
+                line=dict(color="#00FF88", width=2.5),
+                marker=dict(size=7, color="#00FF88"),
+                fill="tozeroy",
+                fillcolor="rgba(0,255,136,0.08)",
+                name="Portfolio Value"
+            ), row=1, col=1)
+
+            fig2.add_hline(
+                y=start_val,
+                line_dash="dash",
+                line_color="#8B949E",
+                opacity=0.5,
+                row=1, col=1
+            )
+
+            fig2.add_trace(go.Scatter(
+                x=eq_df.index, y=eq_df["Drawdown %"],
+                line=dict(color="#FF1744", width=1.5),
+                fill="tozeroy",
+                fillcolor="rgba(255,23,68,0.08)",
+                name="Drawdown %"
+            ), row=2, col=1)
+
+            fig2.update_layout(
+                height=500,
+                template="plotly_dark",
+                paper_bgcolor="#0D1117",
+                plot_bgcolor="#161B22",
+                font=dict(color="#E6EDF3"),
+                margin=dict(l=10, r=10, t=40, b=10)
+            )
+            fig2.update_yaxes(gridcolor="#21262D")
+            fig2.update_xaxes(gridcolor="#21262D")
+
+            st.plotly_chart(fig2, use_container_width=True)
+
+            growth = round(((eq_df["Value"].iloc[-1] - start_val) / start_val) * 100, 2)
+            max_dd = round(eq_df["Drawdown %"].min(), 2)
+
+            eq1, eq2, eq3 = st.columns(3)
+            eq1.metric("Start", f"₹{start_val:,.2f}")
+            eq2.metric("Growth", f"{growth}%")
+            eq3.metric("Max Drawdown", f"{max_dd}%")
+
+            with st.expander("📋 Snapshot History"):
+                st.dataframe(
+                    eq_df[["Value","Profit","Drawdown %"]].reset_index(),
+                    use_container_width=True
+                )
+
+            if st.button("🗑️ Clear History", key="clear_eq"):
+                st.session_state.equity_curve = []
+                save_data()
+                st.success("✅ Cleared")
+        else:
+            st.info("2+ Snapshots જોઈએ Equity Curve માટે. Daily 'Record Snapshot' click કરો.")
+
+    with an_tab2:
+        st.markdown("#### 📊 Portfolio Analytics Pro")
+
+        if st.session_state.paper_trade_history:
+            hist_df = pd.DataFrame(st.session_state.paper_trade_history)
+            pnl_col = "Net P&L" if "Net P&L" in hist_df.columns else "P&L"
+
+            total_trades = len(hist_df)
+            wins = hist_df[hist_df[pnl_col] > 0]
+            losses = hist_df[hist_df[pnl_col] <= 0]
+            win_rate = round((len(wins)/total_trades)*100, 2) if total_trades > 0 else 0
+            realized = round(hist_df[pnl_col].sum(), 2)
+            total_charges = hist_df["Charges"].sum() if "Charges" in hist_df.columns else 0
+
+            a1, a2, a3, a4 = st.columns(4)
+            a1.metric("Total Trades", total_trades)
+            a2.metric("Win Rate", f"{win_rate}%")
+            a3.metric("Net Realized P&L", f"₹{realized}")
+            a4.metric("Total Charges Paid", f"₹{round(total_charges,2)}")
+
+            best = hist_df.loc[hist_df[pnl_col].idxmax()]
+            worst = hist_df.loc[hist_df[pnl_col].idxmin()]
+            b1, b2 = st.columns(2)
+            b1.metric("🏆 Best Trade", best["Stock"], f"₹{best[pnl_col]}")
+            b2.metric("📉 Worst Trade", worst["Stock"], f"₹{worst[pnl_col]}")
+
+            st.write(f"✅ Winning: {len(wins)} | ❌ Losing: {len(losses)}")
+            st.dataframe(hist_df, use_container_width=True)
+        else:
+            st.info("Closed Trades નથી. Sell કર્યા પછી stats આવશે.")
+
+        if st.session_state.paper_portfolio:
+            unreal = 0
+            for sym, pos in st.session_state.paper_portfolio.items():
+                try:
+                    td = fetch_technical_data(sym)
+                    cp = td["current_price"] if td else pos["avg_price"]
+                except:
+                    cp = pos["avg_price"]
+                unreal += (cp - pos["avg_price"]) * pos["qty"]
+            st.metric("📈 Unrealized P&L (Open Positions)", f"₹{round(unreal,2)}")
+
+    with an_tab3:
+        st.markdown("#### 🧪 Strategy Backtesting")
+
+        bt_tab1, bt_tab2, bt_tab3 = st.tabs([
+            "📊 MA Crossover", "🚀 Momentum", "📉 RSI Pullback"
+        ])
+
+        with bt_tab1:
+            bt1_sym = st.text_input("Symbol", value="RELIANCE.NS", key="bt1_sym")
+            if st.button("🧪 Run MA Backtest", key="bt1_btn"):
+                try:
+                    with st.spinner("Backtesting..."):
+                        hist = yf.Ticker(bt1_sym).history(period="3y")
+                        close = hist["Close"]
+                        ma50 = close.rolling(50).mean()
+                        ma200 = close.rolling(200).mean()
+                        delta = close.diff()
+                        gain = delta.where(delta > 0, 0).rolling(14).mean()
+                        loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
+                        rsi_s = 100 - (100/(1+(gain/loss)))
+                        volume = hist["Volume"]
+                        avg_vol = volume.rolling(20).mean()
+
+                        pos, entry = False, 0
+                        trades, wins, losses, profit = 0, 0, 0, 0
+
+                        for i in range(200, len(close)):
+                            if not pos:
+                                if (ma50.iloc[i] > ma200.iloc[i] and
+                                    45 <= rsi_s.iloc[i] <= 65 and
+                                    volume.iloc[i] > avg_vol.iloc[i]):
+                                    entry = close.iloc[i]
+                                    pos = True
+                            else:
+                                pct = ((close.iloc[i]-entry)/entry)*100
+                                if pct >= 8:
+                                    wins+=1; trades+=1; profit+=pct; pos=False
+                                elif pct <= -4:
+                                    losses+=1; trades+=1; profit+=pct; pos=False
+
+                        wr = round((wins/trades)*100,2) if trades>0 else 0
+                        b1, b2, b3 = st.columns(3)
+                        b1.metric("Trades", trades)
+                        b2.metric("Win Rate", f"{wr}%")
+                        b3.metric("Total Return", f"{round(profit,2)}%")
+                        st.write(f"✅ Wins: {wins} | ❌ Losses: {losses}")
+                        if wr >= 60: st.success("🔥 Excellent Strategy")
+                        elif wr >= 50: st.warning("✅ Good Strategy")
+                        else: st.error("⚠️ Needs Improvement")
+                except Exception as e:
+                    st.error(f"Error: {e}")
+
+        with bt_tab2:
+            bt2_sym = st.text_input("Symbol", value="ITC.NS", key="bt2_sym")
+            if st.button("🚀 Run Momentum Backtest", key="bt2_btn"):
+                try:
+                    with st.spinner("Backtesting..."):
+                        hist = yf.Ticker(bt2_sym).history(period="3y")
+                        close = hist["Close"]
+                        volume = hist["Volume"]
+                        ma50 = close.rolling(50).mean()
+                        ma200 = close.rolling(200).mean()
+                        avg_vol = volume.rolling(20).mean()
+
+                        pos, entry = False, 0
+                        trades, wins, losses, profit = 0, 0, 0, 0
+
+                        for i in range(200, len(close)):
+                            bh = close.iloc[i-20:i].max()
+                            if not pos:
+                                if (close.iloc[i] > ma50.iloc[i] and
+                                    close.iloc[i] > ma200.iloc[i] and
+                                    close.iloc[i] > bh and
+                                    volume.iloc[i] > avg_vol.iloc[i]):
+                                    entry = close.iloc[i]; pos = True
+                            else:
+                                pct = ((close.iloc[i]-entry)/entry)*100
+                                if pct >= 10:
+                                    wins+=1; trades+=1; profit+=pct; pos=False
+                                elif pct <= -5:
+                                    losses+=1; trades+=1; profit+=pct; pos=False
+
+                        wr = round((wins/trades)*100,2) if trades>0 else 0
+                        b1, b2, b3 = st.columns(3)
+                        b1.metric("Trades", trades)
+                        b2.metric("Win Rate", f"{wr}%")
+                        b3.metric("Total Return", f"{round(profit,2)}%")
+                        st.write(f"✅ Wins: {wins} | ❌ Losses: {losses}")
+                        if wr >= 60: st.success("🔥 Excellent")
+                        elif wr >= 50: st.warning("✅ Good")
+                        else: st.error("⚠️ Weak")
+                except Exception as e:
+                    st.error(f"Error: {e}")
+
+        with bt_tab3:
+            bt3_sym = st.text_input("Symbol", value="ITC.NS", key="bt3_sym")
+            if st.button("📉 Run RSI Backtest", key="bt3_btn"):
+                try:
+                    with st.spinner("Backtesting..."):
+                        hist = yf.Ticker(bt3_sym).history(period="3y")
+                        close = hist["Close"]
+                        ma50 = close.rolling(50).mean()
+                        ma200 = close.rolling(200).mean()
+                        delta = close.diff()
+                        gain = delta.where(delta > 0, 0).rolling(14).mean()
+                        loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
+                        rsi = 100-(100/(1+(gain/loss)))
+
+                        pos, entry = False, 0
+                        trades, wins, losses, profit = 0, 0, 0, 0
+
+                        for i in range(200, len(close)):
+                            if not pos:
+                                if ma50.iloc[i] > ma200.iloc[i] and rsi.iloc[i] < 35:
+                                    entry = close.iloc[i]; pos = True
+                            else:
+                                pct = ((close.iloc[i]-entry)/entry)*100
+                                if pct >= 8:
+                                    wins+=1; trades+=1; profit+=pct; pos=False
+                                elif pct <= -4:
+                                    losses+=1; trades+=1; profit+=pct; pos=False
+
+                        wr = round((wins/trades)*100,2) if trades>0 else 0
+                        b1, b2, b3 = st.columns(3)
+                        b1.metric("Trades", trades)
+                        b2.metric("Win Rate", f"{wr}%")
+                        b3.metric("Total Return", f"{round(profit,2)}%")
+                        st.write(f"✅ Wins: {wins} | ❌ Losses: {losses}")
+                        if wr >= 60: st.success("🔥 Excellent")
+                        elif wr >= 50: st.warning("✅ Good")
+                        else: st.error("⚠️ Weak")
+                except Exception as e:
+                    st.error(f"Error: {e}")
+
+    with an_tab4:
+        st.markdown("#### 🛡️ Risk Manager")
+
+        r1, r2 = st.columns(2)
+        with r1:
+            rm_cap = st.number_input("Capital (₹)", 1000, 10000000, 100000, 1000, key="rm_cap")
+            rm_entry = st.number_input("Entry Price (₹)", 0.01, 100000.0, 1000.0, 0.5, key="rm_entry")
+        with r2:
+            rm_sl = st.number_input("Stop Loss (₹)", 0.01, 100000.0, 950.0, 0.5, key="rm_sl")
+            rm_target = st.number_input("Target (₹)", 0.01, 100000.0, 1100.0, 0.5, key="rm_target")
+
+        rm_risk = st.slider("Risk Per Trade (%)", 0.5, 10.0, 1.0, 0.5, key="rm_risk")
+        st.caption(f"Risk: {rm_risk}%")
+
+        if st.button("🧮 Calculate Position Size", key="rm_calc"):
+            if rm_entry > rm_sl:
+                rps = rm_entry - rm_sl
+                rwps = rm_target - rm_entry
+                rr = round(rwps/rps, 2) if rps > 0 else 0
+                max_risk = rm_cap * (rm_risk/100)
+                qty = int(max_risk/rps) if rps > 0 else 0
+                pos_val = round(qty * rm_entry, 2)
+                max_loss = round(qty * rps, 2)
+                pot_profit = round(qty * rwps, 2)
+
+                charges_sl = calculate_charges(rm_entry, rm_sl, qty)
+                charges_tgt = calculate_charges(rm_entry, rm_target, qty)
+
+                rr1, rr2, rr3 = st.columns(3)
+                rr1.metric("Risk:Reward", f"1:{rr}")
+                rr2.metric("Position Size", f"{qty} shares")
+                rr3.metric("Position Value", f"₹{pos_val:,}")
+
+                rr4, rr5 = st.columns(2)
+                rr4.metric("Max Loss (Net)", f"₹{charges_sl['net_pnl']}")
+                rr5.metric("Target Profit (Net)", f"₹{charges_tgt['net_pnl']}")
+
+                if rr >= 2: st.success("✅ Good Setup (≥ 1:2)")
+                elif rr >= 1: st.warning("🟡 Acceptable (1:1)")
+                else: st.error("🔴 Poor Setup (< 1:1)")
+
+                with st.expander("📋 Charge Preview"):
+                    st.write("**If SL Hit:**")
+                    st.write(f"Gross Loss: ₹{charges_sl['gross_pnl']} | Charges: ₹{charges_sl['total_charges']} | Net: ₹{charges_sl['net_pnl']}")
+                    st.write("**If Target Hit:**")
+                    st.write(f"Gross Profit: ₹{charges_tgt['gross_pnl']} | Charges: ₹{charges_tgt['total_charges']} | Net: ₹{charges_tgt['net_pnl']}")
+            else:
+                st.error("Entry > Stop Loss હોવો જોઈએ.")
+
+        st.divider()
+        st.markdown("#### 🤖 Auto Trade Bot")
+
+        with st.expander("⚙️ Bot Settings"):
+            at_max = st.number_input("Max Positions", 1, 10, 5, key="at_max")
+            at_cap = st.number_input("Capital Per Trade (₹)", 1000, 50000, 10000, 1000, key="at_cap")
+            at_score = st.slider("Min AI Score", 50, 100, 75, key="at_score")
+            st.caption(f"Score: {at_score}")
+            at_target_pct = st.slider("Target (%)", 2.0, 20.0, 4.0, 0.5, key="at_target_pct")
+            st.caption(f"Target: {at_target_pct}%")
+            at_sl_pct = st.slider("Stop Loss (%)", 1.0, 10.0, 2.5, 0.5, key="at_sl_pct")
+            st.caption(f"SL: {at_sl_pct}%")
+
+        if st.button("🚀 Run Auto Trade Bot", key="auto_bot"):
+            if st.session_state.get("circuit_breaker_triggered", False):
+                st.error("🚨 Circuit Breaker Active! Trading Blocked.")
+            else:
+                # Step 1: Check existing for Target/SL
+                st.markdown("**Step 1: Checking Holdings...**")
+                for sym, pos in list(st.session_state.paper_portfolio.items()):
+                    try:
+                        td = fetch_technical_data(sym)
+                        if not td: continue
+                        cp = td["current_price"]
+                        chg = ((cp - pos["avg_price"]) / pos["avg_price"]) * 100
+                        charges = calculate_charges(pos["avg_price"], cp, pos["qty"])
+
+                        if chg >= at_target_pct:
+                            st.session_state.paper_cash += cp * pos["qty"]
+                            st.session_state.paper_trade_history.append({
+                                "Date": str(datetime.date.today()),
+                                "Stock": sym.replace(".NS",""),
+                                "Qty": pos["qty"],
+                                "Buy ₹": round(pos["avg_price"],2),
+                                "Sell ₹": cp,
+                                "Gross P&L": charges["gross_pnl"],
+                                "Charges": charges["total_charges"],
+                                "Net P&L": charges["net_pnl"],
+                                "Net %": charges["net_pnl_pct"]
+                            })
+                            del st.session_state.paper_portfolio[sym]
+                            st.success(f"🎯 TARGET: SOLD {sym.replace('.NS','')} @ ₹{cp} | Net P&L: ₹{charges['net_pnl']}")
+
+                        elif chg <= -at_sl_pct:
+                            st.session_state.paper_cash += cp * pos["qty"]
+                            st.session_state.paper_trade_history.append({
+                                "Date": str(datetime.date.today()),
+                                "Stock": sym.replace(".NS",""),
+                                "Qty": pos["qty"],
+                                "Buy ₹": round(pos["avg_price"],2),
+                                "Sell ₹": cp,
+                                "Gross P&L": charges["gross_pnl"],
+                                "Charges": charges["total_charges"],
+                                "Net P&L": charges["net_pnl"],
+                                "Net %": charges["net_pnl_pct"]
+                            })
+                            del st.session_state.paper_portfolio[sym]
+                            st.error(f"🛑 STOP LOSS: SOLD {sym.replace('.NS','')} @ ₹{cp} | Net P&L: ₹{charges['net_pnl']}")
+                    except:
+                        pass
+
+                # Step 2: New buys
+                st.markdown("**Step 2: Scanning for Buy...**")
+                slots = at_max - len(st.session_state.paper_portfolio)
+                if slots <= 0:
+                    st.warning(f"Portfolio Full ({at_max}/{at_max})")
+                else:
+                    candidates = []
+                    with st.spinner("Scanning..."):
+                        for sym in STOCK_UNIVERSE:
+                            if sym in st.session_state.paper_portfolio: continue
+                            try:
+                                td = fetch_technical_data(sym)
+                                if not td: continue
+                                score = 50
+                                if td["trend"] == "Bullish": score += 20
+                                if 45 <= td["rsi"] <= 65: score += 20
+                                elif td["rsi"] < 30: score += 5
+                                if td["current_price"] > td["ma50"]: score += 10
+                                if score >= at_score:
+                                    candidates.append({
+                                        "sym": sym,
+                                        "score": score,
+                                        "price": td["current_price"],
+                                        "rsi": td["rsi"]
+                                    })
+                            except:
+                                pass
+
+                    candidates.sort(key=lambda x: x["score"], reverse=True)
+                    bought = 0
+                    for c in candidates[:slots]:
+                        qty = int(at_cap / c["price"])
+                        if qty < 1: continue
+                        cost = qty * c["price"]
+                        stamp = round(cost * 0.00015, 2)
+                        total_cost = round(cost + stamp, 2)
+                        if total_cost > st.session_state.paper_cash: continue
+                        st.session_state.paper_cash -= total_cost
+                        st.session_state.paper_portfolio[c["sym"]] = {
+                            "qty": qty, "avg_price": c["price"]
+                        }
+                        st.success(f"✅ BOUGHT {qty}x {c['sym'].replace('.NS','')} @ ₹{c['price']} | Score: {c['score']}/100")
+                        bought += 1
+
+                    if bought == 0 and len(candidates) == 0:
+                        st.info("કોઈ qualifying stock નથી.")
+
+                save_data()
+                st.session_state.last_auto_trade_run = str(datetime.datetime.now())
+
+                bot1, bot2 = st.columns(2)
+                bot1.metric("Open Positions", len(st.session_state.paper_portfolio))
+                bot2.metric("Available Cash", f"₹{st.session_state.paper_cash:,.2f}")
+
+        if "last_auto_trade_run" in st.session_state:
+            st.caption(f"📅 Last Run: {st.session_state.last_auto_trade_run}")
+
+        st.divider()
+        st.markdown("#### 🔗 Upstox Connection")
+        u1, u2 = st.columns(2)
+        with u1:
+            if st.button("🏦 Check Account", key="upstox_check"):
+                try:
+                    token = st.secrets["UPSTOX_ACCESS_TOKEN"]
+                    headers = {
+                        "Accept": "application/json",
+                        "Authorization": f"Bearer {token}"
+                    }
+                    resp = requests.get(
+                        "https://api.upstox.com/v2/user/profile",
+                        headers=headers
+                    )
+                    if resp.status_code == 200:
+                        st.success("✅ Connected!")
+                        st.json(resp.json())
+                    else:
+                        st.error("❌ Token Expired - Refresh કરો")
+                except Exception as e:
+                    st.error(f"Error: {e}")
+        with u2:
+            if st.button("📂 My Holdings", key="upstox_hold"):
+                try:
+                    token = st.secrets["UPSTOX_ACCESS_TOKEN"]
+                    headers = {
+                        "Accept": "application/json",
+                        "Authorization": f"Bearer {token}"
+                    }
+                    resp = requests.get(
+                        "https://api.upstox.com/v2/portfolio/long-term-holdings",
+                        headers=headers
+                    )
+                    st.json(resp.json())
+                except Exception as e:
+                    st.error(f"Error: {e}")
