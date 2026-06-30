@@ -1,5 +1,5 @@
 {
-  "paper_cash": 53401.4,
+  "paper_cash": 1566.5000000000045,
   "paper_portfolio": {
     "NESTLEIND.NS": {
       "qty": 7,
@@ -20,6 +20,54 @@
     "ADANIPORTS.NS": {
       "qty": 5,
       "avg_price": 1801.7
+    },
+    "INDUSINDBK.NS": {
+      "qty": 5,
+      "avg_price": 928.05
+    },
+    "POWERGRID.NS": {
+      "qty": 17,
+      "avg_price": 286.65
+    },
+    "NTPC.NS": {
+      "qty": 14,
+      "avg_price": 355.2
+    },
+    "LT.NS": {
+      "qty": 1,
+      "avg_price": 4159.9
+    },
+    "BHARTIARTL.NS": {
+      "qty": 2,
+      "avg_price": 1868.0
+    },
+    "KOTAKBANK.NS": {
+      "qty": 12,
+      "avg_price": 391.8
+    },
+    "AXISBANK.NS": {
+      "qty": 3,
+      "avg_price": 1359.5
+    },
+    "SUNPHARMA.NS": {
+      "qty": 2,
+      "avg_price": 1870.8
+    },
+    "TITAN.NS": {
+      "qty": 1,
+      "avg_price": 4412.1
+    },
+    "BAJAJFINSV.NS": {
+      "qty": 2,
+      "avg_price": 1782.5
+    },
+    "DRREDDY.NS": {
+      "qty": 3,
+      "avg_price": 1367.1
+    },
+    "BPCL.NS": {
+      "qty": 16,
+      "avg_price": 303.3
     }
   },
   "paper_trade_history": [
@@ -53,7 +101,7 @@
   ],
   "equity_curve": [],
   "trade_journal": [],
-  "last_auto_trade_run": "2026-06-30 07:57:37.901493",
+  "last_auto_trade_run": "2026-06-30 08:12:22.859404",
   "circuit_breaker_date": "2026-06-30",
   "circuit_breaker_start_value": 98876.7,
   "circuit_breaker_triggered": false
