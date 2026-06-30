@@ -25,8 +25,18 @@ STOCK_UNIVERSE = [
     "EICHERMOT.NS", "DIVISLAB.NS", "M&M.NS", "BPCL.NS", "TATAMOTORS.NS"
 ]
 
-MAX_POSITIONS = 5
-CAPITAL_PER_TRADE = 10000
+# ==========================================
+# TRADING MODE CONFIGURATION
+# ==========================================
+TRADING_MODE = "PAPER"  # "PAPER" અથવા "LIVE" - આ એક line બદલવાથી બધું switch થશે
+
+if TRADING_MODE == "PAPER":
+    MAX_POSITIONS = 20
+    CAPITAL_PER_TRADE = 5000
+else:
+    MAX_POSITIONS = 5
+    CAPITAL_PER_TRADE = 10000
+
 MIN_SCORE = 75
 TARGET_PCT = 4.0
 SL_PCT = 2.5
@@ -170,6 +180,7 @@ def run_auto_trade():
     log = []
     trade_messages = []
 
+    log.append(f"Mode: {TRADING_MODE} | Max Positions: {MAX_POSITIONS}")
     trading_allowed = check_circuit_breaker(data, log)
 
     # ---------- SELL CHECK ----------
@@ -298,6 +309,7 @@ def run_auto_trade():
         summary = (
             "📊 <b>RUN SUMMARY</b>\n"
             "━━━━━━━━━━━━━━━━━━\n"
+            f"🔧 Mode: {TRADING_MODE}\n"
             f"💰 Portfolio Value: ₹{portfolio_value:,.2f}\n"
             f"💵 Available Cash: ₹{data['paper_cash']:,.2f}\n"
             f"📦 Open Positions: {len(data['paper_portfolio'])}/{MAX_POSITIONS}\n"
@@ -306,6 +318,7 @@ def run_auto_trade():
         send_telegram(summary)
 
     print(f"=== Auto Trade Run: {datetime.datetime.now()} ===")
+    print(f"Mode: {TRADING_MODE} | Max Positions: {MAX_POSITIONS}")
     for entry in log:
         print(entry)
     print(f"Open Positions: {len(data['paper_portfolio'])}")
