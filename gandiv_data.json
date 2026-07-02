@@ -1,5 +1,5 @@
 {
-  "paper_cash": 1566.5000000000045,
+  "paper_cash": 1678.4000000000042,
   "paper_portfolio": {
     "NESTLEIND.NS": {
       "qty": 7,
@@ -16,10 +16,6 @@
     "SBIN.NS": {
       "qty": 9,
       "avg_price": 1037.6
-    },
-    "ADANIPORTS.NS": {
-      "qty": 5,
-      "avg_price": 1801.7
     },
     "INDUSINDBK.NS": {
       "qty": 5,
@@ -57,10 +53,6 @@
       "qty": 1,
       "avg_price": 4412.1
     },
-    "BAJAJFINSV.NS": {
-      "qty": 2,
-      "avg_price": 1782.5
-    },
     "DRREDDY.NS": {
       "qty": 3,
       "avg_price": 1367.1
@@ -68,6 +60,18 @@
     "BPCL.NS": {
       "qty": 16,
       "avg_price": 303.3
+    },
+    "ADANIPORTS.NS": {
+      "qty": 2,
+      "avg_price": 1883.2
+    },
+    "COALINDIA.NS": {
+      "qty": 11,
+      "avg_price": 438.9
+    },
+    "HINDUNILVR.NS": {
+      "qty": 2,
+      "avg_price": 2210.6
     }
   },
   "paper_trade_history": [
@@ -97,12 +101,34 @@
       "Sell Price": 1776.1,
       "P&L": -296.0,
       "P&L %": -3.23
+    },
+    {
+      "Date": "2026-07-02",
+      "Stock": "ADANIPORTS.NS",
+      "Qty": 5,
+      "Buy Price": 1801.7,
+      "Sell Price": 1883.2,
+      "Gross P&L": 407.5,
+      "Charges": 24.21,
+      "Net P&L": 383.29,
+      "Net P&L %": 4.25
+    },
+    {
+      "Date": "2026-07-02",
+      "Stock": "BAJAJFINSV.NS",
+      "Qty": 2,
+      "Buy Price": 1782.5,
+      "Sell Price": 1855.7,
+      "Gross P&L": 146.4,
+      "Charges": 9.56,
+      "Net P&L": 136.84,
+      "Net P&L %": 3.84
     }
   ],
   "equity_curve": [],
   "trade_journal": [],
-  "last_auto_trade_run": "2026-07-01 17:26:32.056363",
-  "circuit_breaker_date": "2026-07-01",
-  "circuit_breaker_start_value": 99947.25,
+  "last_auto_trade_run": "2026-07-02 11:58:18.754824",
+  "circuit_breaker_date": "2026-07-02",
+  "circuit_breaker_start_value": 100571.4,
   "circuit_breaker_triggered": false
 }
