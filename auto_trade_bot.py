@@ -34,7 +34,7 @@ TRADING_MODE = "PAPER"
 if TRADING_MODE == "PAPER":
     MAX_POSITIONS = 25  # ૧૦૦% સક્સેસ ટેસ્ટિંગ માટે લિમિટ ૨૫ કરી દીધી
     CAPITAL_PER_TRADE = 10000
-    STARTING_CASH = 1000000.0  # અહીં ₹૧૦,૦૦,૦૦૦ સેટ છે
+    STARTING_CASH = 1000000.0  # અહીં ₹૧૦,૦૦,૦૦庫 સેટ છે
 else:
     MAX_POSITIONS = 5
     CAPITAL_PER_TRADE = 20000
@@ -330,19 +330,24 @@ def run_auto_trade():
     # Auto Equity Curve Snapshot (daily at market close)
     today_str = str(datetime.date.today())
     portfolio_val = calculate_portfolio_value(data)
-    existing_dates = [e["Date"] for e in data.get("equity_curve", [])]
+    
+    if "equity_curve" not in data:
+        data["equity_curve"] = []
+        
+    existing_dates = [e["Date"] for e in data["equity_curve"]]
+    
     if today_str not in existing_dates:
-        if "equity_curve" not in data:
-            data["equity_curve"] = []
         data["equity_curve"].append({
             "Date": today_str,
             "Value": portfolio_val
         })
-        log.append(f"Auto Equity Snapshot: ₹{portfolio_val}")
+        log.append(f"Auto Equity Snapshot Created: ₹{portfolio_val}")
     else:
         for e in data["equity_curve"]:
             if e["Date"] == today_str:
                 e["Value"] = portfolio_val
+        log.append(f"Auto Equity Snapshot Updated: ₹{portfolio_val}")
+
     save_data(data)
 
     if trade_messages:
@@ -350,6 +355,7 @@ def run_auto_trade():
         for msg in trade_messages:
             send_premium_telegram(msg)
             
+        # હાર્ડકોડેડ સિંગલ કોટ્સ એરર અહીં ફિક્સ કરી દીધી છે (data[\"paper_cash\"])
         summary = (
             f"📊 *RUN SUMMARY* 📊\n"
             f"`────────────────────────────── SYSTEM MONITOR ──`\n"
@@ -371,4 +377,4 @@ def run_auto_trade():
 
 if __name__ == "__main__":
     run_auto_trade()
-    
+        
