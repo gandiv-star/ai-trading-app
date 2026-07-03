@@ -355,7 +355,7 @@ def run_auto_trade():
             f"`────────────────────────────── SYSTEM MONITOR ──`\n"
             f"⚙️ *Mode:* {escape_markdown(TRADING_MODE)}\n"
             f"💰 *Portfolio Value:* ₹{escape_markdown(f'{portfolio_value:,.2f}')}\n"
-            f"💵 *Available Cash:* ₹{escape_markdown(f'{data['paper_cash']:,.2f}')}\n"
+            f"💵 *Available Cash:* ₹{escape_markdown(f'{data[\"paper_cash\"]:,.2f}')}\n"
             f"📦 *Open Positions:* {len(data['paper_portfolio'])}/{MAX_POSITIONS}\n"
             f"`────────────────────────────────────────────────`"
         )
