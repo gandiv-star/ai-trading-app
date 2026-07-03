@@ -400,12 +400,13 @@ with tab1:
     with col_d2:
         st.markdown("#### 🤖 Bot Status")
         pos_count = len(st.session_state.paper_portfolio)
-        if pos_count >= 5:
-            st.error(f"🔴 Portfolio Full ({pos_count}/5)")
-        elif pos_count >= 3:
-            st.warning(f"🟡 {pos_count}/5 Positions Open")
+MAX_POS_DISPLAY = 20
+        if pos_count >= MAX_POS_DISPLAY:
+            st.error(f"🔴 Portfolio Full ({pos_count}/{MAX_POS_DISPLAY})")
+        elif pos_count >= MAX_POS_DISPLAY * 0.7:
+            st.warning(f"🟡 {pos_count}/{MAX_POS_DISPLAY} Positions Open")
         else:
-            st.success(f"🟢 {pos_count}/5 - Ready to Trade")
+            st.success(f"🟢 {pos_count}/{MAX_POS_DISPLAY} - Ready to Trade")
         if "last_auto_trade_run" in st.session_state:
             st.caption(f"Last Bot Run: {st.session_state.last_auto_trade_run}")
 
