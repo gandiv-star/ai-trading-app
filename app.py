@@ -400,7 +400,7 @@ with tab1:
     with col_d2:
         st.markdown("#### 🤖 Bot Status")
         pos_count = len(st.session_state.paper_portfolio)
-MAX_POS_DISPLAY = 20
+        MAX_POS_DISPLAY = 20
         if pos_count >= MAX_POS_DISPLAY:
             st.error(f"🔴 Portfolio Full ({pos_count}/{MAX_POS_DISPLAY})")
         elif pos_count >= MAX_POS_DISPLAY * 0.7:
