@@ -1,6 +1,6 @@
 """
 Gandiv AI Trading Assistant - Standalone Auto Trade Bot (Premium Telegram Alerts)
-Updated: Full MarkdownV2 Support & Zero-Crash Escaping
+Updated: Full MarkdownV2 Support & Standard Formatting (No Backslash in f-string)
 """
 
 import datetime
@@ -34,7 +34,7 @@ TRADING_MODE = "PAPER"
 if TRADING_MODE == "PAPER":
     MAX_POSITIONS = 25  # ૧૦૦% સક્સેસ ટેસ્ટિંગ માટે લિમિટ ૨૫ કરી દીધી
     CAPITAL_PER_TRADE = 10000
-    STARTING_CASH = 1000000.0  # અહીં ₹૧૦,૦૦,૦૦庫 સેટ છે
+    STARTING_CASH = 1000000.0  # અહીં ₹૧૦,૦૦,૦૦૦ સેટ છે
 else:
     MAX_POSITIONS = 5
     CAPITAL_PER_TRADE = 20000
@@ -352,17 +352,23 @@ def run_auto_trade():
 
     if trade_messages:
         portfolio_value = calculate_portfolio_value(data)
+        
+        # આ પ્યોર અને કન્વર્ટેડ વેલ્યુઝ છે જેથી f-string ની અંદર ડાયરેક્ટ વેરીએબલ રન થાય (કોઈ બૅકસ્લેશ નથી)
+        p_val_str = escape_markdown(f"{portfolio_value:,.2f}")
+        cash_str = escape_markdown(f"{data['paper_cash']:,.2f}")
+        mode_str = escape_markdown(TRADING_MODE)
+        pos_len = len(data['paper_portfolio'])
+        
         for msg in trade_messages:
             send_premium_telegram(msg)
             
-        # હાર્ડકોડેડ સિંગલ કોટ્સ એરર અહીં ફિક્સ કરી દીધી છે (data[\"paper_cash\"])
         summary = (
             f"📊 *RUN SUMMARY* 📊\n"
             f"`────────────────────────────── SYSTEM MONITOR ──`\n"
-            f"⚙️ *Mode:* {escape_markdown(TRADING_MODE)}\n"
-            f"💰 *Portfolio Value:* ₹{escape_markdown(f'{portfolio_value:,.2f}')}\n"
-            f"💵 *Available Cash:* ₹{escape_markdown(f'{data[\"paper_cash\"]:,.2f}')}\n"
-            f"📦 *Open Positions:* {len(data['paper_portfolio'])}/{MAX_POSITIONS}\n"
+            f"⚙️ *Mode:* {mode_str}\n"
+            f"💰 *Portfolio Value:* ₹{p_val_str}\n"
+            f"💵 *Available Cash:* ₹{cash_str}\n"
+            f"📦 *Open Positions:* {pos_len}/{MAX_POSITIONS}\n"
             f"`────────────────────────────────────────────────`"
         )
         send_premium_telegram(summary)
@@ -377,4 +383,4 @@ def run_auto_trade():
 
 if __name__ == "__main__":
     run_auto_trade()
-        
+                                           
