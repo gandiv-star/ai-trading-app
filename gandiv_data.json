@@ -1,5 +1,5 @@
 {
-  "paper_cash": 989175.6,
+  "paper_cash": 947841.3500000001,
   "paper_portfolio": {
     "NESTLEIND.NS": {
       "qty": 7,
@@ -16,10 +16,6 @@
     "SBIN.NS": {
       "qty": 9,
       "avg_price": 1037.6
-    },
-    "INDUSINDBK.NS": {
-      "qty": 5,
-      "avg_price": 928.05
     },
     "POWERGRID.NS": {
       "qty": 17,
@@ -76,6 +72,26 @@
     "LT.NS": {
       "qty": 2,
       "avg_price": 4034.9
+    },
+    "INDUSINDBK.NS": {
+      "qty": 10,
+      "avg_price": 974.35
+    },
+    "TECHM.NS": {
+      "qty": 7,
+      "avg_price": 1410.1
+    },
+    "EICHERMOT.NS": {
+      "qty": 1,
+      "avg_price": 7339.5
+    },
+    "M&M.NS": {
+      "qty": 3,
+      "avg_price": 3136.9
+    },
+    "JSWSTEEL.NS": {
+      "qty": 8,
+      "avg_price": 1230.2
     }
   },
   "paper_trade_history": [
@@ -138,16 +154,27 @@
       "Charges": 10.79,
       "Net P&L": -135.79,
       "Net P&L %": -3.26
+    },
+    {
+      "Date": "2026-07-03",
+      "Stock": "INDUSINDBK.NS",
+      "Qty": 5,
+      "Buy Price": 928.05,
+      "Sell Price": 974.35,
+      "Gross P&L": 231.5,
+      "Charges": 12.5,
+      "Net P&L": 219.0,
+      "Net P&L %": 4.72
     }
   ],
   "equity_curve": [
     {
       "Date": "2026-07-03",
-      "Value": 1099064.5
+      "Value": 1098984.0
     }
   ],
   "trade_journal": [],
-  "last_auto_trade_run": "2026-07-03 07:51:01.362627",
+  "last_auto_trade_run": "2026-07-03 13:24:10.541929",
   "circuit_breaker_date": "2026-07-03",
   "circuit_breaker_start_value": 1099064.5,
   "circuit_breaker_triggered": false
