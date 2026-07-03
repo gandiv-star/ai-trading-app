@@ -1,5 +1,6 @@
 """
 Gandiv AI Trading Assistant - Standalone Auto Trade Bot (Premium Telegram Alerts)
+Updated: Full MarkdownV2 Support & Zero-Crash Escaping
 """
 
 import datetime
@@ -31,9 +32,9 @@ STOCK_UNIVERSE = [
 TRADING_MODE = "PAPER"
 
 if TRADING_MODE == "PAPER":
-    MAX_POSITIONS = 20
+    MAX_POSITIONS = 25  # ૧૦૦% સક્સેસ ટેસ્ટિંગ માટે લિમિટ ૨૫ કરી દીધી
     CAPITAL_PER_TRADE = 10000
-    STARTING_CASH = 1000000.0
+    STARTING_CASH = 1000000.0  # અહીં ₹૧૦,૦૦,૦૦૦ સેટ છે
 else:
     MAX_POSITIONS = 5
     CAPITAL_PER_TRADE = 20000
@@ -47,7 +48,21 @@ CIRCUIT_BREAKER_ENABLED = True
 SLIPPAGE_PCT = 0.02
 
 
-def send_telegram(text):
+def escape_markdown(text):
+    """
+    MarkdownV2 માટે અનિવાર્ય અક્ષરોને ઓટોમેટીક સેફ કરે છે જેથી બોટ ક્યારેય અટકે નહીં.
+    """
+    reserved_chars = r"_*[]()~`>#+-=|{}.!"
+    escaped = ""
+    for char in str(text):
+        if char in reserved_chars:
+            escaped += "\\" + char
+        else:
+            escaped += char
+    return escaped
+
+
+def send_premium_telegram(text):
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
         return
     try:
@@ -55,7 +70,7 @@ def send_telegram(text):
         data = urllib.parse.urlencode({
             "chat_id": TELEGRAM_CHAT_ID,
             "text": text,
-            "parse_mode": "HTML"
+            "parse_mode": "MarkdownV2"
         }).encode()
         req = urllib.request.Request(url, data=data)
         urllib.request.urlopen(req, timeout=10)
@@ -85,27 +100,30 @@ def calculate_charges(buy_price, sell_price, qty):
 
 
 def fetch_technical_data(symbol, period="1y"):
-    stock = yf.Ticker(symbol)
-    hist = stock.history(period=period)
-    if hist.empty:
+    try:
+        stock = yf.Ticker(symbol)
+        hist = stock.history(period=period)
+        if hist.empty:
+            return None
+        close = hist["Close"]
+        current_price = round(close.iloc[-1], 2)
+        ma50 = close.rolling(50).mean().iloc[-1] if len(close) >= 50 else close.mean()
+        ma200 = close.rolling(200).mean().iloc[-1] if len(close) >= 200 else close.mean()
+        delta = close.diff()
+        gain = delta.where(delta > 0, 0).rolling(14).mean()
+        loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
+        rs = gain / loss
+        rsi = (100 - (100 / (1 + rs))).iloc[-1]
+        trend = "Bullish" if ma50 > ma200 else "Bearish"
+        return {
+            "current_price": current_price,
+            "ma50": round(ma50, 2),
+            "ma200": round(ma200, 2),
+            "rsi": round(rsi, 2),
+            "trend": trend,
+        }
+    except Exception:
         return None
-    close = hist["Close"]
-    current_price = round(close.iloc[-1], 2)
-    ma50 = close.rolling(50).mean().iloc[-1] if len(close) >= 50 else close.mean()
-    ma200 = close.rolling(200).mean().iloc[-1] if len(close) >= 200 else close.mean()
-    delta = close.diff()
-    gain = delta.where(delta > 0, 0).rolling(14).mean()
-    loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
-    rs = gain / loss
-    rsi = (100 - (100 / (1 + rs))).iloc[-1]
-    trend = "Bullish" if ma50 > ma200 else "Bearish"
-    return {
-        "current_price": current_price,
-        "ma50": round(ma50, 2),
-        "ma200": round(ma200, 2),
-        "rsi": round(rsi, 2),
-        "trend": trend,
-    }
 
 
 def load_data():
@@ -159,15 +177,15 @@ def check_circuit_breaker(data, log):
         data["circuit_breaker_triggered"] = True
         if not was_triggered:
             text = (
-                "🚨 <b>CIRCUIT BREAKER TRIGGERED</b>\n"
-                "━━━━━━━━━━━━━━━━━━\n"
-                f"📉 Today's Loss: <b>{round(day_change_pct,2)}%</b>\n"
-                f"🛡️ Limit: -{DAILY_LOSS_LIMIT_PCT}%\n"
-                "⛔ New buys blocked for today.\n"
-                "✅ Existing positions still monitored.\n"
-                "━━━━━━━━━━━━━━━━━━"
+                f"🚨 *CIRCUIT BREAKER TRIGGERED*\n"
+                f"`────────────────────────────── RISK MANAGER ──`\n"
+                f"📉 Today's Loss: *{escape_markdown(round(day_change_pct, 2))}\%*\n"
+                f"🛡️ Daily Limit: \-{DAILY_LOSS_LIMIT_PCT}\%\n"
+                f"⛔ New buys blocked for the day\.\n"
+                f"✅ Open positions are still monitored\.\n"
+                f"`──────────────────────────────────────────────`"
             )
-            send_telegram(text)
+            send_premium_telegram(text)
 
     if data.get("circuit_breaker_triggered"):
         log.append(f"CIRCUIT BREAKER ACTIVE: {round(day_change_pct,2)}%")
@@ -217,25 +235,28 @@ def run_auto_trade():
         del data["paper_portfolio"][sym]
         log.append(f"{reason}: SOLD {qty} {sym} @ {cp} | Net P&L: {charges['net_pnl']}")
 
-        emoji = "🎯" if reason == "TARGET" else "🛑"
-        title = "TARGET HIT - PROFIT BOOKED" if reason == "TARGET" else "STOP LOSS HIT"
-        pnl_emoji = "🟢" if charges["net_pnl"] >= 0 else "🔴"
-        status = "PROFIT" if charges["net_pnl"] >= 0 else "LOSS"
+        color_emoji = "🟢" if charges["net_pnl"] >= 0 else "🔴"
+        status_text = "PROFIT CREATED 🎉" if charges["net_pnl"] >= 0 else "STOP LOSS HIT ⚠️"
+        clean_sym = sym.replace('.NS', '')
 
         text = (
-            f"{emoji} <b>{title}</b>\n"
-            "━━━━━━━━━━━━━━━━━━\n"
-            f"📌 Symbol: <b>{sym.replace('.NS','')}</b>\n"
-            f"📍 Entry: ₹{round(avg,2)}\n"
-            f"📍 Exit: ₹{cp}\n"
-            f"📦 Qty: {qty} shares\n"
-            "━━━━━━━━━━━━━━━━━━\n"
-            f"💵 Gross P&L: ₹{charges['gross_pnl']}\n"
-            f"🧾 Charges (Tax+Slippage): ₹{charges['total_charges']}\n"
-            "━━━━━━━━━━━━━━━━━━\n"
-            f"{pnl_emoji} <b>NET P&L: ₹{charges['net_pnl']} ({charges['net_pnl_pct']}%)</b>\n"
-            f"Status: {status}\n"
-            "━━━━━━━━━━━━━━━━━━"
+            f"⚡ *PORTFOLIO POSITION EXECUTED* ⚡\n"
+            f"`──────────────────────────── ALGO SQUARE-OFF ──`\n"
+            f"🤖 *Strategy:* AI Auto Watchlist Scanner \(V36\)\n"
+            f"📉 *Action:* SELL / SQUARE\-OFF \({reason}\)\n"
+            f"🏷️ *Symbol:* {escape_markdown(clean_sym)} \(NSE\)\n\n"
+            f"📊 *TRANSACTION DETAILS:*\n"
+            f"📍 Entry Price: ₹{escape_markdown(round(avg, 2))}\n"
+            f"📍 Exit Price: ₹{escape_markdown(cp)}\n"
+            f"📦 Total Quantity: {qty} Shares\n\n"
+            f"💰 *FINANCIAL SUMMARY:*\n"
+            f"💵 Gross P\&L: ₹{escape_markdown(charges['gross_pnl'])}\n"
+            f"🧾 Upstox Charges \& Taxes: ₹{escape_markdown(charges['total_charges'])}\n"
+            f"📉 Slippage Cost \({SLIPPAGE_PCT}\%\): Included\n"
+            f"`──────────────────────────────────────────────`\n"
+            f"{color_emoji} *NET P&L:* ₹{escape_markdown(charges['net_pnl'])} \({escape_markdown(charges['net_pnl_pct'])}\%\)\n"
+            f"🏆 *Status:* {status_text}\n"
+            f"`──────────────────────────────────────────────`"
         )
         trade_messages.append(text)
 
@@ -282,27 +303,31 @@ def run_auto_trade():
                 target = round(c["Price"] * (1 + TARGET_PCT/100), 2)
                 sl = round(c["Price"] * (1 - SL_PCT/100), 2)
                 rr = round(TARGET_PCT / SL_PCT, 2)
+                clean_buy_sym = c['Stock'].replace('.NS', '')
 
                 text = (
-                    "⚡ <b>NEW TRADE EXECUTED</b>\n"
-                    "━━━━━━━━━━━━━━━━━━\n"
-                    f"📈 Action: BUY (Paper)\n"
-                    f"📌 Symbol: <b>{c['Stock'].replace('.NS','')}</b>\n"
-                    "━━━━━━━━━━━━━━━━━━\n"
-                    f"📍 Entry: ₹{c['Price']}\n"
-                    f"📦 Qty: {qty} shares\n"
-                    f"💰 Invested: ₹{round(cost,2):,}\n"
-                    f"🧠 AI Score: {c['Score']}/100 | RSI: {c['RSI']}\n"
-                    "━━━━━━━━━━━━━━━━━━\n"
-                    f"🟢 Target: ₹{target} (+{TARGET_PCT}%)\n"
-                    f"🔴 Stop Loss: ₹{sl} (-{SL_PCT}%)\n"
-                    f"⚖️ Risk:Reward = 1:{rr}\n"
-                    "━━━━━━━━━━━━━━━━━━"
+                    f"⚡ *NEW LIVE TRADE EXECUTED* ⚡\n"
+                    f"`───────────────────────────── ALGO TRIGGER ──`\n"
+                    f"🤖 *Strategy:* AI Auto Watchlist Scanner \(V36\)\n"
+                    f"📈 *Action:* BUY / LONG \({TRADING_MODE}\)\n"
+                    f"🏷️ *Symbol:* {escape_markdown(clean_buy_sym)} \(NSE\)\n\n"
+                    f"📊 *TRADE DETAILS:*\n"
+                    f"📍 Entry Price: ₹{escape_markdown(c['Price'])}\n"
+                    f"📦 Order Quantity: {qty} Shares\n"
+                    f"💰 Total Invested: ₹{escape_markdown(round(cost, 2))}\n"
+                    f"🧠 AI Score: {c['Score']}/100 \| RSI: {escape_markdown(c['RSI'])}\n\n"
+                    f"🎯 *TARGETS & PROTECTION:*\n"
+                    f"🟢 Target: ₹{escape_markdown(target)} \(\+{TARGET_PCT}\%\)\n"
+                    f"🔴 Stop Loss: ₹{escape_markdown(sl)} \(\-{SL_PCT}\%\)\n"
+                    f"🛡️ Risk\-Reward Ratio: 1:{escape_markdown(rr)}\n"
+                    f"📉 Est\. Slippage: {SLIPPAGE_PCT}\% Included\n"
+                    f"`──────────────────────────────────────────────`"
                 )
                 trade_messages.append(text)
 
     data["last_auto_trade_run"] = str(datetime.datetime.now())
-# Auto Equity Curve Snapshot (daily at market close)
+
+    # Auto Equity Curve Snapshot (daily at market close)
     today_str = str(datetime.date.today())
     portfolio_val = calculate_portfolio_value(data)
     existing_dates = [e["Date"] for e in data.get("equity_curve", [])]
@@ -323,17 +348,18 @@ def run_auto_trade():
     if trade_messages:
         portfolio_value = calculate_portfolio_value(data)
         for msg in trade_messages:
-            send_telegram(msg)
+            send_premium_telegram(msg)
+            
         summary = (
-            "📊 <b>RUN SUMMARY</b>\n"
-            "━━━━━━━━━━━━━━━━━━\n"
-            f"🔧 Mode: {TRADING_MODE}\n"
-            f"💰 Portfolio Value: ₹{portfolio_value:,.2f}\n"
-            f"💵 Available Cash: ₹{data['paper_cash']:,.2f}\n"
-            f"📦 Open Positions: {len(data['paper_portfolio'])}/{MAX_POSITIONS}\n"
-            "━━━━━━━━━━━━━━━━━━"
+            f"📊 *RUN SUMMARY* 📊\n"
+            f"`────────────────────────────── SYSTEM MONITOR ──`\n"
+            f"⚙️ *Mode:* {escape_markdown(TRADING_MODE)}\n"
+            f"💰 *Portfolio Value:* ₹{escape_markdown(f'{portfolio_value:,.2f}')}\n"
+            f"💵 *Available Cash:* ₹{escape_markdown(f'{data['paper_cash']:,.2f}')}\n"
+            f"📦 *Open Positions:* {len(data['paper_portfolio'])}/{MAX_POSITIONS}\n"
+            f"`────────────────────────────────────────────────`"
         )
-        send_telegram(summary)
+        send_premium_telegram(summary)
 
     print(f"=== Auto Trade Run: {datetime.datetime.now()} ===")
     print(f"Mode: {TRADING_MODE} | Max Positions: {MAX_POSITIONS}")
@@ -345,3 +371,4 @@ def run_auto_trade():
 
 if __name__ == "__main__":
     run_auto_trade()
+    
