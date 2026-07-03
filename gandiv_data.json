@@ -1,5 +1,5 @@
 {
-  "paper_cash": 1000000.0,
+  "paper_cash": 989175.6,
   "paper_portfolio": {
     "NESTLEIND.NS": {
       "qty": 7,
@@ -28,10 +28,6 @@
     "NTPC.NS": {
       "qty": 14,
       "avg_price": 355.2
-    },
-    "LT.NS": {
-      "qty": 1,
-      "avg_price": 4159.9
     },
     "BHARTIARTL.NS": {
       "qty": 2,
@@ -72,6 +68,14 @@
     "HINDUNILVR.NS": {
       "qty": 2,
       "avg_price": 2210.6
+    },
+    "DIVISLAB.NS": {
+      "qty": 1,
+      "avg_price": 6789.5
+    },
+    "LT.NS": {
+      "qty": 2,
+      "avg_price": 4034.9
     }
   },
   "paper_trade_history": [
@@ -123,12 +127,28 @@
       "Charges": 9.56,
       "Net P&L": 136.84,
       "Net P&L %": 3.84
+    },
+    {
+      "Date": "2026-07-03",
+      "Stock": "LT.NS",
+      "Qty": 1,
+      "Buy Price": 4159.9,
+      "Sell Price": 4034.9,
+      "Gross P&L": -125.0,
+      "Charges": 10.79,
+      "Net P&L": -135.79,
+      "Net P&L %": -3.26
     }
   ],
-  "equity_curve": [],
+  "equity_curve": [
+    {
+      "Date": "2026-07-03",
+      "Value": 1099064.5
+    }
+  ],
   "trade_journal": [],
-  "last_auto_trade_run": "2026-07-02 16:23:45.983487",
-  "circuit_breaker_date": "2026-07-02",
-  "circuit_breaker_start_value": 100571.4,
+  "last_auto_trade_run": "2026-07-03 07:51:01.362627",
+  "circuit_breaker_date": "2026-07-03",
+  "circuit_breaker_start_value": 1099064.5,
   "circuit_breaker_triggered": false
 }
