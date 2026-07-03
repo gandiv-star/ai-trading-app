@@ -28,14 +28,16 @@ STOCK_UNIVERSE = [
 # ==========================================
 # TRADING MODE CONFIGURATION
 # ==========================================
-TRADING_MODE = "PAPER"  # "PAPER" અથવા "LIVE" - આ એક line બદલવાથી બધું switch થશે
+TRADING_MODE = "PAPER"
 
 if TRADING_MODE == "PAPER":
     MAX_POSITIONS = 20
-    CAPITAL_PER_TRADE = 5000
+    CAPITAL_PER_TRADE = 10000
+    STARTING_CASH = 1000000.0
 else:
     MAX_POSITIONS = 5
-    CAPITAL_PER_TRADE = 10000
+    CAPITAL_PER_TRADE = 20000
+    STARTING_CASH = 100000.0
 
 MIN_SCORE = 75
 TARGET_PCT = 4.0
@@ -112,7 +114,7 @@ def load_data():
             data = json.load(f)
     else:
         data = {}
-    data.setdefault("paper_cash", 100000.0)
+    data.setdefault("paper_cash", STARTING_CASH)
     data.setdefault("paper_portfolio", {})
     data.setdefault("paper_trade_history", [])
     data.setdefault("equity_curve", [])
@@ -300,6 +302,22 @@ def run_auto_trade():
                 trade_messages.append(text)
 
     data["last_auto_trade_run"] = str(datetime.datetime.now())
+# Auto Equity Curve Snapshot (daily at market close)
+    today_str = str(datetime.date.today())
+    portfolio_val = calculate_portfolio_value(data)
+    existing_dates = [e["Date"] for e in data.get("equity_curve", [])]
+    if today_str not in existing_dates:
+        if "equity_curve" not in data:
+            data["equity_curve"] = []
+        data["equity_curve"].append({
+            "Date": today_str,
+            "Value": portfolio_val
+        })
+        log.append(f"Auto Equity Snapshot: ₹{portfolio_val}")
+    else:
+        for e in data["equity_curve"]:
+            if e["Date"] == today_str:
+                e["Value"] = portfolio_val
     save_data(data)
 
     if trade_messages:
