@@ -1,5 +1,5 @@
 {
-  "paper_cash": 953890.6500000001,
+  "paper_cash": 919837.1400000001,
   "paper_portfolio": {
     "GRASIM.NS": {
       "qty": 3,
@@ -21,10 +21,6 @@
       "qty": 14,
       "avg_price": 355.2
     },
-    "BHARTIARTL.NS": {
-      "qty": 2,
-      "avg_price": 1868.0
-    },
     "AXISBANK.NS": {
       "qty": 3,
       "avg_price": 1359.5
@@ -32,10 +28,6 @@
     "SUNPHARMA.NS": {
       "qty": 2,
       "avg_price": 1870.8
-    },
-    "TITAN.NS": {
-      "qty": 1,
-      "avg_price": 4412.1
     },
     "DRREDDY.NS": {
       "qty": 3,
@@ -49,10 +41,6 @@
       "qty": 2,
       "avg_price": 1883.2
     },
-    "COALINDIA.NS": {
-      "qty": 11,
-      "avg_price": 438.9
-    },
     "HINDUNILVR.NS": {
       "qty": 2,
       "avg_price": 2210.6
@@ -64,10 +52,6 @@
     "LT.NS": {
       "qty": 2,
       "avg_price": 4034.9
-    },
-    "INDUSINDBK.NS": {
-      "qty": 10,
-      "avg_price": 974.35
     },
     "TECHM.NS": {
       "qty": 7,
@@ -88,6 +72,30 @@
     "NESTLEIND.NS": {
       "qty": 6,
       "avg_price": 1473.7
+    },
+    "ONGC.NS": {
+      "qty": 41,
+      "avg_price": 243.31
+    },
+    "TITAN.NS": {
+      "qty": 2,
+      "avg_price": 4600.4
+    },
+    "HCLTECH.NS": {
+      "qty": 8,
+      "avg_price": 1164.3
+    },
+    "INDUSINDBK.NS": {
+      "qty": 9,
+      "avg_price": 1026.0
+    },
+    "HEROMOTOCO.NS": {
+      "qty": 2,
+      "avg_price": 4984.7
+    },
+    "COALINDIA.NS": {
+      "qty": 23,
+      "avg_price": 425.45
     }
   },
   "paper_trade_history": [
@@ -183,6 +191,50 @@
       "Charges": 12.22,
       "Net P&L": -138.22,
       "Net P&L %": -2.94
+    },
+    {
+      "Date": "2026-07-07",
+      "Stock": "BHARTIARTL.NS",
+      "Qty": 2,
+      "Buy Price": 1868.0,
+      "Sell Price": 1942.9,
+      "Gross P&L": 149.8,
+      "Charges": 10.02,
+      "Net P&L": 139.78,
+      "Net P&L %": 3.74
+    },
+    {
+      "Date": "2026-07-07",
+      "Stock": "TITAN.NS",
+      "Qty": 1,
+      "Buy Price": 4412.1,
+      "Sell Price": 4600.4,
+      "Gross P&L": 188.3,
+      "Charges": 11.84,
+      "Net P&L": 176.46,
+      "Net P&L %": 4.0
+    },
+    {
+      "Date": "2026-07-07",
+      "Stock": "COALINDIA.NS",
+      "Qty": 11,
+      "Buy Price": 438.9,
+      "Sell Price": 425.45,
+      "Gross P&L": -147.95,
+      "Charges": 12.52,
+      "Net P&L": -160.47,
+      "Net P&L %": -3.32
+    },
+    {
+      "Date": "2026-07-07",
+      "Stock": "INDUSINDBK.NS",
+      "Qty": 10,
+      "Buy Price": 974.35,
+      "Sell Price": 1026.0,
+      "Gross P&L": 516.5,
+      "Charges": 26.28,
+      "Net P&L": 490.22,
+      "Net P&L %": 5.03
     }
   ],
   "equity_curve": [
@@ -193,11 +245,15 @@
     {
       "Date": "2026-07-06",
       "Value": 1099821.8
+    },
+    {
+      "Date": "2026-07-07",
+      "Value": 1100121.45
     }
   ],
   "trade_journal": [],
-  "last_auto_trade_run": "2026-07-06 18:00:55.957111",
-  "circuit_breaker_date": "2026-07-06",
-  "circuit_breaker_start_value": 1099821.8,
+  "last_auto_trade_run": "2026-07-07 07:03:45.843858",
+  "circuit_breaker_date": "2026-07-07",
+  "circuit_breaker_start_value": 1100121.45,
   "circuit_breaker_triggered": false
 }
