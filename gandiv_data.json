@@ -1,5 +1,5 @@
 {
-  "paper_cash": 919837.1400000001,
+  "paper_cash": 910188.1400000001,
   "paper_portfolio": {
     "GRASIM.NS": {
       "qty": 3,
@@ -96,6 +96,10 @@
     "COALINDIA.NS": {
       "qty": 23,
       "avg_price": 425.45
+    },
+    "BHARTIARTL.NS": {
+      "qty": 5,
+      "avg_price": 1929.8
     }
   },
   "paper_trade_history": [
@@ -248,11 +252,11 @@
     },
     {
       "Date": "2026-07-07",
-      "Value": 1100121.45
+      "Value": 1100222.12
     }
   ],
   "trade_journal": [],
-  "last_auto_trade_run": "2026-07-07 07:03:45.843858",
+  "last_auto_trade_run": "2026-07-07 07:51:07.762150",
   "circuit_breaker_date": "2026-07-07",
   "circuit_breaker_start_value": 1100121.45,
   "circuit_breaker_triggered": false
