@@ -1,5 +1,5 @@
 {
-  "paper_cash": 910188.1400000001,
+  "paper_cash": 904686.4400000002,
   "paper_portfolio": {
     "GRASIM.NS": {
       "qty": 3,
@@ -36,10 +36,6 @@
     "BPCL.NS": {
       "qty": 16,
       "avg_price": 303.3
-    },
-    "ADANIPORTS.NS": {
-      "qty": 2,
-      "avg_price": 1883.2
     },
     "HINDUNILVR.NS": {
       "qty": 2,
@@ -100,6 +96,10 @@
     "BHARTIARTL.NS": {
       "qty": 5,
       "avg_price": 1929.8
+    },
+    "ADANIPORTS.NS": {
+      "qty": 5,
+      "avg_price": 1833.9
     }
   },
   "paper_trade_history": [
@@ -239,6 +239,17 @@
       "Charges": 26.28,
       "Net P&L": 490.22,
       "Net P&L %": 5.03
+    },
+    {
+      "Date": "2026-07-07",
+      "Stock": "ADANIPORTS.NS",
+      "Qty": 2,
+      "Buy Price": 1883.2,
+      "Sell Price": 1833.9,
+      "Gross P&L": -98.6,
+      "Charges": 9.79,
+      "Net P&L": -108.39,
+      "Net P&L %": -2.88
     }
   ],
   "equity_curve": [
@@ -252,11 +263,11 @@
     },
     {
       "Date": "2026-07-07",
-      "Value": 1100715.72
+      "Value": 1100159.17
     }
   ],
   "trade_journal": [],
-  "last_auto_trade_run": "2026-07-07 08:48:56.487724",
+  "last_auto_trade_run": "2026-07-07 10:18:49.160568",
   "circuit_breaker_date": "2026-07-07",
   "circuit_breaker_start_value": 1100121.45,
   "circuit_breaker_triggered": false
