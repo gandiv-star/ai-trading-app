@@ -267,7 +267,7 @@
     }
   ],
   "trade_journal": [],
-  "last_auto_trade_run": "2026-07-07 10:18:49.160568",
+  "last_auto_trade_run": "2026-07-07 11:24:31.981572",
   "circuit_breaker_date": "2026-07-07",
   "circuit_breaker_start_value": 1100121.45,
   "circuit_breaker_triggered": false
