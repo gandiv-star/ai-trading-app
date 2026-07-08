@@ -1,5 +1,5 @@
 {
-  "paper_cash": 899397.6400000001,
+  "paper_cash": 891094.2900000002,
   "paper_portfolio": {
     "GRASIM.NS": {
       "qty": 3,
@@ -33,17 +33,9 @@
       "qty": 16,
       "avg_price": 303.3
     },
-    "HINDUNILVR.NS": {
-      "qty": 2,
-      "avg_price": 2210.6
-    },
     "DIVISLAB.NS": {
       "qty": 1,
       "avg_price": 6789.5
-    },
-    "LT.NS": {
-      "qty": 2,
-      "avg_price": 4034.9
     },
     "TECHM.NS": {
       "qty": 7,
@@ -77,10 +69,6 @@
       "qty": 8,
       "avg_price": 1164.3
     },
-    "INDUSINDBK.NS": {
-      "qty": 9,
-      "avg_price": 1026.0
-    },
     "HEROMOTOCO.NS": {
       "qty": 2,
       "avg_price": 4984.7
@@ -89,10 +77,6 @@
       "qty": 23,
       "avg_price": 425.45
     },
-    "BHARTIARTL.NS": {
-      "qty": 5,
-      "avg_price": 1929.8
-    },
     "ADANIPORTS.NS": {
       "qty": 5,
       "avg_price": 1833.9
@@ -100,6 +84,22 @@
     "AXISBANK.NS": {
       "qty": 7,
       "avg_price": 1322.2
+    },
+    "INDUSINDBK.NS": {
+      "qty": 10,
+      "avg_price": 991.75
+    },
+    "HDFCBANK.NS": {
+      "qty": 12,
+      "avg_price": 808.6
+    },
+    "ICICIBANK.NS": {
+      "qty": 7,
+      "avg_price": 1378.4
+    },
+    "BHARTIARTL.NS": {
+      "qty": 5,
+      "avg_price": 1880.0
     }
   },
   "paper_trade_history": [
@@ -261,6 +261,50 @@
       "Charges": 10.59,
       "Net P&L": -122.49,
       "Net P&L %": -3.0
+    },
+    {
+      "Date": "2026-07-08",
+      "Stock": "HINDUNILVR.NS",
+      "Qty": 2,
+      "Buy Price": 2210.6,
+      "Sell Price": 2137.2,
+      "Gross P&L": -146.8,
+      "Charges": 11.45,
+      "Net P&L": -158.25,
+      "Net P&L %": -3.58
+    },
+    {
+      "Date": "2026-07-08",
+      "Stock": "LT.NS",
+      "Qty": 2,
+      "Buy Price": 4034.9,
+      "Sell Price": 3883.0,
+      "Gross P&L": -303.8,
+      "Charges": 20.86,
+      "Net P&L": -324.66,
+      "Net P&L %": -4.02
+    },
+    {
+      "Date": "2026-07-08",
+      "Stock": "INDUSINDBK.NS",
+      "Qty": 9,
+      "Buy Price": 1026.0,
+      "Sell Price": 991.75,
+      "Gross P&L": -308.25,
+      "Charges": 23.92,
+      "Net P&L": -332.17,
+      "Net P&L %": -3.6
+    },
+    {
+      "Date": "2026-07-08",
+      "Stock": "BHARTIARTL.NS",
+      "Qty": 5,
+      "Buy Price": 1929.8,
+      "Sell Price": 1880.0,
+      "Gross P&L": -249.0,
+      "Charges": 25.08,
+      "Net P&L": -274.08,
+      "Net P&L %": -2.84
     }
   ],
   "equity_curve": [
@@ -278,11 +322,11 @@
     },
     {
       "Date": "2026-07-08",
-      "Value": 1098996.65
+      "Value": 1096438.32
     }
   ],
   "trade_journal": [],
-  "last_auto_trade_run": "2026-07-08 07:53:10.084643",
+  "last_auto_trade_run": "2026-07-08 09:21:12.400498",
   "circuit_breaker_date": "2026-07-08",
   "circuit_breaker_start_value": 1099156.39,
   "circuit_breaker_triggered": false
