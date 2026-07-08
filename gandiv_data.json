@@ -1,5 +1,5 @@
 {
-  "paper_cash": 904686.4400000002,
+  "paper_cash": 899397.6400000001,
   "paper_portfolio": {
     "GRASIM.NS": {
       "qty": 3,
@@ -20,10 +20,6 @@
     "NTPC.NS": {
       "qty": 14,
       "avg_price": 355.2
-    },
-    "AXISBANK.NS": {
-      "qty": 3,
-      "avg_price": 1359.5
     },
     "SUNPHARMA.NS": {
       "qty": 2,
@@ -100,6 +96,10 @@
     "ADANIPORTS.NS": {
       "qty": 5,
       "avg_price": 1833.9
+    },
+    "AXISBANK.NS": {
+      "qty": 7,
+      "avg_price": 1322.2
     }
   },
   "paper_trade_history": [
@@ -250,6 +250,17 @@
       "Charges": 9.79,
       "Net P&L": -108.39,
       "Net P&L %": -2.88
+    },
+    {
+      "Date": "2026-07-08",
+      "Stock": "AXISBANK.NS",
+      "Qty": 3,
+      "Buy Price": 1359.5,
+      "Sell Price": 1322.2,
+      "Gross P&L": -111.9,
+      "Charges": 10.59,
+      "Net P&L": -122.49,
+      "Net P&L %": -3.0
     }
   ],
   "equity_curve": [
@@ -264,11 +275,15 @@
     {
       "Date": "2026-07-07",
       "Value": 1100159.17
+    },
+    {
+      "Date": "2026-07-08",
+      "Value": 1099156.39
     }
   ],
   "trade_journal": [],
-  "last_auto_trade_run": "2026-07-07 12:16:58.777338",
-  "circuit_breaker_date": "2026-07-07",
-  "circuit_breaker_start_value": 1100121.45,
+  "last_auto_trade_run": "2026-07-08 06:15:43.082494",
+  "circuit_breaker_date": "2026-07-08",
+  "circuit_breaker_start_value": 1099156.39,
   "circuit_breaker_triggered": false
 }
