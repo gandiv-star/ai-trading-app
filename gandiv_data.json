@@ -1,5 +1,5 @@
 {
-  "paper_cash": 891094.2900000002,
+  "paper_cash": 885976.6900000001,
   "paper_portfolio": {
     "GRASIM.NS": {
       "qty": 3,
@@ -24,10 +24,6 @@
     "SUNPHARMA.NS": {
       "qty": 2,
       "avg_price": 1870.8
-    },
-    "DRREDDY.NS": {
-      "qty": 3,
-      "avg_price": 1367.1
     },
     "BPCL.NS": {
       "qty": 16,
@@ -100,6 +96,10 @@
     "BHARTIARTL.NS": {
       "qty": 5,
       "avg_price": 1880.0
+    },
+    "DRREDDY.NS": {
+      "qty": 7,
+      "avg_price": 1279.4
     }
   },
   "paper_trade_history": [
@@ -305,6 +305,17 @@
       "Charges": 25.08,
       "Net P&L": -274.08,
       "Net P&L %": -2.84
+    },
+    {
+      "Date": "2026-07-09",
+      "Stock": "DRREDDY.NS",
+      "Qty": 3,
+      "Buy Price": 1367.1,
+      "Sell Price": 1279.4,
+      "Gross P&L": -263.1,
+      "Charges": 10.47,
+      "Net P&L": -273.57,
+      "Net P&L %": -6.67
     }
   ],
   "equity_curve": [
@@ -323,11 +334,15 @@
     {
       "Date": "2026-07-08",
       "Value": 1096925.14
+    },
+    {
+      "Date": "2026-07-09",
+      "Value": 1098303.02
     }
   ],
   "trade_journal": [],
-  "last_auto_trade_run": "2026-07-08 11:28:38.003572",
-  "circuit_breaker_date": "2026-07-08",
-  "circuit_breaker_start_value": 1099156.39,
+  "last_auto_trade_run": "2026-07-09 07:04:48.320956",
+  "circuit_breaker_date": "2026-07-09",
+  "circuit_breaker_start_value": 1098303.02,
   "circuit_breaker_triggered": false
 }
