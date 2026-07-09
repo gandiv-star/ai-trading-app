@@ -1,6 +1,6 @@
 """
 Gandiv AI Trading Assistant - Standalone Auto Trade Bot (Premium Telegram Alerts)
-Updated: Full MarkdownV2 Support & Standard Formatting (No Backslash in f-string)
+Updated: AI Score-Based Dynamic Position Sizing & Anti-Crash MarkdownV2
 """
 
 import datetime
@@ -33,14 +33,15 @@ TRADING_MODE = "PAPER"
 
 if TRADING_MODE == "PAPER":
     MAX_POSITIONS = 25  # ૧૦૦% સક્સેસ ટેસ્ટિંગ માટે લિમિટ ૨૫ કરી દીધી
-    CAPITAL_PER_TRADE = 10000
     STARTING_CASH = 1000000.0  # અહીં ₹૧૦,૦૦,૦૦૦ સેટ છે
 else:
     MAX_POSITIONS = 5
-    CAPITAL_PER_TRADE = 20000
     STARTING_CASH = 100000.0
 
+# ડાયનેમિક મની મેનેજમેન્ટ સેટિંગ્સ
 MIN_SCORE = 75
+BASE_CAPITAL_PER_TRADE = 10000  # નોર્મલ રોકાણ ₹૧૦,૦૦,૦૦૦
+
 TARGET_PCT = 4.0
 SL_PCT = 2.5
 DAILY_LOSS_LIMIT_PCT = 5.0
@@ -290,15 +291,28 @@ def run_auto_trade():
 
             candidates.sort(key=lambda x: x["Score"], reverse=True)
             for c in candidates[:slots]:
-                qty = int(CAPITAL_PER_TRADE / c["Price"])
+                # ─── જે જાદુ આપણે કરવાનો હતો તે અહીં ઇમ્પ્લીમેન્ટ કર્યો છે ───
+                # AI સ્કોર પ્રમાણે રોકાણની મૂડી ઓટોમેટીક બદલાશે (Dynamic Capital)
+                if c["Score"] >= 90:
+                    allocated_capital = BASE_CAPITAL_PER_TRADE * 2  # ₹૨૦,૦૦૦ (High Confidence)
+                    confidence_star = "🔥🔥 [HIGH]"
+                elif c["Score"] >= 80:
+                    allocated_capital = BASE_CAPITAL_PER_TRADE      # ₹૧૦,૦૦૦ (Medium Confidence)
+                    confidence_star = "✅✅ [MEDIUM]"
+                else:
+                    allocated_capital = BASE_CAPITAL_PER_TRADE // 2 # ₹૫,૦૦૦  (Low Confidence)
+                    confidence_star = "⚠️⚠️ [LOW]"
+
+                qty = int(allocated_capital / c["Price"])
                 if qty < 1:
                     continue
                 cost = qty * c["Price"]
                 if cost > data["paper_cash"]:
                     continue
+                
                 data["paper_cash"] -= cost
                 data["paper_portfolio"][c["Stock"]] = {"qty": qty, "avg_price": c["Price"]}
-                log.append(f"BOUGHT {qty} x {c['Stock']} @ {c['Price']} | Score: {c['Score']}/100")
+                log.append(f"BOUGHT {qty} x {c['Stock']} @ {c['Price']} | Score: {c['Score']}/100 | Capital: ₹{allocated_capital}")
 
                 target = round(c["Price"] * (1 + TARGET_PCT/100), 2)
                 sl = round(c["Price"] * (1 - SL_PCT/100), 2)
@@ -310,6 +324,7 @@ def run_auto_trade():
                     f"`───────────────────────────── ALGO TRIGGER ──`\n"
                     f"🤖 *Strategy:* AI Auto Watchlist Scanner \(V36\)\n"
                     f"📈 *Action:* BUY / LONG \({TRADING_MODE}\)\n"
+                    f"🎯 *Confidence:* {escape_markdown(confidence_star)}\n"
                     f"🏷️ *Symbol:* {escape_markdown(clean_buy_sym)} \(NSE\)\n\n"
                     f"📊 *TRADE DETAILS:*\n"
                     f"📍 Entry Price: ₹{escape_markdown(c['Price'])}\n"
@@ -353,7 +368,7 @@ def run_auto_trade():
     if trade_messages:
         portfolio_value = calculate_portfolio_value(data)
         
-        # આ પ્યોર અને કન્વર્ટેડ વેલ્યુઝ છે જેથી f-string ની અંદર ડાયરેક્ટ વેરીએબલ રન થાય (કોઈ બૅકસ્લેશ નથી)
+        # ક્લીન સ્ટ્રિંગ વેરીએબલ્સ જેથી f-string ની અંદર બેકસ્લેશ નો ઇસ્યુ જ ન આવે
         p_val_str = escape_markdown(f"{portfolio_value:,.2f}")
         cash_str = escape_markdown(f"{data['paper_cash']:,.2f}")
         mode_str = escape_markdown(TRADING_MODE)
@@ -383,4 +398,4 @@ def run_auto_trade():
 
 if __name__ == "__main__":
     run_auto_trade()
-                                           
+    
