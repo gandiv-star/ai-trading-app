@@ -1,5 +1,5 @@
 {
-  "paper_cash": 885976.6900000001,
+  "paper_cash": 881785.29,
   "paper_portfolio": {
     "GRASIM.NS": {
       "qty": 3,
@@ -16,10 +16,6 @@
     "POWERGRID.NS": {
       "qty": 17,
       "avg_price": 286.65
-    },
-    "NTPC.NS": {
-      "qty": 14,
-      "avg_price": 355.2
     },
     "SUNPHARMA.NS": {
       "qty": 2,
@@ -100,6 +96,10 @@
     "DRREDDY.NS": {
       "qty": 7,
       "avg_price": 1279.4
+    },
+    "BAJFINANCE.NS": {
+      "qty": 9,
+      "avg_price": 1004.4
     }
   },
   "paper_trade_history": [
@@ -316,6 +316,17 @@
       "Charges": 10.47,
       "Net P&L": -273.57,
       "Net P&L %": -6.67
+    },
+    {
+      "Date": "2026-07-09",
+      "Stock": "NTPC.NS",
+      "Qty": 14,
+      "Buy Price": 355.2,
+      "Sell Price": 346.3,
+      "Gross P&L": -124.6,
+      "Charges": 12.93,
+      "Net P&L": -137.53,
+      "Net P&L %": -2.77
     }
   ],
   "equity_curve": [
@@ -337,11 +348,11 @@
     },
     {
       "Date": "2026-07-09",
-      "Value": 1098303.02
+      "Value": 1098132.77
     }
   ],
   "trade_journal": [],
-  "last_auto_trade_run": "2026-07-09 07:04:48.320956",
+  "last_auto_trade_run": "2026-07-09 07:56:27.140629",
   "circuit_breaker_date": "2026-07-09",
   "circuit_breaker_start_value": 1098303.02,
   "circuit_breaker_triggered": false
