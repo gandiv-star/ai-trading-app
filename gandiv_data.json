@@ -1,5 +1,5 @@
 {
-  "paper_cash": 881785.29,
+  "paper_cash": 870582.09,
   "paper_portfolio": {
     "GRASIM.NS": {
       "qty": 3,
@@ -93,13 +93,13 @@
       "qty": 5,
       "avg_price": 1880.0
     },
-    "DRREDDY.NS": {
-      "qty": 7,
-      "avg_price": 1279.4
-    },
     "BAJFINANCE.NS": {
       "qty": 9,
       "avg_price": 1004.4
+    },
+    "DRREDDY.NS": {
+      "qty": 16,
+      "avg_price": 1244.8
     }
   },
   "paper_trade_history": [
@@ -327,6 +327,17 @@
       "Charges": 12.93,
       "Net P&L": -137.53,
       "Net P&L %": -2.77
+    },
+    {
+      "Date": "2026-07-10",
+      "Stock": "DRREDDY.NS",
+      "Qty": 7,
+      "Buy Price": 1279.4,
+      "Sell Price": 1244.8,
+      "Gross P&L": -242.2,
+      "Charges": 23.27,
+      "Net P&L": -265.47,
+      "Net P&L %": -2.96
     }
   ],
   "equity_curve": [
@@ -349,11 +360,15 @@
     {
       "Date": "2026-07-09",
       "Value": 1097448.79
+    },
+    {
+      "Date": "2026-07-10",
+      "Value": 1098871.22
     }
   ],
   "trade_journal": [],
-  "last_auto_trade_run": "2026-07-09 12:21:03.238947",
-  "circuit_breaker_date": "2026-07-09",
-  "circuit_breaker_start_value": 1098303.02,
+  "last_auto_trade_run": "2026-07-10 07:03:36.416232",
+  "circuit_breaker_date": "2026-07-10",
+  "circuit_breaker_start_value": 1098871.22,
   "circuit_breaker_triggered": false
 }
