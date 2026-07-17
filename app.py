@@ -1869,32 +1869,34 @@ with tab5:
                         gain = delta.where(delta > 0, 0).rolling(14).mean()
                         loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
                         rsi = 100-(100/(1+(gain/loss)))
+        st.info("📌 આ એન્જિન backtester.py ફાઇલનો ઉપયોગ કરીને છેલ્લા ૫ વર્ષના ઐતિહાસિક ડેટા પર EMA + MACD + RSI સ્ટ્રેટેજી ચકાસશે.")
+        
+        if st.button("🚀 Run 5-Year AI Backtest Engine", key="run_v5_backtest"):
+            with st.spinner("ઐતિહાસિક ડેટા પર બેકટેસ્ટ થઈ રહ્યું છે... મહેરબાની કરીને રાહ જુઓ..."):
+                import subprocess
+                # બેકગ્રાઉન્ડમાં backtester.py ફાઈલને પ્રોફેશનલી રન કરશે
+                result = subprocess.run(["python", "backtester.py"], capture_output=True, text=True)
+                
+                if result.returncode == 0:
+                    st.success("🏆 AI Backtest Completed Successfully!")
+                    st.text_area("📊 Gandiv Backtest Report Summary (v5.0)", result.stdout, height=350)
+                    
+                    # ડેટા એનાલિસિસ માટે CSV ફાઈલ ડાઉનલોડ સિસ્ટમ
+                    try:
+                        with open("gandiv_backtest_report.csv", "rb") as file:
+                            st.download_button(
+                                label="📁 Download Detailed Trade Report (CSV)",
+                                data=file,
+                                file_name="gandiv_backtest_report.csv",
+                                mime="text/csv",
+                                key="download_csv_btn"
+                            )
+                    except Exception:
+                        st.warning("⚠ રિપોર્ટ ફાઈલ લોડ કરવામાં કોઈ પ્રોબ્લેમ આવ્યો છે.")
+                else:
+                    st.error("❌ Backtest Run Failed!")
+                    st.code(result.stderr)
 
-                        pos, entry = False, 0
-                        trades, wins, losses, profit = 0, 0, 0, 0
-
-                        for i in range(200, len(close)):
-                            if not pos:
-                                if ma50.iloc[i] > ma200.iloc[i] and rsi.iloc[i] < 35:
-                                    entry = close.iloc[i]; pos = True
-                            else:
-                                pct = ((close.iloc[i]-entry)/entry)*100
-                                if pct >= 8:
-                                    wins+=1; trades+=1; profit+=pct; pos=False
-                                elif pct <= -4:
-                                    losses+=1; trades+=1; profit+=pct; pos=False
-
-                        wr = round((wins/trades)*100,2) if trades>0 else 0
-                        b1, b2, b3 = st.columns(3)
-                        b1.metric("Trades", trades)
-                        b2.metric("Win Rate", f"{wr}%")
-                        b3.metric("Total Return", f"{round(profit,2)}%")
-                        st.write(f"✅ Wins: {wins} | ❌ Losses: {losses}")
-                        if wr >= 60: st.success("🔥 Excellent")
-                        elif wr >= 50: st.warning("✅ Good")
-                        else: st.error("⚠️ Weak")
-                except Exception as e:
-                    st.error(f"Error: {e}")
 
     with an_tab4:
         st.markdown("#### 🛡️ Risk Manager")
