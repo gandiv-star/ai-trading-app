@@ -1856,19 +1856,9 @@ with tab5:
                 except Exception as e:
                     st.error(f"Error: {e}")
 
-        with bt_tab3:
-            bt3_sym = st.text_input("Symbol", value="ITC.NS", key="bt3_sym")
-            if st.button("📉 Run RSI Backtest", key="bt3_btn"):
-                try:
-                    with st.spinner("Backtesting..."):
-                        hist = yf.Ticker(bt3_sym).history(period="3y")
-                        close = hist["Close"]
-                        ma50 = close.rolling(50).mean()
-                        ma200 = close.rolling(200).mean()
-                        delta = close.diff()
-                        gain = delta.where(delta > 0, 0).rolling(14).mean()
-                        loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
-                        rsi = 100-(100/(1+(gain/loss)))
+    with an_tab3:
+        st.markdown("#### 🧪 Strategy Backtesting")
+        
         st.info("📌 આ એન્જિન backtester.py ફાઇલનો ઉપયોગ કરીને છેલ્લા ૫ વર્ષના ઐતિહાસિક ડેટા પર EMA + MACD + RSI સ્ટ્રેટેજી ચકાસશે.")
         
         if st.button("🚀 Run 5-Year AI Backtest Engine", key="run_v5_backtest"):
@@ -1896,7 +1886,6 @@ with tab5:
                 else:
                     st.error("❌ Backtest Run Failed!")
                     st.code(result.stderr)
-
 
     with an_tab4:
         st.markdown("#### 🛡️ Risk Manager")
