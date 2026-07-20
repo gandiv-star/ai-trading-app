@@ -1834,6 +1834,7 @@ with tab5:
                 except Exception as e:
                     st.error(f"Error: {e}")
 
+
     with an_tab3:
         st.markdown("#### 🧪 Strategy Backtesting")
         
@@ -1842,12 +1843,13 @@ with tab5:
         if st.button("🚀 Run 5-Year AI Backtest Engine", key="run_v5_backtest"):
             with st.spinner("ઐતિહાસિક ડેટા પર બેકટેસ્ટ થઈ રહ્યું છે... મહેરબાની કરીને રાહ જુઓ..."):
                 try:
-                    # backtester.py ને સીધું રન કરશે
                     report_text = backtester.run_backtest()
                     st.success("🏆 AI Backtest Completed Successfully!")
-                    st.text_area("📊 Gandiv Backtest Report Summary (v5.0)", report_text, height=350)
                     
-                    try:
+                    # રિપોર્ટ પ્રિન્ટ કરશે
+                    st.code(report_text, language="text")
+                    
+                    if os.path.exists("gandiv_backtest_report.csv"):
                         with open("gandiv_backtest_report.csv", "rb") as file:
                             st.download_button(
                                 label="📁 Download Detailed Trade Report (CSV)",
@@ -1856,8 +1858,6 @@ with tab5:
                                 mime="text/csv",
                                 key="download_csv_btn"
                             )
-                    except Exception:
-                        st.warning("⚠ રિપોર્ટ ફાઈલ લોડ કરવામાં કોઈ પ્રોબ્લેમ આવ્યો છે.")
                 except Exception as e:
                     st.error(f"❌ Backtest Run Failed: {e}")
 
