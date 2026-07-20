@@ -1496,7 +1496,6 @@ with tab5:
                     loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
                     rsi = 100 - (100 / (1 + gain/loss))
 
-                    # Buy/Sell signals
                     buy_sig = []
                     sell_sig = []
                     for i in range(1, len(close)):
@@ -1517,7 +1516,6 @@ with tab5:
                         )
                     )
 
-                    # Candlestick
                     fig.add_trace(go.Candlestick(
                         x=dates, open=open_, high=high, low=low, close=close,
                         increasing_line_color="#00FF88",
@@ -1525,7 +1523,6 @@ with tab5:
                         name="Price"
                     ), row=1, col=1)
 
-                    # MA Lines
                     fig.add_trace(go.Scatter(
                         x=dates, y=ma20,
                         line=dict(color="#00BFFF", width=1.5),
@@ -1538,7 +1535,6 @@ with tab5:
                         name="MA50"
                     ), row=1, col=1)
 
-                    # Buy signals
                     if buy_sig:
                         fig.add_trace(go.Scatter(
                             x=[dates[i] for i in buy_sig],
@@ -1548,7 +1544,6 @@ with tab5:
                             name="Buy Signal"
                         ), row=1, col=1)
 
-                    # Sell signals
                     if sell_sig:
                         fig.add_trace(go.Scatter(
                             x=[dates[i] for i in sell_sig],
@@ -1558,7 +1553,6 @@ with tab5:
                             name="Sell Signal"
                         ), row=1, col=1)
 
-                    # Volume
                     vol_colors = [
                         "#00FF88" if close.iloc[i] >= open_.iloc[i] else "#FF1744"
                         for i in range(len(close))
@@ -1570,7 +1564,6 @@ with tab5:
                         opacity=0.7
                     ), row=2, col=1)
 
-                    # RSI
                     fig.add_trace(go.Scatter(
                         x=dates, y=rsi,
                         line=dict(color="#9C27B0", width=1.5),
@@ -1618,7 +1611,6 @@ with tab5:
         st.divider()
         st.markdown("#### 📈 Portfolio Equity Curve")
 
-        # Current value calculation
         eq_hv = 0
         for sym, pos in st.session_state.paper_portfolio.items():
             try:
@@ -1774,7 +1766,6 @@ with tab5:
                 try:
                     report_text = backtester.run_backtest()
                     st.success("🏆 AI Backtest Completed Successfully!")
-                    
                     st.code(report_text, language="text")
                     
                     if os.path.exists("gandiv_backtest_report.csv"):
@@ -1811,8 +1802,6 @@ with tab5:
                 max_risk = rm_cap * (rm_risk/100)
                 qty = int(max_risk/rps) if rps > 0 else 0
                 pos_val = round(qty * rm_entry, 2)
-                max_loss = round(qty * rps, 2)
-                pot_profit = round(qty * rwps, 2)
 
                 charges_sl = calculate_charges(rm_entry, rm_sl, qty)
                 charges_tgt = calculate_charges(rm_entry, rm_target, qty)
@@ -1829,71 +1818,6 @@ with tab5:
                 if rr >= 2: st.success("✅ Good Setup (≥ 1:2)")
                 elif rr >= 1: st.warning("🟡 Acceptable (1:1)")
                 else: st.error("🔴 Poor Setup (< 1:1)")
-
-                with st.expander("📋 Charge Preview"):
-                    st.write("**If SL Hit:**")
-                    st.write(f"Gross Loss: ₹{charges_sl['gross_pnl']} | Charges: ₹{charges_sl['total_charges']} | Net: ₹{charges_sl['net_pnl']}")
-                    st.write("**If Target Hit:**")
-                    st.write(f"Gross Profit: ₹{charges_tgt['gross_pnl']} | Charges: ₹{charges_tgt['total_charges']} | Net: ₹{charges_tgt['net_pnl']}")
             else:
                 st.error("Entry > Stop Loss હોવો જોઈએ.")
-
-        st.divider()
-        st.markdown("#### 🤖 Auto Trade Bot")
-
-        with st.expander("⚙️ Bot Settings"):
-            at_max = st.number_input("Max Positions", 1, 10, 5, key="at_max")
-            at_cap = st.number_input("Capital Per Trade (₹)", 1000, 50000, 10000, 1000, key="at_cap")
-            at_score = st.slider("Min AI Score", 50, 100, 75, key="at_score")
-            st.caption(f"Score: {at_score}")
-            at_target_pct = st.slider("Target (%)", 2.0, 20.0, 4.0, 0.5, key="at_target_pct")
-            st.caption(f"Target: {at_target_pct}%")
-            at_sl_pct = st.slider("Stop Loss (%)", 1.0, 10.0, 2.5, 0.5, key="at_sl_pct")
-            st.caption(f"SL: {at_sl_pct}%")
-
-        if st.button("🚀 Run Auto Trade Bot", key="auto_bot"):
-            if st.session_state.get("circuit_breaker_triggered", False):
-                st.error("🚨 Circuit Breaker Active! Trading Blocked.")
-            else:
-                st.markdown("**Step 1: Checking Holdings...**")
-                for sym, pos in list(st.session_state.paper_portfolio.items()):
-                    try:
-                        td = fetch_technical_data(sym)
-                        if not td: continue
-                        cp = td["current_price"]
-                        chg = ((cp - pos["avg_price"]) / pos["avg_price"]) * 100
-                        charges = calculate_charges(pos["avg_price"], cp, pos["qty"])
-
-                        if chg >= at_target_pct:
-                            st.session_state.paper_cash += cp * pos["qty"]
-                            st.session_state.paper_trade_history.append({
-                                "Date": str(datetime.date.today()),
-                                "Stock": sym.replace(".NS",""),
-                                "Qty": pos["qty"],
-                                "Buy ₹": round(pos["avg_price"],2),
-                                "Sell ₹": cp,
-                                "Gross P&L": charges["gross_pnl"],
-                                "Charges": charges["total_charges"],
-                                "Net P&L": charges["net_pnl"],
-                                "Net %": charges["net_pnl_pct"]
-                            })
-                            del st.session_state.paper_portfolio[sym]
-                            st.success(f"🎯 TARGET: SOLD {sym.replace('.NS','')} @ ₹{cp} | Net P&L: ₹{charges['net_pnl']}")
-
-                        elif chg <= -at_sl_pct:
-                            st.session_state.paper_cash += cp * pos["qty"]
-                            st.session_state.paper_trade_history.append({
-                                "Date": str(datetime.date.today()),
-                                "Stock": sym.replace(".NS",""),
-                                "Qty": pos["qty"],
-                                "Buy ₹": round(pos["avg_price"],2),
-                                "Sell ₹": cp,
-                                "Gross P&L": charges["gross_pnl"],
-                                "Charges": charges["total_charges"],
-                                "Net P&L": charges["net_pnl"],
-                                "Net %": charges["net_pnl_pct"]
-                            })
-                            del st.session_state.paper_portfolio[sym]
-                            st.error(f"🛑 STOP LOSS: SOLD {sym.replace('.NS','')} @ ₹{cp} | Net P&L: ₹{charges['net_pnl']}")
-                    except:
-                  
+                
