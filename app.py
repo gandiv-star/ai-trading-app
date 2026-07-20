@@ -1764,33 +1764,6 @@ with tab5:
                 unreal += (cp - pos["avg_price"]) * pos["qty"]
             st.metric("📈 Unrealized P&L (Open Positions)", f"₹{round(unreal,2)}")
 
-    with an_tab3:
-        st.markdown("#### 🧪 Strategy Backtesting")
-        
-        st.info("📌 આ એન્જિન backtester.py ફાઇલનો ઉપયોગ કરીને છેલ્લા ૫ વર્ષના ઐતિહાસિક ડેટા પર EMA + MACD + RSI સ્ટ્રેટેજી ચકાસશે.")
-        
-        if st.button("🚀 Run 5-Year AI Backtest Engine", key="run_v5_backtest"):
-            with st.spinner("ઐતિહાસિક ડેટા પર બેકટેસ્ટ થઈ રહ્યું છે... મહેરબાની કરીને રાહ જુઓ..."):
-                try:
-                    report_text = backtester.run_backtest()
-                    st.success("🏆 AI Backtest Completed Successfully!")
-                    
-                    # રિપોર્ટ સ્ક્રીન પર છાપશે
-                    st.code(report_text, language="text")
-                    
-                    # CSV ડાઉનલોડ બટન Safe રીતે લોડ કરશે
-                    if os.path.exists("gandiv_backtest_report.csv"):
-                        with open("gandiv_backtest_report.csv", "rb") as file:
-                            st.download_button(
-                                label="📁 Download Detailed Trade Report (CSV)",
-                                data=file,
-                                file_name="gandiv_backtest_report.csv",
-                                mime="text/csv",
-                                key="download_csv_btn"
-                            )
-                except Exception as e:
-                    st.error(f"❌ Backtest Run Failed: {e}")
-
 
         with bt_tab2:
             bt2_sym = st.text_input("Symbol", value="ITC.NS", key="bt2_sym")
