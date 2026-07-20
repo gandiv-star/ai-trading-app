@@ -1766,55 +1766,31 @@ with tab5:
 
     with an_tab3:
         st.markdown("#### 🧪 Strategy Backtesting")
-
-        bt_tab1, bt_tab2, bt_tab3 = st.tabs([
-            "📊 MA Crossover", "🚀 Momentum", "📉 RSI Pullback"
-        ])
-
-        with bt_tab1:
-            bt1_sym = st.text_input("Symbol", value="RELIANCE.NS", key="bt1_sym")
-            if st.button("🧪 Run MA Backtest", key="bt1_btn"):
+        
+        st.info("📌 આ એન્જિન backtester.py ફાઇલનો ઉપયોગ કરીને છેલ્લા ૫ વર્ષના ઐતિહાસિક ડેટા પર EMA + MACD + RSI સ્ટ્રેટેજી ચકાસશે.")
+        
+        if st.button("🚀 Run 5-Year AI Backtest Engine", key="run_v5_backtest"):
+            with st.spinner("ઐતિહાસિક ડેટા પર બેકટેસ્ટ થઈ રહ્યું છે... મહેરબાની કરીને રાહ જુઓ..."):
                 try:
-                    with st.spinner("Backtesting..."):
-                        hist = yf.Ticker(bt1_sym).history(period="3y")
-                        close = hist["Close"]
-                        ma50 = close.rolling(50).mean()
-                        ma200 = close.rolling(200).mean()
-                        delta = close.diff()
-                        gain = delta.where(delta > 0, 0).rolling(14).mean()
-                        loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
-                        rsi_s = 100 - (100/(1+(gain/loss)))
-                        volume = hist["Volume"]
-                        avg_vol = volume.rolling(20).mean()
-
-                        pos, entry = False, 0
-                        trades, wins, losses, profit = 0, 0, 0, 0
-
-                        for i in range(200, len(close)):
-                            if not pos:
-                                if (ma50.iloc[i] > ma200.iloc[i] and
-                                    45 <= rsi_s.iloc[i] <= 65 and
-                                    volume.iloc[i] > avg_vol.iloc[i]):
-                                    entry = close.iloc[i]
-                                    pos = True
-                            else:
-                                pct = ((close.iloc[i]-entry)/entry)*100
-                                if pct >= 8:
-                                    wins+=1; trades+=1; profit+=pct; pos=False
-                                elif pct <= -4:
-                                    losses+=1; trades+=1; profit+=pct; pos=False
-
-                        wr = round((wins/trades)*100,2) if trades>0 else 0
-                        b1, b2, b3 = st.columns(3)
-                        b1.metric("Trades", trades)
-                        b2.metric("Win Rate", f"{wr}%")
-                        b3.metric("Total Return", f"{round(profit,2)}%")
-                        st.write(f"✅ Wins: {wins} | ❌ Losses: {losses}")
-                        if wr >= 60: st.success("🔥 Excellent Strategy")
-                        elif wr >= 50: st.warning("✅ Good Strategy")
-                        else: st.error("⚠️ Needs Improvement")
+                    report_text = backtester.run_backtest()
+                    st.success("🏆 AI Backtest Completed Successfully!")
+                    
+                    # રિપોર્ટ સ્ક્રીન પર છાપશે
+                    st.code(report_text, language="text")
+                    
+                    # CSV ડાઉનલોડ બટન Safe રીતે લોડ કરશે
+                    if os.path.exists("gandiv_backtest_report.csv"):
+                        with open("gandiv_backtest_report.csv", "rb") as file:
+                            st.download_button(
+                                label="📁 Download Detailed Trade Report (CSV)",
+                                data=file,
+                                file_name="gandiv_backtest_report.csv",
+                                mime="text/csv",
+                                key="download_csv_btn"
+                            )
                 except Exception as e:
-                    st.error(f"Error: {e}")
+                    st.error(f"❌ Backtest Run Failed: {e}")
+
 
         with bt_tab2:
             bt2_sym = st.text_input("Symbol", value="ITC.NS", key="bt2_sym")
