@@ -8,6 +8,8 @@ import yfinance as yf
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import backtester
+
 
 # ==========================================
 # PAGE CONFIGURATION
@@ -1863,15 +1865,12 @@ with tab5:
         
         if st.button("🚀 Run 5-Year AI Backtest Engine", key="run_v5_backtest"):
             with st.spinner("ઐતિહાસિક ડેટા પર બેકટેસ્ટ થઈ રહ્યું છે... મહેરબાની કરીને રાહ જુઓ..."):
-                import subprocess
-                # બેકગ્રાઉન્ડમાં backtester.py ફાઈલને પ્રોફેશનલી રન કરશે
-                result = subprocess.run(["python", "backtester.py"], capture_output=True, text=True)
-                
-                if result.returncode == 0:
+                try:
+                    # backtester.py ને સીધું રન કરશે
+                    report_text = backtester.run_backtest()
                     st.success("🏆 AI Backtest Completed Successfully!")
-                    st.text_area("📊 Gandiv Backtest Report Summary (v5.0)", result.stdout, height=350)
+                    st.text_area("📊 Gandiv Backtest Report Summary (v5.0)", report_text, height=350)
                     
-                    # ડેટા એનાલિસિસ માટે CSV ફાઈલ ડાઉનલોડ સિસ્ટમ
                     try:
                         with open("gandiv_backtest_report.csv", "rb") as file:
                             st.download_button(
@@ -1883,9 +1882,8 @@ with tab5:
                             )
                     except Exception:
                         st.warning("⚠ રિપોર્ટ ફાઈલ લોડ કરવામાં કોઈ પ્રોબ્લેમ આવ્યો છે.")
-                else:
-                    st.error("❌ Backtest Run Failed!")
-                    st.code(result.stderr)
+                except Exception as e:
+                    st.error(f"❌ Backtest Run Failed: {e}")
 
     with an_tab4:
         st.markdown("#### 🛡️ Risk Manager")
