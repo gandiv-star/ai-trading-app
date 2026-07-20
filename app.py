@@ -1764,50 +1764,6 @@ with tab5:
                 unreal += (cp - pos["avg_price"]) * pos["qty"]
             st.metric("📈 Unrealized P&L (Open Positions)", f"₹{round(unreal,2)}")
 
-
-        with bt_tab2:
-            bt2_sym = st.text_input("Symbol", value="ITC.NS", key="bt2_sym")
-            if st.button("🚀 Run Momentum Backtest", key="bt2_btn"):
-                try:
-                    with st.spinner("Backtesting..."):
-                        hist = yf.Ticker(bt2_sym).history(period="3y")
-                        close = hist["Close"]
-                        volume = hist["Volume"]
-                        ma50 = close.rolling(50).mean()
-                        ma200 = close.rolling(200).mean()
-                        avg_vol = volume.rolling(20).mean()
-
-                        pos, entry = False, 0
-                        trades, wins, losses, profit = 0, 0, 0, 0
-
-                        for i in range(200, len(close)):
-                            bh = close.iloc[i-20:i].max()
-                            if not pos:
-                                if (close.iloc[i] > ma50.iloc[i] and
-                                    close.iloc[i] > ma200.iloc[i] and
-                                    close.iloc[i] > bh and
-                                    volume.iloc[i] > avg_vol.iloc[i]):
-                                    entry = close.iloc[i]; pos = True
-                            else:
-                                pct = ((close.iloc[i]-entry)/entry)*100
-                                if pct >= 10:
-                                    wins+=1; trades+=1; profit+=pct; pos=False
-                                elif pct <= -5:
-                                    losses+=1; trades+=1; profit+=pct; pos=False
-
-                        wr = round((wins/trades)*100,2) if trades>0 else 0
-                        b1, b2, b3 = st.columns(3)
-                        b1.metric("Trades", trades)
-                        b2.metric("Win Rate", f"{wr}%")
-                        b3.metric("Total Return", f"{round(profit,2)}%")
-                        st.write(f"✅ Wins: {wins} | ❌ Losses: {losses}")
-                        if wr >= 60: st.success("🔥 Excellent")
-                        elif wr >= 50: st.warning("✅ Good")
-                        else: st.error("⚠️ Weak")
-                except Exception as e:
-                    st.error(f"Error: {e}")
-
-
     with an_tab3:
         st.markdown("#### 🧪 Strategy Backtesting")
         
@@ -1816,14 +1772,11 @@ with tab5:
         if st.button("🚀 Run 5-Year AI Backtest Engine", key="run_v5_backtest"):
             with st.spinner("ઐતિહાસિક ડેટા પર બેકટેસ્ટ થઈ રહ્યું છે... મહેરબાની કરીને રાહ જુઓ..."):
                 try:
-                    # backtester.py મોડ્યુલ રન કરશે
                     report_text = backtester.run_backtest()
                     st.success("🏆 AI Backtest Completed Successfully!")
                     
-                    # આખો ૫ વર્ષનો બેકટેસ્ટ રિપોર્ટ બોક્સમાં છાપશે
                     st.code(report_text, language="text")
                     
-                    # CSV રિપોર્ટ ડાઉનલોડ બટન
                     if os.path.exists("gandiv_backtest_report.csv"):
                         with open("gandiv_backtest_report.csv", "rb") as file:
                             st.download_button(
@@ -1902,7 +1855,6 @@ with tab5:
             if st.session_state.get("circuit_breaker_triggered", False):
                 st.error("🚨 Circuit Breaker Active! Trading Blocked.")
             else:
-                # Step 1: Check existing for Target/SL
                 st.markdown("**Step 1: Checking Holdings...**")
                 for sym, pos in list(st.session_state.paper_portfolio.items()):
                     try:
@@ -1944,99 +1896,4 @@ with tab5:
                             del st.session_state.paper_portfolio[sym]
                             st.error(f"🛑 STOP LOSS: SOLD {sym.replace('.NS','')} @ ₹{cp} | Net P&L: ₹{charges['net_pnl']}")
                     except:
-                        pass
-
-                # Step 2: New buys
-                st.markdown("**Step 2: Scanning for Buy...**")
-                slots = at_max - len(st.session_state.paper_portfolio)
-                if slots <= 0:
-                    st.warning(f"Portfolio Full ({at_max}/{at_max})")
-                else:
-                    candidates = []
-                    with st.spinner("Scanning..."):
-                        for sym in STOCK_UNIVERSE:
-                            if sym in st.session_state.paper_portfolio: continue
-                            try:
-                                td = fetch_technical_data(sym)
-                                if not td: continue
-                                score = 50
-                                if td["trend"] == "Bullish": score += 20
-                                if 45 <= td["rsi"] <= 65: score += 20
-                                elif td["rsi"] < 30: score += 5
-                                if td["current_price"] > td["ma50"]: score += 10
-                                if score >= at_score:
-                                    candidates.append({
-                                        "sym": sym,
-                                        "score": score,
-                                        "price": td["current_price"],
-                                        "rsi": td["rsi"]
-                                    })
-                            except:
-                                pass
-
-                    candidates.sort(key=lambda x: x["score"], reverse=True)
-                    bought = 0
-                    for c in candidates[:slots]:
-                        qty = int(at_cap / c["price"])
-                        if qty < 1: continue
-                        cost = qty * c["price"]
-                        stamp = round(cost * 0.00015, 2)
-                        total_cost = round(cost + stamp, 2)
-                        if total_cost > st.session_state.paper_cash: continue
-                        st.session_state.paper_cash -= total_cost
-                        st.session_state.paper_portfolio[c["sym"]] = {
-                            "qty": qty, "avg_price": c["price"]
-                        }
-                        st.success(f"✅ BOUGHT {qty}x {c['sym'].replace('.NS','')} @ ₹{c['price']} | Score: {c['score']}/100")
-                        bought += 1
-
-                    if bought == 0 and len(candidates) == 0:
-                        st.info("કોઈ qualifying stock નથી.")
-
-                save_data()
-                st.session_state.last_auto_trade_run = str(datetime.datetime.now())
-
-                bot1, bot2 = st.columns(2)
-                bot1.metric("Open Positions", len(st.session_state.paper_portfolio))
-                bot2.metric("Available Cash", f"₹{st.session_state.paper_cash:,.2f}")
-
-        if "last_auto_trade_run" in st.session_state:
-            st.caption(f"📅 Last Run: {st.session_state.last_auto_trade_run}")
-
-        st.divider()
-        st.markdown("#### 🔗 Upstox Connection")
-        u1, u2 = st.columns(2)
-        with u1:
-            if st.button("🏦 Check Account", key="upstox_check"):
-                try:
-                    token = st.secrets["UPSTOX_ACCESS_TOKEN"]
-                    headers = {
-                        "Accept": "application/json",
-                        "Authorization": f"Bearer {token}"
-                    }
-                    resp = requests.get(
-                        "https://api.upstox.com/v2/user/profile",
-                        headers=headers
-                    )
-                    if resp.status_code == 200:
-                        st.success("✅ Connected!")
-                        st.json(resp.json())
-                    else:
-                        st.error("❌ Token Expired - Refresh કરો")
-                except Exception as e:
-                    st.error(f"Error: {e}")
-        with u2:
-            if st.button("📂 My Holdings", key="upstox_hold"):
-                try:
-                    token = st.secrets["UPSTOX_ACCESS_TOKEN"]
-                    headers = {
-                        "Accept": "application/json",
-                        "Authorization": f"Bearer {token}"
-                    }
-                    resp = requests.get(
-                        "https://api.upstox.com/v2/portfolio/long-term-holdings",
-                        headers=headers
-                    )
-                    st.json(resp.json())
-                except Exception as e:
-                    st.error(f"Error: {e}")
+                  
