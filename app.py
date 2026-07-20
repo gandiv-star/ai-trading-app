@@ -1843,12 +1843,14 @@ with tab5:
         if st.button("🚀 Run 5-Year AI Backtest Engine", key="run_v5_backtest"):
             with st.spinner("ઐતિહાસિક ડેટા પર બેકટેસ્ટ થઈ રહ્યું છે... મહેરબાની કરીને રાહ જુઓ..."):
                 try:
+                    # backtester.py મોડ્યુલ રન કરશે
                     report_text = backtester.run_backtest()
                     st.success("🏆 AI Backtest Completed Successfully!")
                     
-                    # રિપોર્ટ પ્રિન્ટ કરશે
+                    # આખો ૫ વર્ષનો બેકટેસ્ટ રિપોર્ટ બોક્સમાં છાપશે
                     st.code(report_text, language="text")
                     
+                    # CSV રિપોર્ટ ડાઉનલોડ બટન
                     if os.path.exists("gandiv_backtest_report.csv"):
                         with open("gandiv_backtest_report.csv", "rb") as file:
                             st.download_button(
