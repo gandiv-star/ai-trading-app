@@ -59,14 +59,15 @@ def run_backtest():
                 row = df.iloc[i]
                 next_row = df.iloc[i+1]
                 
+                # સ્કોરિંગ સિસ્ટમ
                 score = 0
                 if row["MA50"] > row["MA200"]: score += 25
-                if row["EMA20"] > row["EMA50"]: score += 20
-                if row["MACD"] > row["Signal"]: score += 20
-                if 45 <= row["RSI"] <= 65: score += 20
-                if row["Close"] > row["MA50"]: score += 15
+                if row["EMA20"] > row["EMA50"]: score += 25
+                if row["MACD"] > row["Signal"]: score += 25
+                if 40 <= row["RSI"] <= 70: score += 25
                 
-                if not in_position and score >= 75:
+                # ૭૫ ની જગ્યાએ ૬૦ સ્કોર પર ટ્રેડ લેશે
+                if not in_position and score >= 60:
                     in_position = True
                     entry_price = next_row["Open"]
                     entry_date = df.index[i+1]
@@ -130,7 +131,6 @@ def run_backtest():
     csv_filename = "gandiv_backtest_report.csv"
     trades_df.to_csv(csv_filename, index=False)
     
-    # ─── અહીંથી ડેટા આપોઆપ ટેક્સ્ટ બનીને app.py ને મળશે ───
     report_output = f"""=============================================
 🏆 GANDIV AI BACKTEST REPORT (v5.0) 🏆
 =============================================
