@@ -24,23 +24,22 @@ SLIPPAGE_AND_CHARGES_PCT = 0.05
 
 def run_backtest():
     all_trades = []
+    error_logs = []
     
     for symbol in STOCK_UNIVERSE:
         try:
             stock = yf.Ticker(symbol)
             df = stock.history(start=START_DATE, end=END_DATE)
-            if df.empty or len(df) < 30:
+            
+            if df.empty or len(df) < 50:
+                error_logs.append(f"{symbol}: No data fetched")
                 continue
                 
-            # Indicators Calculation
+            # Simple Moving Averages
             df["MA20"] = df["Close"].rolling(20).mean()
             df["MA50"] = df["Close"].rolling(50).mean()
             
-            ema12 = df["Close"].ewm(span=12, adjust=False).mean()
-            ema26 = df["Close"].ewm(span=26, adjust=False).mean()
-            df["MACD"] = ema12 - ema26
-            df["Signal"] = df["MACD"].ewm(span=9, adjust=False).mean()
-            
+            # Simple RSI
             delta = df["Close"].diff()
             gain = (delta.where(delta > 0, 0)).rolling(14).mean()
             loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
@@ -55,23 +54,18 @@ def run_backtest():
                 row = df.iloc[i]
                 next_row = df.iloc[i+1]
                 
-                # Dynamic Score
-                score = 0
-                if row["Close"] > row["MA20"]: score += 30
-                if row["MA20"] > row["MA50"]: score += 30
-                if row["MACD"] > row["Signal"]: score += 20
-                if 40 <= row["RSI"] <= 70: score += 20
+                # Simple Logic
+                buy_condition = (row["Close"] > row["MA20"]) and (row["MA20"] > row["MA50"])
                 
-                # Entry Condition
-                if not in_position and score >= 50:
+                if not in_position and buy_condition:
                     in_position = True
-                    entry_price = next_row["Open"]
-                    entry_date = df.index[i+1]
+                    entry_price = float(next_row["Open"])
+                    entry_date = df.index[i+1].strftime("%Y-%m-%d") if hasattr(df.index[i+1], 'strftime') else str(df.index[i+1])[:10]
                     continue
                 
                 if in_position:
-                    high_price = next_row["High"]
-                    low_price = next_row["Low"]
+                    high_price = float(next_row["High"])
+                    low_price = float(next_row["Low"])
                     
                     target_price = entry_price * (1 + TARGET_PCT/100)
                     sl_price = entry_price * (1 - SL_PCT/100)
@@ -81,7 +75,7 @@ def run_backtest():
                     
                     if hit_target or hit_sl:
                         exit_price = target_price if hit_target else sl_price
-                        exit_date = df.index[i+1]
+                        exit_date = df.index[i+1].strftime("%Y-%m-%d") if hasattr(df.index[i+1], 'strftime') else str(df.index[i+1])[:10]
                         
                         gross_pnl = (exit_price - entry_price) * (CAPITAL_PER_TRADE / entry_price)
                         charges = (CAPITAL_PER_TRADE) * (SLIPPAGE_AND_CHARGES_PCT / 100)
@@ -90,9 +84,9 @@ def run_backtest():
                         
                         all_trades.append({
                             "Stock": symbol,
-                            "Entry Date": entry_date.strftime("%Y-%m-%d"),
+                            "Entry Date": entry_date,
                             "Entry Price": round(entry_price, 2),
-                            "Exit Date": exit_date.strftime("%Y-%m-%d"),
+                            "Exit Date": exit_date,
                             "Exit Price": round(exit_price, 2),
                             "Net P&L (₹)": net_pnl,
                             "P&L (%)": pnl_pct,
@@ -100,11 +94,12 @@ def run_backtest():
                         })
                         in_position = False
                         
-        except Exception:
-            pass
+        except Exception as e:
+            error_logs.append(f"{symbol} Error: {str(e)}")
             
     if not all_trades:
-        return "⚠ કોઈ ટ્રેડ મળ્યા નથી."
+        err_msg = "\n".join(error_logs[:5]) if error_logs else "No Error Logs"
+        return f"⚠ કોઈ ટ્રેડ મળ્યા નથી.\n\nDebug Info:\n{err_msg}"
         
     trades_df = pd.DataFrame(all_trades)
     trades_df = trades_df.sort_values(by="Exit Date").reset_index(drop=True)
