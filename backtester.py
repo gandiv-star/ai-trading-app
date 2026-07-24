@@ -17,7 +17,6 @@ START_DATE = "2021-01-01"
 END_DATE = "2026-01-01"
 STARTING_CAPITAL = 1000000.0
 CAPITAL_PER_TRADE = 20000
-MAX_POSITIONS = 10
 
 TARGET_PCT = 4.0
 SL_PCT = 2.5
@@ -33,10 +32,9 @@ def run_backtest():
             if df.empty or len(df) < 50:
                 continue
                 
+            # Indicators Calculation
+            df["MA20"] = df["Close"].rolling(20).mean()
             df["MA50"] = df["Close"].rolling(50).mean()
-            df["MA200"] = df["Close"].rolling(200).mean()
-            df["EMA20"] = df["Close"].ewm(span=20).adjust(False).mean()
-            df["EMA50"] = df["Close"].ewm(span=50).adjust(False).mean()
             
             ema12 = df["Close"].ewm(span=12).adjust(False).mean()
             ema26 = df["Close"].ewm(span=26).adjust(False).mean()
@@ -49,25 +47,25 @@ def run_backtest():
             rs = gain / loss
             df["RSI"] = 100 - (100 / (1 + rs))
             
-            df = df.dropna()
+            df = df.fillna(method='bfill').fillna(method='ffill')
             
             in_position = False
             entry_price = 0
             entry_date = None
             
-            for i in range(len(df) - 1):
+            for i in range(50, len(df) - 1):
                 row = df.iloc[i]
                 next_row = df.iloc[i+1]
                 
-                # સ્કોરિંગ સિસ્ટમ
+                # Dynamic Smart Score System
                 score = 0
-                if row["MA50"] > row["MA200"]: score += 25
-                if row["EMA20"] > row["EMA50"]: score += 25
-                if row["MACD"] > row["Signal"]: score += 25
-                if 40 <= row["RSI"] <= 70: score += 25
+                if row["Close"] > row["MA20"]: score += 30
+                if row["MA20"] > row["MA50"]: score += 30
+                if row["MACD"] > row["Signal"]: score += 20
+                if 40 <= row["RSI"] <= 70: score += 20
                 
-                # ૭૫ ની જગ્યાએ ૬૦ સ્કોર પર ટ્રેડ લેશે
-                if not in_position and score >= 60:
+                # Entry Condition: Score >= 50
+                if not in_position and score >= 50:
                     in_position = True
                     entry_price = next_row["Open"]
                     entry_date = df.index[i+1]
