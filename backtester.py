@@ -1,16 +1,13 @@
 """
-Gandiv AI Trading Terminal - Professional Backtesting Engine (V5.0)
-Calculates: Win Rate, CAGR, Max Drawdown, Sharpe Ratio, Profit Factor
+Gandiv AI Trading Terminal - Backtesting Engine
 """
 
-import datetime
 import pandas as pd
 import yfinance as yf
 
+# Top 5 Highly Liquid Stocks (તુરંત ડાઉનલોડ થશે)
 STOCK_UNIVERSE = [
-    "RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", "ICICIBANK.NS",
-    "SBIN.NS", "LT.NS", "BHARTIARTL.NS", "ITC.NS", "HINDUNILVR.NS",
-    "INDUSINDBK.NS", "TATASTEEL.NS", "TATAMOTORS.NS", "GRASIM.NS", "ZOMATO.NS"
+    "RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", "SBIN.NS"
 ]
 
 STARTING_CAPITAL = 1000000.0
@@ -25,14 +22,16 @@ def run_backtest():
     
     for symbol in STOCK_UNIVERSE:
         try:
-            stock = yf.Ticker(symbol)
-            # period="5y" વાપરવાથી ડેટા ડાઉનલોડ થવો ૧૦૦% કન્ફર્મ થઈ જશે
-            df = stock.history(period="5y")
+            # 2 વર્ષનો ડેટા એકદમ ફાસ્ટ ડાઉનલોડ થશે
+            df = yf.download(symbol, period="2y", interval="1d", progress=False)
             
-            if df.empty or len(df) < 50:
+            if df.empty:
                 continue
                 
-            # Moving Averages
+            # Flatten MultiIndex columns if present
+            if isinstance(df.columns, pd.MultiIndex):
+                df.columns = df.columns.get_level_values(0)
+                
             df["MA20"] = df["Close"].rolling(20).mean()
             df["MA50"] = df["Close"].rolling(50).mean()
             
@@ -41,21 +40,22 @@ def run_backtest():
             entry_date = None
             
             for i in range(50, len(df) - 1):
-                row = df.iloc[i]
-                next_row = df.iloc[i+1]
+                close_val = float(df["Close"].iloc[i])
+                ma20_val = float(df["MA20"].iloc[i])
+                ma50_val = float(df["MA50"].iloc[i])
                 
-                # Trend Condition: Close > MA20 & MA20 > MA50
-                buy_condition = (row["Close"] > row["MA20"]) and (row["MA20"] > row["MA50"])
+                # Simple Golden Crossover Condition
+                buy_condition = (close_val > ma20_val) and (ma20_val > ma50_val)
                 
                 if not in_position and buy_condition:
                     in_position = True
-                    entry_price = float(next_row["Open"])
-                    entry_date = df.index[i+1].strftime("%Y-%m-%d") if hasattr(df.index[i+1], 'strftime') else str(df.index[i+1])[:10]
+                    entry_price = float(df["Open"].iloc[i+1])
+                    entry_date = str(df.index[i+1])[:10]
                     continue
                 
                 if in_position:
-                    high_price = float(next_row["High"])
-                    low_price = float(next_row["Low"])
+                    high_price = float(df["High"].iloc[i+1])
+                    low_price = float(df["Low"].iloc[i+1])
                     
                     target_price = entry_price * (1 + TARGET_PCT/100)
                     sl_price = entry_price * (1 - SL_PCT/100)
@@ -65,7 +65,7 @@ def run_backtest():
                     
                     if hit_target or hit_sl:
                         exit_price = target_price if hit_target else sl_price
-                        exit_date = df.index[i+1].strftime("%Y-%m-%d") if hasattr(df.index[i+1], 'strftime') else str(df.index[i+1])[:10]
+                        exit_date = str(df.index[i+1])[:10]
                         
                         gross_pnl = (exit_price - entry_price) * (CAPITAL_PER_TRADE / entry_price)
                         charges = (CAPITAL_PER_TRADE) * (SLIPPAGE_AND_CHARGES_PCT / 100)
@@ -84,7 +84,7 @@ def run_backtest():
                         })
                         in_position = False
                         
-        except Exception:
+        except Exception as e:
             pass
             
     if not all_trades:
@@ -101,7 +101,7 @@ def run_backtest():
     total_net_pnl = round(trades_df["Net P&L (₹)"].sum(), 2)
     final_value = STARTING_CAPITAL + total_net_pnl
     
-    years = 5
+    years = 2
     cagr = round((((final_value / STARTING_CAPITAL) ** (1 / years)) - 1) * 100, 2)
     
     total_profit = trades_df[trades_df["Net P&L (₹)"] > 0]["Net P&L (₹)"].sum()
@@ -114,7 +114,7 @@ def run_backtest():
     report_output = f"""=============================================
 🏆 GANDIV AI BACKTEST REPORT (v5.0) 🏆
 =============================================
-📅 ગાળો: છેલ્લા ૫ વર્ષ (5-Year Historical Data)
+📅 ગાળો: છેલ્લા ૨ વર્ષ (2-Year Historical Data)
 💵 શરૂઆતની કેપિટલ: ₹{STARTING_CAPITAL:,.2f}
 💰 ફાઇનલ પોર્ટફોલિયો વેલ્યુ: ₹{final_value:,.2f}
 📈 ચોખ્ખો નફો (Net P&L): ₹{total_net_pnl:,.2f}
