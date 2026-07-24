@@ -29,25 +29,23 @@ def run_backtest():
         try:
             stock = yf.Ticker(symbol)
             df = stock.history(start=START_DATE, end=END_DATE)
-            if df.empty or len(df) < 50:
+            if df.empty or len(df) < 30:
                 continue
                 
             # Indicators Calculation
             df["MA20"] = df["Close"].rolling(20).mean()
             df["MA50"] = df["Close"].rolling(50).mean()
             
-            ema12 = df["Close"].ewm(span=12).adjust(False).mean()
-            ema26 = df["Close"].ewm(span=26).adjust(False).mean()
+            ema12 = df["Close"].ewm(span=12, adjust=False).mean()
+            ema26 = df["Close"].ewm(span=26, adjust=False).mean()
             df["MACD"] = ema12 - ema26
-            df["Signal"] = df["MACD"].ewm(span=9).adjust(False).mean()
+            df["Signal"] = df["MACD"].ewm(span=9, adjust=False).mean()
             
             delta = df["Close"].diff()
             gain = (delta.where(delta > 0, 0)).rolling(14).mean()
             loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
             rs = gain / loss
             df["RSI"] = 100 - (100 / (1 + rs))
-            
-            df = df.fillna(method='bfill').fillna(method='ffill')
             
             in_position = False
             entry_price = 0
@@ -57,14 +55,14 @@ def run_backtest():
                 row = df.iloc[i]
                 next_row = df.iloc[i+1]
                 
-                # Dynamic Smart Score System
+                # Dynamic Score
                 score = 0
                 if row["Close"] > row["MA20"]: score += 30
                 if row["MA20"] > row["MA50"]: score += 30
                 if row["MACD"] > row["Signal"]: score += 20
                 if 40 <= row["RSI"] <= 70: score += 20
                 
-                # Entry Condition: Score >= 50
+                # Entry Condition
                 if not in_position and score >= 50:
                     in_position = True
                     entry_price = next_row["Open"]
