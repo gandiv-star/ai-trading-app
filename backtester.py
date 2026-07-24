@@ -130,8 +130,8 @@ def run_backtest():
     csv_filename = "gandiv_backtest_report.csv"
     trades_df.to_csv(csv_filename, index=False)
     
-    report_output = f"""
-=============================================
+    # ─── અહીંથી ડેટા આપોઆપ ટેક્સ્ટ બનીને app.py ને મળશે ───
+    report_output = f"""=============================================
 🏆 GANDIV AI BACKTEST REPORT (v5.0) 🏆
 =============================================
 📅 ગાળો: {START_DATE} થી {END_DATE}
@@ -147,4 +147,4 @@ def run_backtest():
 =============================================
 """
     return report_output
-                        
+    
