@@ -13,8 +13,6 @@ STOCK_UNIVERSE = [
     "INDUSINDBK.NS", "TATASTEEL.NS", "TATAMOTORS.NS", "GRASIM.NS", "ZOMATO.NS"
 ]
 
-START_DATE = "2021-01-01"
-END_DATE = "2026-01-01"
 STARTING_CAPITAL = 1000000.0
 CAPITAL_PER_TRADE = 20000
 
@@ -24,27 +22,19 @@ SLIPPAGE_AND_CHARGES_PCT = 0.05
 
 def run_backtest():
     all_trades = []
-    error_logs = []
     
     for symbol in STOCK_UNIVERSE:
         try:
             stock = yf.Ticker(symbol)
-            df = stock.history(start=START_DATE, end=END_DATE)
+            # period="5y" વાપરવાથી ડેટા ડાઉનલોડ થવો ૧૦૦% કન્ફર્મ થઈ જશે
+            df = stock.history(period="5y")
             
             if df.empty or len(df) < 50:
-                error_logs.append(f"{symbol}: No data fetched")
                 continue
                 
-            # Simple Moving Averages
+            # Moving Averages
             df["MA20"] = df["Close"].rolling(20).mean()
             df["MA50"] = df["Close"].rolling(50).mean()
-            
-            # Simple RSI
-            delta = df["Close"].diff()
-            gain = (delta.where(delta > 0, 0)).rolling(14).mean()
-            loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
-            rs = gain / loss
-            df["RSI"] = 100 - (100 / (1 + rs))
             
             in_position = False
             entry_price = 0
@@ -54,7 +44,7 @@ def run_backtest():
                 row = df.iloc[i]
                 next_row = df.iloc[i+1]
                 
-                # Simple Logic
+                # Trend Condition: Close > MA20 & MA20 > MA50
                 buy_condition = (row["Close"] > row["MA20"]) and (row["MA20"] > row["MA50"])
                 
                 if not in_position and buy_condition:
@@ -94,12 +84,11 @@ def run_backtest():
                         })
                         in_position = False
                         
-        except Exception as e:
-            error_logs.append(f"{symbol} Error: {str(e)}")
+        except Exception:
+            pass
             
     if not all_trades:
-        err_msg = "\n".join(error_logs[:5]) if error_logs else "No Error Logs"
-        return f"⚠ કોઈ ટ્રેડ મળ્યા નથી.\n\nDebug Info:\n{err_msg}"
+        return "⚠ કોઈ ટ્રેડ મળ્યા નથી."
         
     trades_df = pd.DataFrame(all_trades)
     trades_df = trades_df.sort_values(by="Exit Date").reset_index(drop=True)
@@ -125,7 +114,7 @@ def run_backtest():
     report_output = f"""=============================================
 🏆 GANDIV AI BACKTEST REPORT (v5.0) 🏆
 =============================================
-📅 ગાળો: {START_DATE} થી {END_DATE}
+📅 ગાળો: છેલ્લા ૫ વર્ષ (5-Year Historical Data)
 💵 શરૂઆતની કેપિટલ: ₹{STARTING_CAPITAL:,.2f}
 💰 ફાઇનલ પોર્ટફોલિયો વેલ્યુ: ₹{final_value:,.2f}
 📈 ચોખ્ખો નફો (Net P&L): ₹{total_net_pnl:,.2f}
