@@ -415,11 +415,11 @@
     },
     {
       "Date": "2026-07-29",
-      "Value": 1101305.26
+      "Value": 1101042.4
     }
   ],
   "trade_journal": [],
-  "last_auto_trade_run": "2026-07-29 09:32:30.492484",
+  "last_auto_trade_run": "2026-07-29 11:02:31.386772",
   "circuit_breaker_date": "2026-07-29",
   "circuit_breaker_start_value": 1101328.71,
   "circuit_breaker_triggered": false
