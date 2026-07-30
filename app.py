@@ -1792,7 +1792,6 @@ with tab5:
             rm_target = st.number_input("Target (₹)", 0.01, 100000.0, 1100.0, 0.5, key="rm_target")
 
         rm_risk = st.slider("Risk Per Trade (%)", 0.5, 10.0, 1.0, 0.5, key="rm_risk")
-        st.caption(f"Risk: {rm_risk}%")
 
         if st.button("🧮 Calculate Position Size", key="rm_calc"):
             if rm_entry > rm_sl:
@@ -1820,4 +1819,172 @@ with tab5:
                 else: st.error("🔴 Poor Setup (< 1:1)")
             else:
                 st.error("Entry > Stop Loss હોવો જોઈએ.")
+
+        # ==========================================
+        # v5.2: PORTFOLIO OPTIMIZER & SECTOR MAP
+        # ==========================================
+        SECTOR_MAP = {
+            "RELIANCE.NS": "Energy", "TCS.NS": "IT", "INFY.NS": "IT",
+            "HDFCBANK.NS": "Banking", "ICICIBANK.NS": "Banking", "SBIN.NS": "Banking",
+            "INDUSINDBK.NS": "Banking", "LT.NS": "Capital Goods", "BHARTIARTL.NS": "Telecom",
+            "ITC.NS": "FMCG", "HINDUNILVR.NS": "FMCG", "TATASTEEL.NS": "Metals",
+            "TATAMOTORS.NS": "Auto", "GRASIM.NS": "Cement", "ZOMATO.NS": "Services"
+        }
+
+        SECTOR_CAPS = {
+            "Banking": 0.20,  # Max 20%
+            "IT": 0.20,       # Max 20%
+            "Pharma": 0.15,   # Max 15%
+            "FMCG": 0.15,
+            "Auto": 0.15,
+            "Other": 0.15
+        }
+        SINGLE_STOCK_CAP = 0.08  # Single Stock Max 8%
+
+        st.divider()
+        st.markdown("#### 🤖 Auto Trade Bot (v5.2 Portfolio Optimizer Integrated)")
+
+        with st.expander("⚙️ Bot & Risk Settings"):
+            at_max = st.number_input("Max Positions", 1, 10, 5, key="at_max")
+            at_cap = st.number_input("Capital Per Trade (₹)", 1000, 50000, 10000, 1000, key="at_cap")
+            at_score = st.slider("Min AI Score", 50, 100, 75, key="at_score")
+            at_target_pct = st.slider("Target (%)", 2.0, 20.0, 4.0, 0.5, key="at_target_pct")
+            at_sl_pct = st.slider("Stop Loss (%)", 1.0, 10.0, 2.5, 0.5, key="at_sl_pct")
+
+        if st.button("🚀 Run Auto Trade Bot v5.2", key="auto_bot"):
+            if st.session_state.get("circuit_breaker_triggered", False):
+                st.error("🚨 Circuit Breaker Active! Trading Blocked.")
+            else:
+                # ----------------------------------------------------
+                # STEP 1: Dynamic Trailing Stop-Loss Check
+                # ----------------------------------------------------
+                st.markdown("**Step 1: Checking Holdings & Trailing SL...**")
+                for sym, pos in list(st.session_state.paper_portfolio.items()):
+                    try:
+                        td = fetch_technical_data(sym)
+                        if not td: continue
+                        cp = td["current_price"]
+                        chg = ((cp - pos["avg_price"]) / pos["avg_price"]) * 100
+                        charges = calculate_charges(pos["avg_price"], cp, pos["qty"])
+
+                        # Dynamic Trailing SL Logic
+                        if chg >= (at_target_pct / 2) and not pos.get("sl_trailed", False):
+                            pos["sl_trailed"] = True
+                            st.info(f"🛡️ TRAILING SL ACTIVATED: {sym.replace('.NS','')} SL shifted to Entry Price (₹{pos['avg_price']})")
+
+                        # Target Hit
+                        if chg >= at_target_pct:
+                            st.session_state.paper_cash += cp * pos["qty"]
+                            st.session_state.paper_trade_history.append({
+                                "Date": str(datetime.date.today()),
+                                "Stock": sym.replace(".NS",""),
+                                "Qty": pos["qty"],
+                                "Buy ₹": round(pos["avg_price"],2),
+                                "Sell ₹": cp,
+                                "Gross P&L": charges["gross_pnl"],
+                                "Charges": charges["total_charges"],
+                                "Net P&L": charges["net_pnl"],
+                                "Net %": charges["net_pnl_pct"]
+                            })
+                            del st.session_state.paper_portfolio[sym]
+                            st.success(f"🎯 TARGET HIT: SOLD {sym.replace('.NS','')} @ ₹{cp} | Net P&L: ₹{charges['net_pnl']}")
+
+                        # SL Hit
+                        elif (pos.get("sl_trailed", False) and cp <= pos["avg_price"]) or (chg <= -at_sl_pct):
+                            st.session_state.paper_cash += cp * pos["qty"]
+                            st.session_state.paper_trade_history.append({
+                                "Date": str(datetime.date.today()),
+                                "Stock": sym.replace(".NS",""),
+                                "Qty": pos["qty"],
+                                "Buy ₹": round(pos["avg_price"],2),
+                                "Sell ₹": cp,
+                                "Gross P&L": charges["gross_pnl"],
+                                "Charges": charges["total_charges"],
+                                "Net P&L": charges["net_pnl"],
+                                "Net %": charges["net_pnl_pct"]
+                            })
+                            del st.session_state.paper_portfolio[sym]
+                            st.error(f"🛑 STOP LOSS HIT: SOLD {sym.replace('.NS','')} @ ₹{cp} | Net P&L: ₹{charges['net_pnl']}")
+                    except:
+                        pass
+
+                # ----------------------------------------------------
+                # STEP 2: Sector Limits & Portfolio Optimization
+                # ----------------------------------------------------
+                st.markdown("**Step 2: Portfolio Sector & Capital Optimization...**")
                 
+                total_portfolio_val = st.session_state.paper_cash + sum(p["qty"] * p["avg_price"] for p in st.session_state.paper_portfolio.values())
+                sector_exposure = {}
+                for s_sym, s_pos in st.session_state.paper_portfolio.items():
+                    sec = SECTOR_MAP.get(s_sym, "Other")
+                    sec_val = s_pos["qty"] * s_pos["avg_price"]
+                    sector_exposure[sec] = sector_exposure.get(sec, 0) + sec_val
+
+                slots = at_max - len(st.session_state.paper_portfolio)
+                if slots <= 0:
+                    st.warning(f"Portfolio Full ({at_max}/{at_max})")
+                else:
+                    candidates = []
+                    with st.spinner("Scanning Stocks with Sector Limits..."):
+                        for sym in STOCK_UNIVERSE:
+                            if sym in st.session_state.paper_portfolio: continue
+                            
+                            sec = SECTOR_MAP.get(sym, "Other")
+                            curr_sec_val = sector_exposure.get(sec, 0)
+                            sec_cap_limit = total_portfolio_val * SECTOR_CAPS.get(sec, 0.15)
+                            
+                            if curr_sec_val + at_cap > sec_cap_limit:
+                                continue  # Skip if sector cap exceeded
+                                
+                            try:
+                                td = fetch_technical_data(sym)
+                                if not td: continue
+                                score = 50
+                                if td["trend"] == "Bullish": score += 20
+                                if 45 <= td["rsi"] <= 65: score += 20
+                                elif td["rsi"] < 30: score += 5
+                                if td["current_price"] > td["ma50"]: score += 10
+                                if score >= at_score:
+                                    candidates.append({
+                                        "sym": sym,
+                                        "score": score,
+                                        "price": td["current_price"],
+                                        "rsi": td["rsi"],
+                                        "sector": sec
+                                    })
+                            except:
+                                pass
+
+                    candidates.sort(key=lambda x: x["score"], reverse=True)
+                    bought = 0
+                    for c in candidates[:slots]:
+                        qty = int(at_cap / c["price"])
+                        if qty < 1: continue
+                        cost = qty * c["price"]
+                        
+                        if cost > (total_portfolio_val * SINGLE_STOCK_CAP):
+                            qty = int((total_portfolio_val * SINGLE_STOCK_CAP) / c["price"])
+                            cost = qty * c["price"]
+
+                        stamp = round(cost * 0.00015, 2)
+                        total_cost = round(cost + stamp, 2)
+                        if total_cost > st.session_state.paper_cash: continue
+                        
+                        st.session_state.paper_cash -= total_cost
+                        st.session_state.paper_portfolio[c["sym"]] = {
+                            "qty": qty, 
+                            "avg_price": c["price"],
+                            "sl_trailed": False
+                        }
+                        st.success(f"✅ BOUGHT {qty}x {c['sym'].replace('.NS','')} [{c['sector']}] @ ₹{c['price']} | Score: {c['score']}/100")
+                        bought += 1
+
+                    if bought == 0 and len(candidates) == 0:
+                        st.info("કોઈ qualifying stock નથી અથવા Sector Limit પૂરી થઈ ગઈ છે.")
+
+                save_data()
+                st.session_state.last_auto_trade_run = str(datetime.datetime.now())
+
+                bot1, bot2 = st.columns(2)
+                bot1.metric("Open Positions", len(st.session_state.paper_portfolio))
+                bot2.metric("Available Cash", f"₹{st.session_state.paper_cash:,.2f}")
