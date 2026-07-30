@@ -1854,7 +1854,6 @@ with tab5:
             at_target_pct = st.slider("Target (%)", 2.0, 20.0, 4.0, 0.5, key="at_target_pct")
             at_sl_pct = st.slider("Stop Loss (%)", 1.0, 10.0, 2.5, 0.5, key="at_sl_pct")
 
-        # મોડ્યુલર બોટ રન કરવાનો ફાઇનલ કૉલ
         if st.button("🚀 Run Auto Trade Bot v5.2", key="auto_bot"):
             execute_auto_bot(at_max, at_cap, at_score, at_target_pct, at_sl_pct, save_data)
 
