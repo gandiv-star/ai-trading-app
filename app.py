@@ -9,6 +9,8 @@ import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import backtester
+from config import STOCK_UNIVERSE, SECTOR_MAP
+from strategy.auto_bot import execute_auto_bot
 
 
 # ==========================================
@@ -1816,9 +1818,9 @@ with tab5:
             if rm_entry > rm_sl:
                 rps = rm_entry - rm_sl
                 rwps = rm_target - rm_entry
-                rr = round(rwps/rps, 2) if rps > 0 else 0
-                max_risk = rm_cap * (rm_risk/100)
-                qty = int(max_risk/rps) if rps > 0 else 0
+                rr = round(rwps / rps, 2) if rps > 0 else 0
+                max_risk = rm_cap * (rm_risk / 100)
+                qty = int(max_risk / rps) if rps > 0 else 0
                 pos_val = round(qty * rm_entry, 2)
 
                 charges_sl = calculate_charges(rm_entry, rm_sl, qty)
@@ -1833,11 +1835,29 @@ with tab5:
                 rr4.metric("Max Loss (Net)", f"₹{charges_sl['net_pnl']}")
                 rr5.metric("Target Profit (Net)", f"₹{charges_tgt['net_pnl']}")
 
-                if rr >= 2: st.success("✅ Good Setup (≥ 1:2)")
-                elif rr >= 1: st.warning("🟡 Acceptable (1:1)")
-                else: st.error("🔴 Poor Setup (< 1:1)")
+                if rr >= 2:
+                    st.success("✅ Good Setup (≥ 1:2)")
+                elif rr >= 1:
+                    st.warning("🟡 Acceptable (1:1)")
+                else:
+                    st.error("🔴 Poor Setup (< 1:1)")
             else:
                 st.error("Entry > Stop Loss હોવો જોઈએ.")
+
+        st.divider()
+        st.markdown("#### 🤖 Auto Trade Bot (v6.0 Modular Engine)")
+
+        with st.expander("⚙️ Bot & Risk Settings"):
+            at_max = st.number_input("Max Positions", 1, 10, 5, key="at_max")
+            at_cap = st.number_input("Capital Per Trade (₹)", 1000, 50000, 10000, 1000, key="at_cap")
+            at_score = st.slider("Min AI Score", 50, 100, 75, key="at_score")
+            at_target_pct = st.slider("Target (%)", 2.0, 20.0, 4.0, 0.5, key="at_target_pct")
+            at_sl_pct = st.slider("Stop Loss (%)", 1.0, 10.0, 2.5, 0.5, key="at_sl_pct")
+
+        # મોડ્યુલર બોટ રન કરવાનો ફાઇનલ કૉલ
+        if st.button("🚀 Run Auto Trade Bot v5.2", key="auto_bot"):
+            execute_auto_bot(at_max, at_cap, at_score, at_target_pct, at_sl_pct, save_data)
+
 
         # ==========================================
         # v5.2: PORTFOLIO OPTIMIZER & SECTOR MAP
