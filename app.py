@@ -1715,46 +1715,60 @@ with tab5:
             st.info("2+ Snapshots જોઈએ Equity Curve માટે. Daily 'Record Snapshot' click કરો.")
 
     with an_tab2:
-        st.markdown("#### 📊 Portfolio Analytics Pro")
+        st.markdown("### 📊 Advanced Portfolio Analytics (v5.3)")
 
-        if st.session_state.paper_trade_history:
-            hist_df = pd.DataFrame(st.session_state.paper_trade_history)
-            pnl_col = "Net P&L" if "Net P&L" in hist_df.columns else "P&L"
-
-            total_trades = len(hist_df)
-            wins = hist_df[hist_df[pnl_col] > 0]
-            losses = hist_df[hist_df[pnl_col] <= 0]
-            win_rate = round((len(wins)/total_trades)*100, 2) if total_trades > 0 else 0
-            realized = round(hist_df[pnl_col].sum(), 2)
-            total_charges = hist_df["Charges"].sum() if "Charges" in hist_df.columns else 0
-
-            a1, a2, a3, a4 = st.columns(4)
-            a1.metric("Total Trades", total_trades)
-            a2.metric("Win Rate", f"{win_rate}%")
-            a3.metric("Net Realized P&L", f"₹{realized}")
-            a4.metric("Total Charges Paid", f"₹{round(total_charges,2)}")
-
-            best = hist_df.loc[hist_df[pnl_col].idxmax()]
-            worst = hist_df.loc[hist_df[pnl_col].idxmin()]
-            b1, b2 = st.columns(2)
-            b1.metric("🏆 Best Trade", best["Stock"], f"₹{best[pnl_col]}")
-            b2.metric("📉 Worst Trade", worst["Stock"], f"₹{worst[pnl_col]}")
-
-            st.write(f"✅ Winning: {len(wins)} | ❌ Losing: {len(losses)}")
-            st.dataframe(hist_df, use_container_width=True)
+        if not st.session_state.paper_trade_history and not st.session_state.paper_portfolio:
+            st.info("💡 હજુ સુધી કોઈ ટ્રેડ હિસ્ટ્રી કે ઓપન પોઝિશન નથી. ઓટો બોટ રન કર્યા પછી અહીં ચાર્ટ્સ દેખાશે.")
         else:
-            st.info("Closed Trades નથી. Sell કર્યા પછી stats આવશે.")
-
-        if st.session_state.paper_portfolio:
-            unreal = 0
+            # ----------------------------------------------------
+            # 1. SECTOR ALLOCATION PIE CHART
+            # ----------------------------------------------------
+            st.markdown("#### 🍩 Current Sector Allocation")
+            
+            sector_data = {}
             for sym, pos in st.session_state.paper_portfolio.items():
-                try:
-                    td = fetch_technical_data(sym)
-                    cp = td["current_price"] if td else pos["avg_price"]
-                except:
-                    cp = pos["avg_price"]
-                unreal += (cp - pos["avg_price"]) * pos["qty"]
-            st.metric("📈 Unrealized P&L (Open Positions)", f"₹{round(unreal,2)}")
+                sec = SECTOR_MAP.get(sym, "Other")
+                val = pos["qty"] * pos["avg_price"]
+                sector_data[sec] = sector_data.get(sec, 0) + val
+            
+            if st.session_state.paper_cash > 0:
+                sector_data["Cash"] = st.session_state.paper_cash
+
+            if sector_data:
+                sec_df = pd.DataFrame(list(sector_data.items()), columns=["Sector", "Value (₹)"])
+                st.bar_chart(sec_df.set_index("Sector"))
+
+            st.divider()
+
+            # ----------------------------------------------------
+            # 2. CLOSED TRADES ANALYTICS & WIN/LOSS RATIO
+            # ----------------------------------------------------
+            if st.session_state.paper_trade_history:
+                st.markdown("#### 🎯 Trade Performance Metrics")
+                th_df = pd.DataFrame(st.session_state.paper_trade_history)
+                
+                tot_trades = len(th_df)
+                win_trades = len(th_df[th_df["Net P&L"] > 0])
+                loss_trades = len(th_df[th_df["Net P&L"] < 0])
+                win_rate = round((win_trades / tot_trades) * 100, 1) if tot_trades > 0 else 0
+                
+                total_net_profit = th_df["Net P&L"].sum()
+                avg_trade_pnl = round(total_net_profit / tot_trades, 2) if tot_trades > 0 else 0
+                
+                m1, m2, m3, m4 = st.columns(4)
+                m1.metric("Total Trades", tot_trades)
+                m2.metric("Win Rate", f"{win_rate}%")
+                m3.metric("Net Realized P&L", f"₹{total_net_profit:,.2f}")
+                m4.metric("Avg P&L / Trade", f"₹{avg_trade_pnl:,.2f}")
+
+                # Cumulative P&L Curve Chart
+                st.markdown("#### 📈 Equity / Profit Growth Curve")
+                th_df["Cumulative P&L"] = th_df["Net P&L"].cumsum()
+                st.line_chart(th_df.set_index("Date")["Cumulative P&L"])
+
+                # Trade History Table
+                st.markdown("#### 📜 Trade Journal")
+                st.dataframe(th_df[["Date", "Stock", "Qty", "Buy ₹", "Sell ₹", "Net P&L", "Net %"]], use_container_width=True)
 
     with an_tab3:
         st.markdown("#### 🧪 Strategy Backtesting")
