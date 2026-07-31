@@ -12,6 +12,8 @@ from config import STOCK_UNIVERSE, SECTOR_MAP
 from strategy.auto_bot import execute_auto_bot
 from ui.analytics_ui import render_analytics_tab
 from strategy.backtester import run_backtest_engine
+from ui.scanner_ui import render_scanners_tab
+
 
 
 # ==========================================
@@ -986,14 +988,8 @@ with tab3:
 
             smart_results.sort(key=lambda x: x["Vol Ratio"], reverse=True)
 
-            if smart_results:
-                st.dataframe(pd.DataFrame(smart_results), use_container_width=True)
-                best = [r for r in smart_results if "Breakout" in r["Signal"] or "Accumulation" in r["Signal"]]
-                if best:
-                    st.success(f"🏆 Best: **{best[0]['Stock']}** | {best[0]['Signal']} | Vol: {best[0]['Vol Ratio']}x")
-            else:
-                st.info("કોઈ Unusual Activity નથી.")
-            st.caption("⚠️ Technical Scan - Financial Advice નથી.")
+render_scanners_tab()
+
             # ==========================================
 # TAB 4: AI TOOLS
 # ==========================================
