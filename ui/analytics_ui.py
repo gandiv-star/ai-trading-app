@@ -65,4 +65,29 @@ def render_analytics_tab():
             # Trade History Table
             st.markdown("#### 📜 Trade Journal")
             st.dataframe(th_df, use_container_width=True)
+            def render_backtest_quant_ui(trades_df, metrics, equity_df):
+    """
+    Renders Quant Analytics Dashboard for Mission 1 Validation
+    """
+    if metrics:
+        st.markdown("#### 📐 Quant Performance Metrics")
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("CAGR", f"{metrics['CAGR (%)']}%")
+        c2.metric("Sharpe Ratio", metrics['Sharpe Ratio'])
+        c3.metric("Sortino Ratio", metrics['Sortino Ratio'])
+        c4.metric("Max Drawdown", f"{metrics['Max Drawdown (%)']}%")
+        
+        c5, c6, c7, c8 = st.columns(4)
+        c5.metric("Total Trades", metrics['Total Trades'])
+        c6.metric("Win Rate", f"{metrics['Win Rate (%)']}%")
+        c7.metric("Profit Factor", metrics['Profit Factor'])
+        c8.metric("Net Realized PnL", f"₹{metrics['Total Net PnL (₹)']:,.2f}")
+
+        st.markdown("#### 📈 Portfolio Equity Curve & Drawdown")
+        st.line_chart(equity_df['Equity'])
+
+        if not trades_df.empty:
+            st.markdown("#### 📜 Backtest Trade Journal")
+            st.dataframe(trades_df, use_container_width=True)
+            
           
