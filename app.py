@@ -8,10 +8,10 @@ import yfinance as yf
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import backtester
 from config import STOCK_UNIVERSE, SECTOR_MAP
 from strategy.auto_bot import execute_auto_bot
 from ui.analytics_ui import render_analytics_tab
+from strategy.backtester import run_backtest_engine
 
 
 # ==========================================
