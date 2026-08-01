@@ -1,6 +1,6 @@
 """
 Gandiv AI Trading Assistant - Standalone Auto Trade Bot (Premium Telegram Alerts)
-Version: V4.0 - Advanced Multi-Factor (EMA+MACD) & Market Regime Filter
+Version: V4.0 - Advanced Multi-Factor (EMA+MACD) & Market Regime Filter (HTML Fixed)
 """
 
 import datetime
@@ -14,7 +14,7 @@ DATA_FILE = "gandiv_data.json"
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
 
-# Claude ના સજેશન મુજબ Universe ને લિક્વિડ ૧૦ પ્રો સ્ટોક્સ ઉમેરીને ૫૦ સુધી વધાર્યું
+# Stock Universe (50 Liquid Stocks)
 STOCK_UNIVERSE = [
     "RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", "ICICIBANK.NS",
     "SBIN.NS", "LT.NS", "BHARTIARTL.NS", "ITC.NS", "HINDUNILVR.NS",
@@ -47,31 +47,27 @@ BASE_CAPITAL_PER_TRADE = 10000
 DAILY_LOSS_LIMIT_PCT = 5.0
 CIRCUIT_BREAKER_ENABLED = True
 SLIPPAGE_PCT = 0.02
-
-
-def escape_markdown(text):
-    reserved_chars = r"_*[]()~`>#+-=|{}.!"
-    escaped = ""
-    for char in str(text):
-        if char in reserved_chars:
-            escaped += "\\" + char
-        else:
-            escaped += char
-    return escaped
+TARGET_PCT = 4.0
+SL_PCT = 2.5
 
 
 def send_premium_telegram(text):
+    """
+    Sends notification to Telegram using HTML parsing for 100% reliable formatting
+    """
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
+        print("⚠️ Telegram Token or Chat ID is missing!")
         return
     try:
         url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
         data = urllib.parse.urlencode({
             "chat_id": TELEGRAM_CHAT_ID,
             "text": text,
-            "parse_mode": "MarkdownV2"
+            "parse_mode": "HTML"
         }).encode()
         req = urllib.request.Request(url, data=data)
         urllib.request.urlopen(req, timeout=10)
+        print("✅ Telegram alert sent successfully.")
     except Exception as e:
         print(f"Telegram send failed: {e}")
 
@@ -98,9 +94,6 @@ def calculate_charges(buy_price, sell_price, qty):
 
 
 def detect_market_regime(close, period=20):
-    """
-    Priority 2: Sideways બજારમાં ખોટા ટ્રેડ્સ ફિલ્ટર કરવાનું મેજિક લોજિક
-    """
     if len(close) < period:
         return "TRENDING"
     returns = close.pct_change().dropna()
@@ -108,17 +101,14 @@ def detect_market_regime(close, period=20):
     trend_strength = abs(close.iloc[-1] - close.iloc[-period]) / close.iloc[-period]
     
     if trend_strength > 0.05:
-        return "TRENDING"    # મજબૂત માર્કેટ
+        return "TRENDING"
     elif volatility > 0.02:
-        return "VOLATILE"    # જોખમી માર્કેટ
+        return "VOLATILE"
     else:
-        return "SIDEWAYS"    # આને અવોઇડ (SKIP) કરીશું
+        return "SIDEWAYS"
 
 
 def fetch_advanced_technical_data(symbol, period="1y"):
-    """
-    Priority 1: Multi-Factor Indicators (EMA + MACD + ATR Dynamic SL)
-    """
     try:
         stock = yf.Ticker(symbol)
         hist = stock.history(period=period)
@@ -168,7 +158,7 @@ def fetch_advanced_technical_data(symbol, period="1y"):
             "macd_bullish": macd_bullish,
             "rsi": round(rsi, 2),
             "ma50": round(ma50, 2),
-            "atr": atr,
+            "atr": round(atr, 2),
             "regime": regime
         }
     except Exception:
@@ -177,8 +167,11 @@ def fetch_advanced_technical_data(symbol, period="1y"):
 
 def load_data():
     if os.path.exists(DATA_FILE):
-        with open(DATA_FILE, "r") as f:
-            data = json.load(f)
+        try:
+            with open(DATA_FILE, "r") as f:
+                data = json.load(f)
+        except Exception:
+            data = {}
     else:
         data = {}
     data.setdefault("paper_cash", STARTING_CASH)
@@ -226,13 +219,13 @@ def check_circuit_breaker(data, log):
         data["circuit_breaker_triggered"] = True
         if not was_triggered:
             text = (
-                f"🚨 *CIRCUIT BREAKER TRIGGERED*\n"
-                f"`────────────────────────────── RISK MANAGER ──`\n"
-                f"📉 Today's Loss: *{escape_markdown(round(day_change_pct, 2))}\%*\n"
-                f"🛡️ Daily Limit: \-{DAILY_LOSS_LIMIT_PCT}\%\n"
-                f"⛔ New buys blocked for the day\.\n"
-                f"✅ Open positions are still monitored\.\n"
-                f"`──────────────────────────────────────────────`"
+                f"🚨 <b>CIRCUIT BREAKER TRIGGERED</b> 🚨\n"
+                f"━━━━━━━━━━━━━━━━━━━━\n"
+                f"📉 <b>Today's Loss:</b> {round(day_change_pct, 2)}%\n"
+                f"🛡️ <b>Daily Limit:</b> -{DAILY_LOSS_LIMIT_PCT}%\n"
+                f"⛔ New buys blocked for the day.\n"
+                f"✅ Open positions are still monitored.\n"
+                f"━━━━━━━━━━━━━━━━━━━━"
             )
             send_premium_telegram(text)
 
@@ -262,7 +255,6 @@ def run_auto_trade():
             cp = td["current_price"]
             avg = pos["avg_price"]
             
-            # Dynamic Target / SL Checking (જો કોડમાં સેવ હોય તો તે વાપરશે, નહીતર ડિફોલ્ટ ટકાવારી)
             target_price = pos.get("target_price", round(avg * (1 + TARGET_PCT/100), 2))
             sl_price = pos.get("sl_price", round(avg * (1 - SL_PCT/100), 2))
             
@@ -293,22 +285,22 @@ def run_auto_trade():
         clean_sym = sym.replace('.NS', '')
 
         text = (
-            f"⚡ *PORTFOLIO POSITION EXECUTED* ⚡\n"
-            f"`──────────────────────────── ALGO SQUARE-OFF ──`\n"
-            f"🤖 *Strategy:* AI Auto Watchlist Scanner \(V4\.0\)\n"
-            f"📉 *Action:* SELL / SQUARE\-OFF \({reason}\)\n"
-            f"🏷️ *Symbol:* {escape_markdown(clean_sym)} \(NSE\)\n\n"
-            f"📊 *TRANSACTION DETAILS:*\n"
-            f"📍 Entry Price: ₹{escape_markdown(round(avg, 2))}\n"
-            f"📍 Exit Price: ₹{escape_markdown(cp)}\n"
+            f"⚡ <b>PORTFOLIO POSITION EXECUTED</b> ⚡\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n"
+            f"🤖 <b>Strategy:</b> AI Auto Watchlist Scanner (V4.0)\n"
+            f"📉 <b>Action:</b> SELL / SQUARE-OFF ({reason})\n"
+            f"🏷️ <b>Symbol:</b> {clean_sym} (NSE)\n\n"
+            f"📊 <b>TRANSACTION DETAILS:</b>\n"
+            f"📍 Entry Price: ₹{round(avg, 2)}\n"
+            f"📍 Exit Price: ₹{cp}\n"
             f"📦 Total Quantity: {qty} Shares\n\n"
-            f"💰 *FINANCIAL SUMMARY:*\n"
-            f"💵 Gross P\&L: ₹{escape_markdown(charges['gross_pnl'])}\n"
-            f"🧾 Upstox Charges \& Taxes: ₹{escape_markdown(charges['total_charges'])}\n"
-            f"`──────────────────────────────────────────────`\n"
-            f"{color_emoji} *NET P&L:* ₹{escape_markdown(charges['net_pnl'])} \({escape_markdown(charges['net_pnl_pct'])}\%\)\n"
-            f"🏆 *Status:* {status_text}\n"
-            f"`──────────────────────────────────────────────`"
+            f"💰 <b>FINANCIAL SUMMARY:</b>\n"
+            f"💵 Gross P&L: ₹{charges['gross_pnl']}\n"
+            f"🧾 Upstox Charges & Taxes: ₹{charges['total_charges']}\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n"
+            f"{color_emoji} <b>NET P&L:</b> ₹{charges['net_pnl']} ({charges['net_pnl_pct']}%)\n"
+            f"🏆 <b>Status:</b> {status_text}\n"
+            f"━━━━━━━━━━━━━━━━━━━━"
         )
         trade_messages.append(text)
 
@@ -327,17 +319,15 @@ def run_auto_trade():
                     if not td:
                         continue
                     
-                    # Priority 2: Sideways ફિલ્ટર - જો સાઇડવેઝ માર્કેટ હશે તો આખેઆખો સ્ટોક સ્કીપ થશે
                     if td["regime"] == "SIDEWAYS":
                         continue
                         
-                    # Claude ની શક્તિશાળી ન્યૂ સ્કોરિંગ સિસ્ટમ
                     score = 0
-                    if td["trend"] == "Bullish": score += 25       # MA 50/200 Crossover
-                    if td["ema_bullish"]: score += 20             # EMA 20/50 Crossover 
-                    if td["macd_bullish"]: score += 20            # MACD Confirmation
-                    if 45 <= td["rsi"] <= 65: score += 20         # RSI Healthy Accumulation Zone
-                    if td["current_price"] > td["ma50"]: score += 15 # Above MA50 support
+                    if td["trend"] == "Bullish": score += 25
+                    if td["ema_bullish"]: score += 20 
+                    if td["macd_bullish"]: score += 20
+                    if 45 <= td["rsi"] <= 65: score += 20
+                    if td["current_price"] > td["ma50"]: score += 15
                     
                     if score >= MIN_SCORE:
                         candidates.append({
@@ -353,15 +343,14 @@ def run_auto_trade():
 
             candidates.sort(key=lambda x: x["Score"], reverse=True)
             for c in candidates[:slots]:
-                # ડાયનેમિક કેપિટલ મેનેજમેન્ટ
                 if c["Score"] >= 90:
-                    allocated_capital = BASE_CAPITAL_PER_TRADE * 2  # ₹૨૦,૦૦૦ (High Confidence)
+                    allocated_capital = BASE_CAPITAL_PER_TRADE * 2
                     confidence_star = "🔥🔥 [HIGH CONFIDENCE]"
                 elif c["Score"] >= 80:
-                    allocated_capital = BASE_CAPITAL_PER_TRADE      # ₹૧૦,૦૦0 (Medium Confidence)
+                    allocated_capital = BASE_CAPITAL_PER_TRADE
                     confidence_star = "✅✅ [MEDIUM]"
                 else:
-                    allocated_capital = BASE_CAPITAL_PER_TRADE // 2 # ₹૫,૦૦૦  (Low Confidence)
+                    allocated_capital = BASE_CAPITAL_PER_TRADE // 2
                     confidence_star = "⚠️⚠️ [LOW]"
 
                 qty = int(allocated_capital / c["Price"])
@@ -371,12 +360,10 @@ def run_auto_trade():
                 if cost > data["paper_cash"]:
                     continue
                 
-                # ATR બેઝ્ડ મોર્ડન ડાયનેમિક Target અને Stop Loss (Claude Priority 1)
                 atr_val = c["ATR"] if c["ATR"] > 0 else (c["Price"] * 0.02)
                 dynamic_sl = round(c["Price"] - (2 * atr_val), 2)
                 dynamic_target = round(c["Price"] + (3 * atr_val), 2)
                 
-                # રિસ્ક રિવોર્ડ રેશિયો ગણતરી (ઓછામાં ઓછો 1:2 કે 1:3 જ નીકળશે)
                 expected_profit_pct = round(((dynamic_target - c["Price"]) / c["Price"]) * 100, 1)
                 expected_loss_pct = round(((c["Price"] - dynamic_sl) / c["Price"]) * 100, 1)
 
@@ -392,23 +379,23 @@ def run_auto_trade():
                 clean_buy_sym = c['Stock'].replace('.NS', '')
 
                 text = (
-                    f"⚡ *NEW LIVE TRADE EXECUTED* ⚡\n"
-                    f"`───────────────────────────── ALGO TRIGGER ──`\n"
-                    f"🤖 *Strategy:* AI Multi\-Factor Advanced \(V4\.0\)\n"
-                    f"📈 *Action:* BUY / LONG \({TRADING_MODE}\)\n"
-                    f"🎯 *Signal Quality:* {escape_markdown(confidence_star)}\n"
-                    f"🌐 *Market Regime:* {escape_markdown(c['Regime'])}\n"
-                    f"🏷️ *Symbol:* {escape_markdown(clean_buy_sym)} \(NSE\)\n\n"
-                    f"📊 *TRADE DETAILS:*\n"
-                    f"📍 Entry Price: ₹{escape_markdown(c['Price'])}\n"
+                    f"⚡ <b>NEW LIVE TRADE EXECUTED</b> ⚡\n"
+                    f"━━━━━━━━━━━━━━━━━━━━\n"
+                    f"🤖 <b>Strategy:</b> AI Multi-Factor Advanced (V4.0)\n"
+                    f"📈 <b>Action:</b> BUY / LONG ({TRADING_MODE})\n"
+                    f"🎯 <b>Signal Quality:</b> {confidence_star}\n"
+                    f"🌐 <b>Market Regime:</b> {c['Regime']}\n"
+                    f"🏷️ <b>Symbol:</b> {clean_buy_sym} (NSE)\n\n"
+                    f"📊 <b>TRADE DETAILS:</b>\n"
+                    f"📍 Entry Price: ₹{c['Price']}\n"
                     f"📦 Order Quantity: {qty} Shares\n"
-                    f"💰 Total Invested: ₹{escape_markdown(round(cost, 2))}\n"
-                    f"🧠 AI Score: {c['Score']}/100 \| RSI: {escape_markdown(c['RSI'])}\n\n"
-                    f"🎯 *ATR DYNAMIC TARGETS & PROTECTION:*\n"
-                    f"🟢 Target: ₹{escape_markdown(dynamic_target)} \(\+{expected_profit_pct}\%\)\n"
-                    f"🔴 Stop Loss: ₹{escape_markdown(dynamic_sl)} \(\-{escape_markdown(expected_loss_pct)}\%\)\n"
-                    f"🛡️ Risk\-Reward Ratio = 1:1\.5 \(ATR Based\)\n"
-                    f"`──────────────────────────────────────────────`"
+                    f"💰 Total Invested: ₹{round(cost, 2):,.2f}\n"
+                    f"🧠 AI Score: {c['Score']}/100 | RSI: {c['RSI']}\n\n"
+                    f"🎯 <b>ATR DYNAMIC TARGETS & PROTECTION:</b>\n"
+                    f"🟢 Target: ₹{dynamic_target} (+{expected_profit_pct}%)\n"
+                    f"🔴 Stop Loss: ₹{dynamic_sl} (-{expected_loss_pct}%)\n"
+                    f"🛡️ Risk-Reward Ratio = 1:1.5 (ATR Based)\n"
+                    f"━━━━━━━━━━━━━━━━━━━━"
                 )
                 trade_messages.append(text)
 
@@ -431,26 +418,25 @@ def run_auto_trade():
                 e["Value"] = portfolio_val
     save_data(data)
 
-    if trade_messages:
-        portfolio_value = calculate_portfolio_value(data)
-        p_val_str = escape_markdown(f"{portfolio_value:,.2f}")
-        cash_str = escape_markdown(f"{data['paper_cash']:,.2f}")
-        mode_str = escape_markdown(TRADING_MODE)
-        pos_len = len(data['paper_portfolio'])
+    # Always Send Run Summary Message on Execution
+    portfolio_value = calculate_portfolio_value(data)
+    p_val_str = f"{portfolio_value:,.2f}"
+    cash_str = f"{data['paper_cash']:,.2f}"
+    pos_len = len(data['paper_portfolio'])
+    
+    for msg in trade_messages:
+        send_premium_telegram(msg)
         
-        for msg in trade_messages:
-            send_premium_telegram(msg)
-            
-        summary = (
-            f"📊 *RUN SUMMARY* 📊\n"
-            f"`────────────────────────────── SYSTEM MONITOR ──`\n"
-            f"⚙️ *Mode:* {mode_str}\n"
-            f"💰 *Portfolio Value:* ₹{p_val_str}\n"
-            f"💵 *Available Cash:* ₹{cash_str}\n"
-            f"📦 *Open Positions:* {pos_len}/{MAX_POSITIONS}\n"
-            f"`────────────────────────────────────────────────`"
-        )
-        send_premium_telegram(summary)
+    summary = (
+        f"📊 <b>RUN SUMMARY</b> 📊\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n"
+        f"⚙️ <b>Mode:</b> {TRADING_MODE}\n"
+        f"💰 <b>Portfolio Value:</b> ₹{p_val_str}\n"
+        f"💵 <b>Available Cash:</b> ₹{cash_str}\n"
+        f"📦 <b>Open Positions:</b> {pos_len}/{MAX_POSITIONS}\n"
+        f"━━━━━━━━━━━━━━━━━━━━"
+    )
+    send_premium_telegram(summary)
 
     print(f"=== Auto Trade Run: {datetime.datetime.now()} ===")
     print(f"Open Positions: {len(data['paper_portfolio'])}")
@@ -458,4 +444,4 @@ def run_auto_trade():
 
 if __name__ == "__main__":
     run_auto_trade()
-            
+    
