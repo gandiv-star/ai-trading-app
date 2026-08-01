@@ -1,12 +1,14 @@
 """
-Gandiv AI Trading Terminal - Auto Bot Module (v6.0 - Safe & Crash-Proof)
+Gandiv AI Trading Terminal - Auto Bot Module (v6.0 - Advanced Quant Engine)
+Features: Crash-Proof Guard, Completed Candle Logic, ATR Stop Loss & Risk-Based Position Sizing
 """
 
 import streamlit as st
 import pandas as pd
 from datetime import datetime
+import yfinance as yf
 from config import STOCK_UNIVERSE, SECTOR_MAP
-from core.data_loader import fetch_technical_data, calculate_charges
+from core.data_loader import fetch_technical_data, calculate_charges, calculate_atr
 
 def save_session_data_atomically():
     """
@@ -22,14 +24,14 @@ def save_session_data_atomically():
 
 def execute_auto_bot(max_pos=3, cap_per_trade=10000, min_score=75, target_pct=4.0, sl_pct=2.5):
     """
-    Crash-Proof Auto Bot Execution Loop matching app.py parameters
+    Quant-grade Auto Bot Execution using Completed Candle & ATR Volatility Rules
     """
-    st.markdown("### 🤖 Auto Trading Bot Engine (v6.0 - Crash-Proof)")
+    st.markdown("### 🤖 Auto Trading Bot Engine (v6.0 - Quant Multi-Factor)")
     
-    # Time Guard (3:15 PM પછી નવા ઓર્ડર અટકાવવા)
+    # 1. Time Guard Check (3:15 PM પછી નવા ટ્રેડ અટકાવવા)
     now = datetime.now()
     if now.hour == 15 and now.minute >= 15:
-        st.warning("⏰ માર્કેટ બંધ થવાનો સમય (3:15 PM) થઈ ગયો છે. નવા ટ્રેડ ઓટો-અટકાવાયેલ છે.")
+        st.warning("⏰ માર્કેટ બંધ થવાનો સમય (3:15 PM) થઈ ગયો છે. નવા ઓટો-ટ્રેડ અટકાવાયેલ છે.")
         return
 
     try:
@@ -38,41 +40,79 @@ def execute_auto_bot(max_pos=3, cap_per_trade=10000, min_score=75, target_pct=4.
         
         for idx, sym in enumerate(STOCK_UNIVERSE):
             try:
-                # Safe technical data fetch with Error Catching
-                td = fetch_technical_data(sym)
-                if not td or "current_price" not in td:
-                    continue
-                    
-                cp = td["current_price"]
-                rsi = td["rsi"]
-                trend = td["trend"]
+                # Fetch Historical Data for ATR & Completed Candle Analysis
+                ticker = yf.Ticker(sym)
+                df = ticker.history(period="60d", interval="1d")
                 
-                # Completed Candle / Technical Confirmation
-                if trend == "Bullish" and rsi >= 50:
-                    qty = int(cap_per_trade / cp) if cp > 0 else 0
-                    if qty > 0:
-                        results.append({
-                            "Symbol": sym.replace(".NS", ""),
-                            "Price (₹)": cp,
-                            "Qty": qty,
-                            "RSI": rsi,
-                            "Signal": "BUY",
-                            "Time": datetime.now().strftime("%H:%M:%S")
-                        })
+                if df.empty or len(df) < 30:
+                    continue
+                
+                # ATR Volatility Calculation
+                atr_val = calculate_atr(df, period=14)
+                
+                # COMPLETED CANDLE LOGIC (Using iloc[-2] for Closed Candle Signal)
+                prev_candle_close = float(df["Close"].iloc[-2])
+                prev_candle_open = float(df["Open"].iloc[-2])
+                current_price = float(df["Close"].iloc[-1])
+                
+                # Technical Indicators on Completed Data
+                ma20 = float(df["Close"].rolling(20).mean().iloc[-2])
+                ma50 = float(df["Close"].rolling(50).mean().iloc[-2])
+                
+                # RSI Calculation
+                delta = df["Close"].diff()
+                gain = (delta.where(delta > 0, 0)).rolling(14).mean()
+                loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
+                rs = gain / loss
+                rsi_series = 100 - (100 / (1 + rs))
+                rsi_completed = float(rsi_series.iloc[-2])
+
+                # SIGNAL RULE: Bullish Completed Candle + Trend + RSI Confirmation
+                is_bullish_candle = prev_candle_close > prev_candle_open
+                is_uptrend = prev_candle_close > ma20 and ma20 > ma50
+                is_rsi_strong = rsi_completed >= 50
+
+                if is_bullish_candle and is_uptrend and is_rsi_strong:
+                    # DYNAMIC ATR STOP LOSS & TARGET
+                    # Dynamic SL = Current Price - (1.5 * ATR), Target = Current Price + (3.0 * ATR)
+                    atr_sl = current_price - (1.5 * atr_val) if atr_val > 0 else current_price * (1 - sl_pct / 100)
+                    atr_tgt = current_price + (3.0 * atr_val) if atr_val > 0 else current_price * (1 + target_pct / 100)
+                    
+                    risk_per_share = max(current_price - atr_sl, 1.0)
+                    
+                    # RISK-BASED POSITION SIZING (Max Risk Limit = 2% of Allocated Capital)
+                    max_risk_allowed = cap_per_trade * 0.02
+                    qty_by_risk = int(max_risk_allowed / risk_per_share)
+                    qty_by_cap = int(cap_per_trade / current_price) if current_price > 0 else 0
+                    
+                    # Final Safe Quantity
+                    final_qty = max(min(qty_by_risk, qty_by_cap), 1)
+                    
+                    results.append({
+                        "Symbol": sym.replace(".NS", ""),
+                        "Price (₹)": round(current_price, 2),
+                        "Qty": final_qty,
+                        "ATR (₹)": round(atr_val, 2),
+                        "Dynamic SL (₹)": round(atr_sl, 2),
+                        "Target (₹)": round(atr_tgt, 2),
+                        "RSI (Closed)": round(rsi_completed, 1),
+                        "Signal": "BUY (Confirmed)",
+                        "Time": datetime.now().strftime("%H:%M:%S")
+                    })
             except Exception:
-                # Individual stock error will not crash the bot loop
+                # Individual stock errors will not crash the bot execution loop
                 pass
                 
             progress.progress((idx + 1) / len(STOCK_UNIVERSE))
             
-        # Atomic Data Saving Safeguard
+        # Save portfolio state safely
         save_session_data_atomically()
         
         if results:
-            st.success(f"✅ {len(results)} સિગ્નલ્સ સફળતાપૂર્વક ફિલ્ટર થયા.")
+            st.success(f"✅ {len(results)} કન્ફર્મ્ડ પાવરફુલ સિગ્નલ્સ સ્કેન થયા.")
             st.dataframe(pd.DataFrame(results), use_container_width=True)
         else:
-            st.info("💡 તમારા સેટિંગ્સ મુજબ અત્યારે કોઈ બાય સિગ્નલ મળ્યું નથી.")
+            st.info("💡 તમારા સેટિંગ્સ અને Completed Candle ફિલ્ટર મુજબ અત્યારે કોઈ સેફ બાય સિગ્નલ મળ્યું નથી.")
             
     except Exception as main_err:
         st.error(f"🚨 બોટ રન કરતી વખતે એરર આવી: {str(main_err)}")
