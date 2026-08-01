@@ -16,13 +16,13 @@ def render_analytics_tab():
         # 1. SECTOR ALLOCATION CHART
         # ----------------------------------------------------
         st.markdown("#### 🍩 Current Sector Allocation")
-        
+
         sector_data = {}
         for sym, pos in st.session_state.paper_portfolio.items():
             sec = SECTOR_MAP.get(sym, "Other")
             val = pos["qty"] * pos["avg_price"]
             sector_data[sec] = sector_data.get(sec, 0) + val
-        
+
         if st.session_state.paper_cash > 0:
             sector_data["Cash"] = st.session_state.paper_cash
 
@@ -38,16 +38,16 @@ def render_analytics_tab():
         if st.session_state.paper_trade_history:
             st.markdown("#### 🎯 Trade Performance Metrics")
             th_df = pd.DataFrame(st.session_state.paper_trade_history)
-            
+
             pnl_col = "Net P&L" if "Net P&L" in th_df.columns else ("Gross P&L" if "Gross P&L" in th_df.columns else None)
-            
+
             if pnl_col:
                 tot_trades = len(th_df)
                 win_trades = len(th_df[th_df[pnl_col] > 0])
                 win_rate = round((win_trades / tot_trades) * 100, 1) if tot_trades > 0 else 0
                 total_net_profit = round(th_df[pnl_col].sum(), 2)
                 avg_trade_pnl = round(total_net_profit / tot_trades, 2) if tot_trades > 0 else 0
-                
+
                 m1, m2, m3, m4 = st.columns(4)
                 m1.metric("Total Trades", tot_trades)
                 m2.metric("Win Rate", f"{win_rate}%")
@@ -65,7 +65,9 @@ def render_analytics_tab():
             # Trade History Table
             st.markdown("#### 📜 Trade Journal")
             st.dataframe(th_df, use_container_width=True)
-            def render_backtest_quant_ui(trades_df, metrics, equity_df):
+
+
+def render_backtest_quant_ui(trades_df, metrics, equity_df):
     """
     Renders Quant Analytics Dashboard for Mission 1 Validation
     """
@@ -76,7 +78,7 @@ def render_analytics_tab():
         c2.metric("Sharpe Ratio", metrics['Sharpe Ratio'])
         c3.metric("Sortino Ratio", metrics['Sortino Ratio'])
         c4.metric("Max Drawdown", f"{metrics['Max Drawdown (%)']}%")
-        
+
         c5, c6, c7, c8 = st.columns(4)
         c5.metric("Total Trades", metrics['Total Trades'])
         c6.metric("Win Rate", f"{metrics['Win Rate (%)']}%")
@@ -89,5 +91,3 @@ def render_analytics_tab():
         if not trades_df.empty:
             st.markdown("#### 📜 Backtest Trade Journal")
             st.dataframe(trades_df, use_container_width=True)
-            
-          
