@@ -16,6 +16,7 @@ from ui.scanner_ui import render_scanners_tab
 
 
 
+
 # ==========================================
 # PAGE CONFIGURATION
 # ==========================================
