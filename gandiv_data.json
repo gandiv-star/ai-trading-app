@@ -424,11 +424,15 @@
     {
       "Date": "2026-07-31",
       "Value": 1103670.22
+    },
+    {
+      "Date": "2026-08-01",
+      "Value": NaN
     }
   ],
   "trade_journal": [],
-  "last_auto_trade_run": "2026-07-31 11:46:30.083168",
-  "circuit_breaker_date": "2026-07-31",
-  "circuit_breaker_start_value": 1103223.22,
+  "last_auto_trade_run": "2026-08-01 05:13:09.831623",
+  "circuit_breaker_date": "2026-08-01",
+  "circuit_breaker_start_value": NaN,
   "circuit_breaker_triggered": false
 }
