@@ -55,4 +55,23 @@ def calculate_charges(buy_price, sell_price, qty):
         "net_pnl": net_pnl,
         "net_pnl_pct": net_pnl_pct
     }
-  
+
+def calculate_atr(df, period=14):
+    """
+    Calculates Average True Range (ATR) for volatility-based stop loss.
+    """
+    try:
+        high = df['High']
+        low = df['Low']
+        close = df['Close'].shift(1)
+        
+        tr1 = high - low
+        tr2 = (high - close).abs()
+        tr3 = (low - close).abs()
+        
+        tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+        atr = tr.rolling(period).mean()
+        return round(float(atr.iloc[-1]), 2)
+    except Exception:
+        return 0.0
+        
