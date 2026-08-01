@@ -1,6 +1,6 @@
 """
 Gandiv AI Trading Terminal - Auto Bot Module (v6.0 - Advanced Quant Engine)
-Features: Crash-Proof Guard, Completed Candle Logic, ATR Stop Loss & Risk-Based Position Sizing
+Features: Crash-Proof Guard, Completed Candle Logic, ATR Stop Loss, Risk-Based Position Sizing & Time-Based Exit Guard
 """
 
 import streamlit as st
@@ -21,6 +21,40 @@ def save_session_data_atomically():
             st.session_state["paper_trade_history"] = list(st.session_state.paper_trade_history)
     except Exception as e:
         st.warning(f"⚠️ ડેટા સેવ કરતી વખતે નાની એરર આવી: {str(e)}")
+
+def check_time_based_exits(max_holding_days=10):
+    """
+    Time-Based Exit Guard: Check for 3:15 PM intraday exit & stale position exits.
+    """
+    if "paper_portfolio" not in st.session_state or not st.session_state.paper_portfolio:
+        return
+
+    now = datetime.now()
+    exit_signals = []
+
+    # 1. Market Close Guard (3:15 PM)
+    if now.hour == 15 and now.minute >= 15:
+        st.warning("⚠️ Market closing time (3:15 PM) reached. Review open positions for exit.")
+
+    # 2. Stale Trade Guard (Capital Lockout Prevention)
+    for sym, pos in list(st.session_state.paper_portfolio.items()):
+        try:
+            entry_date = datetime.strptime(pos.get("date", datetime.now().strftime("%Y-%m-%d")), "%Y-%m-%d")
+            holding_days = (now - entry_date).days
+            
+            if holding_days >= max_holding_days:
+                exit_signals.append({
+                    "Symbol": sym,
+                    "Holding Days": holding_days,
+                    "Reason": f"Stale Trade Limit ({max_holding_days} Days Exceeded)",
+                    "Action": "AUTO_EXIT_RECOMMENDED"
+                })
+        except Exception:
+            pass
+
+    if exit_signals:
+        st.markdown("#### ⏱️ Time-Based Exit Recommendations")
+        st.dataframe(pd.DataFrame(exit_signals), use_container_width=True)
 
 def execute_auto_bot(max_pos=3, cap_per_trade=10000, min_score=75, target_pct=4.0, sl_pct=2.5):
     """
@@ -74,13 +108,12 @@ def execute_auto_bot(max_pos=3, cap_per_trade=10000, min_score=75, target_pct=4.
 
                 if is_bullish_candle and is_uptrend and is_rsi_strong:
                     # DYNAMIC ATR STOP LOSS & TARGET
-                    # Dynamic SL = Current Price - (1.5 * ATR), Target = Current Price + (3.0 * ATR)
                     atr_sl = current_price - (1.5 * atr_val) if atr_val > 0 else current_price * (1 - sl_pct / 100)
                     atr_tgt = current_price + (3.0 * atr_val) if atr_val > 0 else current_price * (1 + target_pct / 100)
                     
                     risk_per_share = max(current_price - atr_sl, 1.0)
                     
-                    # RISK-BASED POSITION SIZING (Max Risk Limit = 2% of Allocated Capital)
+                    # RISK-BASED POSITION SIZING
                     max_risk_allowed = cap_per_trade * 0.02
                     qty_by_risk = int(max_risk_allowed / risk_per_share)
                     qty_by_cap = int(cap_per_trade / current_price) if current_price > 0 else 0
@@ -100,11 +133,13 @@ def execute_auto_bot(max_pos=3, cap_per_trade=10000, min_score=75, target_pct=4.
                         "Time": datetime.now().strftime("%H:%M:%S")
                     })
             except Exception:
-                # Individual stock errors will not crash the bot execution loop
                 pass
                 
             progress.progress((idx + 1) / len(STOCK_UNIVERSE))
             
+        # Time-Based Exit Guard Check
+        check_time_based_exits(max_holding_days=10)
+
         # Save portfolio state safely
         save_session_data_atomically()
         
@@ -116,38 +151,4 @@ def execute_auto_bot(max_pos=3, cap_per_trade=10000, min_score=75, target_pct=4.
             
     except Exception as main_err:
         st.error(f"🚨 બોટ રન કરતી વખતે એરર આવી: {str(main_err)}")
-
-def check_time_based_exits(max_holding_days=10):
-    """
-    Time-Based Exit Guard: Check for 3:15 PM intraday exit & stale position exits.
-    """
-    if "paper_portfolio" not in st.session_state or not st.session_state.paper_portfolio:
-        return
-
-    now = datetime.now()
-    exit_signals = []
-
-    # 1. Market Close Guard (3:15 PM)
-    if now.hour == 15 and now.minute >= 15:
-        st.warning("⚠️ Market closing time (3:15 PM) reached. Review open positions for exit.")
-
-    # 2. Stale Trade Guard (Capital Lockout Prevention)
-    for sym, pos in list(st.session_state.paper_portfolio.items()):
-        try:
-            entry_date = datetime.strptime(pos.get("date", datetime.now().strftime("%Y-%m-%d")), "%Y-%m-%d")
-            holding_days = (now - entry_date).days
-            
-            if holding_days >= max_holding_days:
-                exit_signals.append({
-                    "Symbol": sym,
-                    "Holding Days": holding_days,
-                    "Reason": f"Stale Trade Limit ({max_holding_days} Days Exceeded)",
-                    "Action": "AUTO_EXIT_RECOMMENDED"
-                })
-        except Exception:
-            pass
-
-    if exit_signals:
-        st.markdown("#### ⏱️ Time-Based Exit Recommendations")
-        st.dataframe(pd.DataFrame(exit_signals), use_container_width=True)
         
