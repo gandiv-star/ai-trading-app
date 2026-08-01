@@ -20,16 +20,17 @@ def save_session_data_atomically():
     except Exception as e:
         st.warning(f"⚠️ ડેટા સેવ કરતી વખતે નાની એરર આવી: {str(e)}")
 
-def run_auto_bot():
+def execute_auto_bot(max_pos=3, cap_per_trade=10000, min_score=75, target_pct=4.0, sl_pct=2.5):
     """
-    Crash-Proof Auto Bot Execution Loop
+    Crash-Proof Auto Bot Execution Loop matching app.py parameters
     """
-    st.markdown("### 🤖 Auto Trading Bot (v6.0 - Crash-Proof)")
+    st.markdown("### 🤖 Auto Trading Bot Engine (v6.0 - Crash-Proof)")
     
     # Time Guard (3:15 PM પછી નવા ઓર્ડર અટકાવવા)
     now = datetime.now()
     if now.hour == 15 and now.minute >= 15:
         st.warning("⏰ માર્કેટ બંધ થવાનો સમય (3:15 PM) થઈ ગયો છે. નવા ટ્રેડ ઓટો-અટકાવાયેલ છે.")
+        return
 
     try:
         results = []
@@ -46,17 +47,20 @@ def run_auto_bot():
                 rsi = td["rsi"]
                 trend = td["trend"]
                 
-                # Simple Strategy Logic
-                if trend == "Bullish" and rsi > 50:
-                    results.append({
-                        "Symbol": sym.replace(".NS", ""),
-                        "Price": cp,
-                        "RSI": rsi,
-                        "Signal": "BUY",
-                        "Time": datetime.now().strftime("%H:%M:%S")
-                    })
-            except Exception as inner_err:
-                # Individual Stock Failures Won't Crash the Entire Loop
+                # Completed Candle / Technical Confirmation
+                if trend == "Bullish" and rsi >= 50:
+                    qty = int(cap_per_trade / cp) if cp > 0 else 0
+                    if qty > 0:
+                        results.append({
+                            "Symbol": sym.replace(".NS", ""),
+                            "Price (₹)": cp,
+                            "Qty": qty,
+                            "RSI": rsi,
+                            "Signal": "BUY",
+                            "Time": datetime.now().strftime("%H:%M:%S")
+                        })
+            except Exception:
+                # Individual stock error will not crash the bot loop
                 pass
                 
             progress.progress((idx + 1) / len(STOCK_UNIVERSE))
@@ -65,10 +69,10 @@ def run_auto_bot():
         save_session_data_atomically()
         
         if results:
-            st.success(f"✅ {len(results)} સિગ્નલ્સ સફળતાપૂર્વક સ્કેન થયા.")
+            st.success(f"✅ {len(results)} સિગ્નલ્સ સફળતાપૂર્વક ફિલ્ટર થયા.")
             st.dataframe(pd.DataFrame(results), use_container_width=True)
         else:
-            st.info("💡 અત્યારે કોઈ નવું સિગ્નલ મળ્યું નથી.")
+            st.info("💡 તમારા સેટિંગ્સ મુજબ અત્યારે કોઈ બાય સિગ્નલ મળ્યું નથી.")
             
     except Exception as main_err:
         st.error(f"🚨 બોટ રન કરતી વખતે એરર આવી: {str(main_err)}")
