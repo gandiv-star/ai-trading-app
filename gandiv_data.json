@@ -1,5 +1,5 @@
 {
-  "paper_cash": 870582.09,
+  "paper_cash": 983211.2,
   "paper_portfolio": {
     "GRASIM.NS": {
       "qty": 3,
@@ -17,30 +17,6 @@
       "qty": 17,
       "avg_price": 286.65
     },
-    "SUNPHARMA.NS": {
-      "qty": 2,
-      "avg_price": 1870.8
-    },
-    "BPCL.NS": {
-      "qty": 16,
-      "avg_price": 303.3
-    },
-    "DIVISLAB.NS": {
-      "qty": 1,
-      "avg_price": 6789.5
-    },
-    "TECHM.NS": {
-      "qty": 7,
-      "avg_price": 1410.1
-    },
-    "EICHERMOT.NS": {
-      "qty": 1,
-      "avg_price": 7339.5
-    },
-    "M&M.NS": {
-      "qty": 3,
-      "avg_price": 3136.9
-    },
     "JSWSTEEL.NS": {
       "qty": 8,
       "avg_price": 1230.2
@@ -53,53 +29,45 @@
       "qty": 41,
       "avg_price": 243.31
     },
-    "TITAN.NS": {
-      "qty": 2,
-      "avg_price": 4600.4
-    },
-    "HCLTECH.NS": {
-      "qty": 8,
-      "avg_price": 1164.3
-    },
-    "HEROMOTOCO.NS": {
-      "qty": 2,
-      "avg_price": 4984.7
-    },
-    "COALINDIA.NS": {
-      "qty": 23,
-      "avg_price": 425.45
-    },
-    "ADANIPORTS.NS": {
-      "qty": 5,
-      "avg_price": 1833.9
-    },
-    "AXISBANK.NS": {
-      "qty": 7,
-      "avg_price": 1322.2
-    },
     "INDUSINDBK.NS": {
       "qty": 10,
       "avg_price": 991.75
     },
-    "HDFCBANK.NS": {
-      "qty": 12,
-      "avg_price": 808.6
-    },
-    "ICICIBANK.NS": {
-      "qty": 7,
-      "avg_price": 1378.4
-    },
-    "BHARTIARTL.NS": {
-      "qty": 5,
-      "avg_price": 1880.0
-    },
     "BAJFINANCE.NS": {
-      "qty": 9,
-      "avg_price": 1004.4
+      "qty": 8,
+      "avg_price": 1141.2,
+      "target_price": 1219.41,
+      "sl_price": 1089.06
     },
-    "DRREDDY.NS": {
-      "qty": 16,
-      "avg_price": 1244.8
+    "TITAN.NS": {
+      "qty": 2,
+      "avg_price": 4875.2,
+      "target_price": 5061.08,
+      "sl_price": 4751.28
+    },
+    "TECHM.NS": {
+      "qty": 6,
+      "avg_price": 1651.3,
+      "target_price": 1774.03,
+      "sl_price": 1569.48
+    },
+    "EICHERMOT.NS": {
+      "qty": 1,
+      "avg_price": 7833.5,
+      "target_price": 8270.48,
+      "sl_price": 7542.18
+    },
+    "DIVISLAB.NS": {
+      "qty": 1,
+      "avg_price": 8056.0,
+      "target_price": 8571.49,
+      "sl_price": 7712.34
+    },
+    "JIOFIN.NS": {
+      "qty": 19,
+      "avg_price": 256.46,
+      "target_price": 273.86,
+      "sl_price": 244.86
     }
   },
   "paper_trade_history": [
@@ -338,6 +306,193 @@
       "Charges": 23.27,
       "Net P&L": -265.47,
       "Net P&L %": -2.96
+    },
+    {
+      "Date": "2026-08-01",
+      "Stock": "SUNPHARMA.NS",
+      "Qty": 2,
+      "Buy Price": 1870.8,
+      "Sell Price": 1990.5,
+      "Gross P&L": 239.4,
+      "Charges": 10.14,
+      "Net P&L": 229.26,
+      "Net P&L %": 6.13
+    },
+    {
+      "Date": "2026-08-01",
+      "Stock": "BPCL.NS",
+      "Qty": 16,
+      "Buy Price": 303.3,
+      "Sell Price": 319.75,
+      "Gross P&L": 263.2,
+      "Charges": 13.1,
+      "Net P&L": 250.1,
+      "Net P&L %": 5.15
+    },
+    {
+      "Date": "2026-08-01",
+      "Stock": "DIVISLAB.NS",
+      "Qty": 1,
+      "Buy Price": 6789.5,
+      "Sell Price": 8056.0,
+      "Gross P&L": 1266.5,
+      "Charges": 19.44,
+      "Net P&L": 1247.06,
+      "Net P&L %": 18.37
+    },
+    {
+      "Date": "2026-08-01",
+      "Stock": "TECHM.NS",
+      "Qty": 7,
+      "Buy Price": 1410.1,
+      "Sell Price": 1651.3,
+      "Gross P&L": 1688.4,
+      "Charges": 28.07,
+      "Net P&L": 1660.33,
+      "Net P&L %": 16.82
+    },
+    {
+      "Date": "2026-08-01",
+      "Stock": "EICHERMOT.NS",
+      "Qty": 1,
+      "Buy Price": 7339.5,
+      "Sell Price": 7833.5,
+      "Gross P&L": 494.0,
+      "Charges": 19.93,
+      "Net P&L": 474.07,
+      "Net P&L %": 6.46
+    },
+    {
+      "Date": "2026-08-01",
+      "Stock": "M&M.NS",
+      "Qty": 3,
+      "Buy Price": 3136.9,
+      "Sell Price": 3398.5,
+      "Gross P&L": 784.8,
+      "Charges": 25.74,
+      "Net P&L": 759.06,
+      "Net P&L %": 8.07
+    },
+    {
+      "Date": "2026-08-01",
+      "Stock": "TITAN.NS",
+      "Qty": 2,
+      "Buy Price": 4600.4,
+      "Sell Price": 4875.2,
+      "Gross P&L": 549.6,
+      "Charges": 24.89,
+      "Net P&L": 524.71,
+      "Net P&L %": 5.7
+    },
+    {
+      "Date": "2026-08-01",
+      "Stock": "HCLTECH.NS",
+      "Qty": 8,
+      "Buy Price": 1164.3,
+      "Sell Price": 1346.9,
+      "Gross P&L": 1460.8,
+      "Charges": 26.32,
+      "Net P&L": 1434.48,
+      "Net P&L %": 15.4
+    },
+    {
+      "Date": "2026-08-01",
+      "Stock": "HEROMOTOCO.NS",
+      "Qty": 2,
+      "Buy Price": 4984.7,
+      "Sell Price": 5386.0,
+      "Gross P&L": 802.6,
+      "Charges": 27.23,
+      "Net P&L": 775.37,
+      "Net P&L %": 7.78
+    },
+    {
+      "Date": "2026-08-01",
+      "Stock": "COALINDIA.NS",
+      "Qty": 23,
+      "Buy Price": 425.45,
+      "Sell Price": 414.15,
+      "Gross P&L": -259.9,
+      "Charges": 25.43,
+      "Net P&L": -285.33,
+      "Net P&L %": -2.92
+    },
+    {
+      "Date": "2026-08-01",
+      "Stock": "ADANIPORTS.NS",
+      "Qty": 5,
+      "Buy Price": 1833.9,
+      "Sell Price": 1696.5,
+      "Gross P&L": -687.0,
+      "Charges": 23.28,
+      "Net P&L": -710.28,
+      "Net P&L %": -7.75
+    },
+    {
+      "Date": "2026-08-01",
+      "Stock": "AXISBANK.NS",
+      "Qty": 7,
+      "Buy Price": 1322.2,
+      "Sell Price": 1229.5,
+      "Gross P&L": -648.9,
+      "Charges": 23.55,
+      "Net P&L": -672.45,
+      "Net P&L %": -7.27
+    },
+    {
+      "Date": "2026-08-01",
+      "Stock": "HDFCBANK.NS",
+      "Qty": 12,
+      "Buy Price": 808.6,
+      "Sell Price": 748.15,
+      "Gross P&L": -725.4,
+      "Charges": 24.63,
+      "Net P&L": -750.03,
+      "Net P&L %": -7.73
+    },
+    {
+      "Date": "2026-08-01",
+      "Stock": "ICICIBANK.NS",
+      "Qty": 7,
+      "Buy Price": 1378.4,
+      "Sell Price": 1435.4,
+      "Gross P&L": 399.0,
+      "Charges": 25.89,
+      "Net P&L": 373.11,
+      "Net P&L %": 3.87
+    },
+    {
+      "Date": "2026-08-01",
+      "Stock": "BHARTIARTL.NS",
+      "Qty": 5,
+      "Buy Price": 1880.0,
+      "Sell Price": 1972.0,
+      "Gross P&L": 460.0,
+      "Charges": 25.31,
+      "Net P&L": 434.69,
+      "Net P&L %": 4.62
+    },
+    {
+      "Date": "2026-08-01",
+      "Stock": "BAJFINANCE.NS",
+      "Qty": 9,
+      "Buy Price": 1004.4,
+      "Sell Price": 1141.2,
+      "Gross P&L": 1231.2,
+      "Charges": 25.31,
+      "Net P&L": 1205.89,
+      "Net P&L %": 13.34
+    },
+    {
+      "Date": "2026-08-01",
+      "Stock": "DRREDDY.NS",
+      "Qty": 16,
+      "Buy Price": 1244.8,
+      "Sell Price": 1148.1,
+      "Gross P&L": -1547.2,
+      "Charges": 50.49,
+      "Net P&L": -1597.69,
+      "Net P&L %": -8.02
     }
   ],
   "equity_curve": [
@@ -431,7 +586,7 @@
     }
   ],
   "trade_journal": [],
-  "last_auto_trade_run": "2026-08-01 05:13:09.831623",
+  "last_auto_trade_run": "2026-08-01 05:28:54.096566",
   "circuit_breaker_date": "2026-08-01",
   "circuit_breaker_start_value": NaN,
   "circuit_breaker_triggered": false
