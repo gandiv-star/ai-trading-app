@@ -116,4 +116,38 @@ def execute_auto_bot(max_pos=3, cap_per_trade=10000, min_score=75, target_pct=4.
             
     except Exception as main_err:
         st.error(f"🚨 બોટ રન કરતી વખતે એરર આવી: {str(main_err)}")
+
+def check_time_based_exits(max_holding_days=10):
+    """
+    Time-Based Exit Guard: Check for 3:15 PM intraday exit & stale position exits.
+    """
+    if "paper_portfolio" not in st.session_state or not st.session_state.paper_portfolio:
+        return
+
+    now = datetime.now()
+    exit_signals = []
+
+    # 1. Market Close Guard (3:15 PM)
+    if now.hour == 15 and now.minute >= 15:
+        st.warning("⚠️ Market closing time (3:15 PM) reached. Review open positions for exit.")
+
+    # 2. Stale Trade Guard (Capital Lockout Prevention)
+    for sym, pos in list(st.session_state.paper_portfolio.items()):
+        try:
+            entry_date = datetime.strptime(pos.get("date", datetime.now().strftime("%Y-%m-%d")), "%Y-%m-%d")
+            holding_days = (now - entry_date).days
+            
+            if holding_days >= max_holding_days:
+                exit_signals.append({
+                    "Symbol": sym,
+                    "Holding Days": holding_days,
+                    "Reason": f"Stale Trade Limit ({max_holding_days} Days Exceeded)",
+                    "Action": "AUTO_EXIT_RECOMMENDED"
+                })
+        except Exception:
+            pass
+
+    if exit_signals:
+        st.markdown("#### ⏱️ Time-Based Exit Recommendations")
+        st.dataframe(pd.DataFrame(exit_signals), use_container_width=True)
         
