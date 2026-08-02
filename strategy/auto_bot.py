@@ -7,7 +7,16 @@ import pandas as pd
 from datetime import datetime
 import yfinance as yf
 import requests
-from config import STOCK_UNIVERSE, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
+from config import STOCK_UNIVERSE
+
+# Safely get Telegram credentials from config or environment variables
+try:
+    from config import TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
+except ImportError:
+    import os
+    TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+    TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
+
 from core.data_loader import fetch_technical_data, calculate_atr
 
 def send_telegram_alert(message):
