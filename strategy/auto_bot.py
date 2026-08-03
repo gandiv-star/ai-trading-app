@@ -126,4 +126,4 @@ def execute_auto_bot(max_pos=25, cap_per_trade=10000, min_score=75, target_pct=4
             
     except Exception as main_err:
         st.error(f"🚨 બોટ એરર: {str(main_err)}")
-        
+                    
