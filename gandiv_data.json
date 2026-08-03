@@ -1,5 +1,5 @@
 {
-  "paper_cash": 982194.2,
+  "paper_cash": 992451.7999999999,
   "paper_portfolio": {
     "GRASIM.NS": {
       "qty": 3,
@@ -12,10 +12,6 @@
     "POWERGRID.NS": {
       "qty": 17,
       "avg_price": 286.65
-    },
-    "JSWSTEEL.NS": {
-      "qty": 8,
-      "avg_price": 1230.2
     },
     "NESTLEIND.NS": {
       "qty": 6,
@@ -506,6 +502,17 @@
       "Charges": 21.4,
       "Net P&L": 317.9,
       "Net P&L %": 3.99
+    },
+    {
+      "Date": "2026-08-03",
+      "Stock": "JSWSTEEL.NS",
+      "Qty": 8,
+      "Buy Price": 1230.2,
+      "Sell Price": 1282.2,
+      "Gross P&L": 416.0,
+      "Charges": 26.41,
+      "Net P&L": 389.59,
+      "Net P&L %": 3.96
     }
   ],
   "equity_curve": [
@@ -599,11 +606,11 @@
     },
     {
       "Date": "2026-08-03",
-      "Value": 1104931.28
+      "Value": 1104839.32
     }
   ],
   "trade_journal": [],
-  "last_auto_trade_run": "2026-08-03 07:44:42.204334",
+  "last_auto_trade_run": "2026-08-03 08:46:45.941459",
   "circuit_breaker_date": "2026-08-03",
   "circuit_breaker_start_value": 1104981.87,
   "circuit_breaker_triggered": false
