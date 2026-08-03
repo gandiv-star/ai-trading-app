@@ -1077,14 +1077,50 @@ MA50: {td['ma50']}, MA200: {td['ma200']}, RSI: {td['rsi']}, Trend: {td['trend']}
                             })
                     except:
                         pass
-            swing_list.sort(key=lambda x: x["RSI"], reverse=True)
-            if swing_list[:8]:
-                st.dataframe(pd.DataFrame(swing_list[:8]), use_container_width=True)
-                st.caption("Est. Net P&L = Upstox charges + Slippage after deduction")
-            else:
-                st.info("કોઈ Swing Setup નથી.")
+        # ==========================================
+        # REAL-TIME SWING & AI SCANNER (v5.0 QUANT)
+        # ==========================================
+        swing_list = []
+        for sym in STOCK_UNIVERSE:
+            try:
+                td = fetch_technical_data(sym)
+                if td:
+                    score = td.get("score", 0)
+                    regime = td.get("Regime", "UNKNOWN")
+                    
+                    if score >= 85 and regime != "SIDEWAYS":
+                        badge = "🔥🔥 STRONG BUY"
+                    elif score >= 70 and regime != "SIDEWAYS":
+                        badge = "✅ BUY"
+                    elif score >= 55:
+                        badge = "👀 WATCHLIST"
+                    else:
+                        badge = "⚪ NEUTRAL"
+
+                    swing_list.append({
+                        "Symbol": td.get("Symbol", sym.replace(".NS", "")),
+                        "Price (₹)": td.get("current_price", 0.0),
+                        "Quant Score": f"{score}/100",
+                        "Market Regime": regime,
+                        "Signal": badge,
+                        "RSI": td.get("rsi", 0),
+                        "ATR (₹)": td.get("atr", 0.0),
+                        "AI Analysis": td.get("Reason", "Technical Analysis Complete")
+                    })
+            except Exception:
+                pass
+
+        if swing_list:
+            df_swing = pd.DataFrame(swing_list)
+            # સ્કોર મુજબ સોર્ટિંગ (સૌથી સારા સ્ટોક ઉપર આવશે)
+            df_swing = df_swing.sort_values(by="Quant Score", ascending=False)
+            st.dataframe(df_swing, use_container_width=True)
+            st.caption("⚡ Powered by Gandiv v5.0 Quant Engine (Regime + Confluence Score)")
+        else:
+            st.warning("⚠️ અત્યારે કોઈ ડેટા મળ્યો નથી, કૃપા કરીને રીફ્રેશ કરો.")
 
         st.divider()
+
         st.markdown("#### ⭐ AI Watchlist")
         watchlist = st.text_area(
             "Stocks (Comma Separated)",
