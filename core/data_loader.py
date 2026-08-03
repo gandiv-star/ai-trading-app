@@ -155,21 +155,41 @@ def calculate_confluence_score(df):
         return 0, f"Error: {str(e)}", "UNKNOWN", 0.0
 
 def fetch_technical_data(symbol):
+    """
+    Fetches technical indicator dictionary for UI Scanners & Advisors
+    """
     try:
         ticker = yf.Ticker(symbol)
         df = ticker.history(period="60d", interval="1d")
-        if df.empty:
+        if df.empty or len(df) < 30:
             return None
-        return df
+
+        close = df["Close"]
+        current_price = float(close.iloc[-1])
+        ma20 = float(close.rolling(20).mean().iloc[-1])
+        ma50 = float(close.rolling(50).mean().iloc[-1])
+
+        # RSI Calculation
+        delta = close.diff()
+        gain = (delta.where(delta > 0, 0)).rolling(14).mean()
+        loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
+        rs = gain / (loss + 1e-6)
+        rsi = float((100 - (100 / (1 + rs))).iloc[-1])
+
+        atr = calculate_atr(df)
+        score, confidence_text, regime, _ = calculate_confluence_score(df)
+
+        return {
+            "current_price": round(current_price, 2),
+            "ma20": round(ma20, 2),
+            "ma50": round(ma50, 2),
+            "rsi": round(rsi, 1),
+            "atr": round(atr, 2),
+            "score": score,
+            "regime": regime,
+            "signal": "BUY" if score >= 75 else "NEUTRAL",
+            "df": df
+        }
     except Exception:
         return None
-
-def calculate_charges(buy_price, sell_price, qty):
-    buy_val = buy_price * qty
-    sell_val = sell_price * qty
-    gross_pnl = sell_val - buy_val
-    charges = round((buy_val + sell_val) * 0.0012, 2)
-    net_pnl = round(gross_pnl - charges, 2)
-    net_pnl_pct = round((net_pnl / buy_val) * 100, 2) if buy_val > 0 else 0.0
-    return {"gross_pnl": gross_pnl, "total_charges": charges, "net_pnl": net_pnl, "net_pnl_pct": net_pnl_pct}
-    
+        
