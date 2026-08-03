@@ -49,12 +49,6 @@
       "target_price": 8270.48,
       "sl_price": 7542.18
     },
-    "DIVISLAB.NS": {
-      "qty": 1,
-      "avg_price": 8056.0,
-      "target_price": 8571.49,
-      "sl_price": 7712.34
-    },
     "JIOFIN.NS": {
       "qty": 19,
       "avg_price": 256.46,
@@ -66,6 +60,12 @@
       "avg_price": 4663.5,
       "target_price": 4894.56,
       "sl_price": 4509.46
+    },
+    "DIVISLAB.NS": {
+      "qty": 1,
+      "avg_price": 8585.0,
+      "target_price": 9139.43,
+      "sl_price": 8215.38
     }
   },
   "paper_trade_history": [
@@ -513,6 +513,17 @@
       "Charges": 26.41,
       "Net P&L": 389.59,
       "Net P&L %": 3.96
+    },
+    {
+      "Date": "2026-08-03",
+      "Stock": "DIVISLAB.NS",
+      "Qty": 1,
+      "Buy Price": 8056.0,
+      "Sell Price": 8585.0,
+      "Gross P&L": 529.0,
+      "Charges": 21.86,
+      "Net P&L": 507.14,
+      "Net P&L %": 6.3
     }
   ],
   "equity_curve": [
@@ -606,11 +617,11 @@
     },
     {
       "Date": "2026-08-03",
-      "Value": 1104839.32
+      "Value": 1106036.8
     }
   ],
   "trade_journal": [],
-  "last_auto_trade_run": "2026-08-03 08:46:45.941459",
+  "last_auto_trade_run": "2026-08-03 10:32:35.250011",
   "circuit_breaker_date": "2026-08-03",
   "circuit_breaker_start_value": 1104981.87,
   "circuit_breaker_triggered": false
