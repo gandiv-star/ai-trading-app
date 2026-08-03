@@ -1,13 +1,9 @@
 {
-  "paper_cash": 983211.2,
+  "paper_cash": 982194.2,
   "paper_portfolio": {
     "GRASIM.NS": {
       "qty": 3,
       "avg_price": 3149.5
-    },
-    "ASIANPAINT.NS": {
-      "qty": 3,
-      "avg_price": 2656.9
     },
     "SBIN.NS": {
       "qty": 9,
@@ -68,6 +64,12 @@
       "avg_price": 256.46,
       "target_price": 273.86,
       "sl_price": 244.86
+    },
+    "HAL.NS": {
+      "qty": 2,
+      "avg_price": 4663.5,
+      "target_price": 4894.56,
+      "sl_price": 4509.46
     }
   },
   "paper_trade_history": [
@@ -493,6 +495,17 @@
       "Charges": 50.49,
       "Net P&L": -1597.69,
       "Net P&L %": -8.02
+    },
+    {
+      "Date": "2026-08-03",
+      "Stock": "ASIANPAINT.NS",
+      "Qty": 3,
+      "Buy Price": 2656.9,
+      "Sell Price": 2770.0,
+      "Gross P&L": 339.3,
+      "Charges": 21.4,
+      "Net P&L": 317.9,
+      "Net P&L %": 3.99
     }
   ],
   "equity_curve": [
@@ -583,11 +596,15 @@
     {
       "Date": "2026-08-01",
       "Value": NaN
+    },
+    {
+      "Date": "2026-08-03",
+      "Value": 1104981.87
     }
   ],
   "trade_journal": [],
-  "last_auto_trade_run": "2026-08-01 05:28:54.096566",
-  "circuit_breaker_date": "2026-08-01",
-  "circuit_breaker_start_value": NaN,
+  "last_auto_trade_run": "2026-08-03 06:46:55.113076",
+  "circuit_breaker_date": "2026-08-03",
+  "circuit_breaker_start_value": 1104981.87,
   "circuit_breaker_triggered": false
 }
