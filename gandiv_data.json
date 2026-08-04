@@ -1,5 +1,5 @@
 {
-  "paper_cash": 982729.5499999999,
+  "paper_cash": 960241.2499999999,
   "paper_portfolio": {
     "GRASIM.NS": {
       "qty": 3,
@@ -72,6 +72,24 @@
       "avg_price": 335.25,
       "target_price": 356.01,
       "sl_price": 321.41
+    },
+    "ICICIBANK.NS": {
+      "qty": 6,
+      "avg_price": 1441.8,
+      "target_price": 1512.21,
+      "sl_price": 1394.86
+    },
+    "JSWSTEEL.NS": {
+      "qty": 7,
+      "avg_price": 1287.0,
+      "target_price": 1357.59,
+      "sl_price": 1239.94
+    },
+    "BPCL.NS": {
+      "qty": 15,
+      "avg_price": 321.9,
+      "target_price": 344.1,
+      "sl_price": 307.1
     }
   },
   "paper_trade_history": [
@@ -627,11 +645,11 @@
     },
     {
       "Date": "2026-08-04",
-      "Value": 1104587.9
+      "Value": 1104359.14
     }
   ],
   "trade_journal": [],
-  "last_auto_trade_run": "2026-08-04 08:00:25.120230",
+  "last_auto_trade_run": "2026-08-04 09:33:33.408681",
   "circuit_breaker_date": "2026-08-04",
   "circuit_breaker_start_value": 1104849.7,
   "circuit_breaker_triggered": false
