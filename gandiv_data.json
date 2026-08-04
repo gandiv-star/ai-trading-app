@@ -1,5 +1,5 @@
 {
-  "paper_cash": 992451.7999999999,
+  "paper_cash": 982729.5499999999,
   "paper_portfolio": {
     "GRASIM.NS": {
       "qty": 3,
@@ -66,6 +66,12 @@
       "avg_price": 8585.0,
       "target_price": 9139.43,
       "sl_price": 8215.38
+    },
+    "NYKAA.NS": {
+      "qty": 29,
+      "avg_price": 335.25,
+      "target_price": 356.01,
+      "sl_price": 321.41
     }
   },
   "paper_trade_history": [
@@ -618,11 +624,15 @@
     {
       "Date": "2026-08-03",
       "Value": 1106036.8
+    },
+    {
+      "Date": "2026-08-04",
+      "Value": 1104849.7
     }
   ],
   "trade_journal": [],
-  "last_auto_trade_run": "2026-08-03 12:44:37.240126",
-  "circuit_breaker_date": "2026-08-03",
-  "circuit_breaker_start_value": 1104981.87,
+  "last_auto_trade_run": "2026-08-04 06:16:01.826017",
+  "circuit_breaker_date": "2026-08-04",
+  "circuit_breaker_start_value": 1104849.7,
   "circuit_breaker_triggered": false
 }
