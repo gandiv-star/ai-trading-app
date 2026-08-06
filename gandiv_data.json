@@ -43,12 +43,6 @@
       "target_price": 273.86,
       "sl_price": 244.86
     },
-    "HAL.NS": {
-      "qty": 2,
-      "avg_price": 4663.5,
-      "target_price": 4894.56,
-      "sl_price": 4509.46
-    },
     "DIVISLAB.NS": {
       "qty": 1,
       "avg_price": 8585.0,
@@ -96,6 +90,12 @@
       "avg_price": 1171.5,
       "target_price": 1252.11,
       "sl_price": 1117.76
+    },
+    "HAL.NS": {
+      "qty": 2,
+      "avg_price": 4933.6,
+      "target_price": 5210.53,
+      "sl_price": 4748.98
     }
   },
   "paper_trade_history": [
@@ -587,6 +587,17 @@
       "Charges": 25.94,
       "Net P&L": -278.5,
       "Net P&L %": -2.79
+    },
+    {
+      "Date": "2026-08-06",
+      "Stock": "HAL.NS",
+      "Qty": 2,
+      "Buy Price": 4663.5,
+      "Sell Price": 4933.6,
+      "Gross P&L": 540.2,
+      "Charges": 25.21,
+      "Net P&L": 514.99,
+      "Net P&L %": 5.52
     }
   ],
   "equity_curve": [
@@ -692,11 +703,11 @@
     },
     {
       "Date": "2026-08-06",
-      "Value": 1105933.25
+      "Value": 1105784.65
     }
   ],
   "trade_journal": [],
-  "last_auto_trade_run": "2026-08-06 06:43:14.808217",
+  "last_auto_trade_run": "2026-08-06 08:00:07.582944",
   "circuit_breaker_date": "2026-08-06",
   "circuit_breaker_start_value": 1105952.77,
   "circuit_breaker_triggered": false
