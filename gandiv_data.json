@@ -1,13 +1,9 @@
 {
-  "paper_cash": 966122.7499999999,
+  "paper_cash": 975895.8499999999,
   "paper_portfolio": {
     "GRASIM.NS": {
       "qty": 3,
       "avg_price": 3149.5
-    },
-    "SBIN.NS": {
-      "qty": 9,
-      "avg_price": 1037.6
     },
     "NESTLEIND.NS": {
       "qty": 6,
@@ -598,6 +594,17 @@
       "Charges": 25.21,
       "Net P&L": 514.99,
       "Net P&L %": 5.52
+    },
+    {
+      "Date": "2026-08-06",
+      "Stock": "SBIN.NS",
+      "Qty": 9,
+      "Buy Price": 1037.6,
+      "Sell Price": 1085.9,
+      "Gross P&L": 434.7,
+      "Charges": 25.11,
+      "Net P&L": 409.59,
+      "Net P&L %": 4.39
     }
   ],
   "equity_curve": [
@@ -703,11 +710,11 @@
     },
     {
       "Date": "2026-08-06",
-      "Value": 1105784.65
+      "Value": 1105815.75
     }
   ],
   "trade_journal": [],
-  "last_auto_trade_run": "2026-08-06 08:00:07.582944",
+  "last_auto_trade_run": "2026-08-06 09:34:51.476154",
   "circuit_breaker_date": "2026-08-06",
   "circuit_breaker_start_value": 1105952.77,
   "circuit_breaker_triggered": false
