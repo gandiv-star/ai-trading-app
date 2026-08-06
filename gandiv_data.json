@@ -5,10 +5,6 @@
       "qty": 3,
       "avg_price": 3149.5
     },
-    "NESTLEIND.NS": {
-      "qty": 6,
-      "avg_price": 1473.7
-    },
     "BAJFINANCE.NS": {
       "qty": 8,
       "avg_price": 1141.2,
@@ -92,6 +88,12 @@
       "avg_price": 4933.6,
       "target_price": 5210.53,
       "sl_price": 4748.98
+    },
+    "NESTLEIND.NS": {
+      "qty": 6,
+      "avg_price": 1535.0,
+      "target_price": 1653.62,
+      "sl_price": 1455.92
     }
   },
   "paper_trade_history": [
@@ -605,6 +607,17 @@
       "Charges": 25.11,
       "Net P&L": 409.59,
       "Net P&L %": 4.39
+    },
+    {
+      "Date": "2026-08-06",
+      "Stock": "NESTLEIND.NS",
+      "Qty": 6,
+      "Buy Price": 1473.7,
+      "Sell Price": 1535.0,
+      "Gross P&L": 367.8,
+      "Charges": 23.72,
+      "Net P&L": 344.08,
+      "Net P&L %": 3.89
     }
   ],
   "equity_curve": [
@@ -710,11 +723,11 @@
     },
     {
       "Date": "2026-08-06",
-      "Value": 1105815.75
+      "Value": 1105839.6
     }
   ],
   "trade_journal": [],
-  "last_auto_trade_run": "2026-08-06 09:34:51.476154",
+  "last_auto_trade_run": "2026-08-06 11:00:25.329085",
   "circuit_breaker_date": "2026-08-06",
   "circuit_breaker_start_value": 1105952.77,
   "circuit_breaker_triggered": false
