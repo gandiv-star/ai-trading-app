@@ -1,5 +1,5 @@
 {
-  "paper_cash": 965887.5999999999,
+  "paper_cash": 966122.7499999999,
   "paper_portfolio": {
     "GRASIM.NS": {
       "qty": 3,
@@ -12,10 +12,6 @@
     "NESTLEIND.NS": {
       "qty": 6,
       "avg_price": 1473.7
-    },
-    "ONGC.NS": {
-      "qty": 41,
-      "avg_price": 243.31
     },
     "BAJFINANCE.NS": {
       "qty": 8,
@@ -88,6 +84,18 @@
       "avg_price": 1032.7,
       "target_price": 1097.32,
       "sl_price": 989.62
+    },
+    "TCS.NS": {
+      "qty": 2,
+      "avg_price": 2401.0,
+      "target_price": 2565.97,
+      "sl_price": 2291.02
+    },
+    "INFY.NS": {
+      "qty": 4,
+      "avg_price": 1171.5,
+      "target_price": 1252.11,
+      "sl_price": 1117.76
     }
   },
   "paper_trade_history": [
@@ -568,6 +576,17 @@
       "Charges": 26.6,
       "Net P&L": 381.9,
       "Net P&L %": 3.85
+    },
+    {
+      "Date": "2026-08-06",
+      "Stock": "ONGC.NS",
+      "Qty": 41,
+      "Buy Price": 243.31,
+      "Sell Price": 237.15,
+      "Gross P&L": -252.56,
+      "Charges": 25.94,
+      "Net P&L": -278.5,
+      "Net P&L %": -2.79
     }
   ],
   "equity_curve": [
@@ -673,11 +692,11 @@
     },
     {
       "Date": "2026-08-06",
-      "Value": 1105947.22
+      "Value": 1105933.25
     }
   ],
   "trade_journal": [],
-  "last_auto_trade_run": "2026-08-06 06:15:15.722349",
+  "last_auto_trade_run": "2026-08-06 06:43:14.808217",
   "circuit_breaker_date": "2026-08-06",
   "circuit_breaker_start_value": 1105952.77,
   "circuit_breaker_triggered": false
