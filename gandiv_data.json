@@ -1,5 +1,5 @@
 {
-  "paper_cash": 960241.2499999999,
+  "paper_cash": 965887.5999999999,
   "paper_portfolio": {
     "GRASIM.NS": {
       "qty": 3,
@@ -9,10 +9,6 @@
       "qty": 9,
       "avg_price": 1037.6
     },
-    "POWERGRID.NS": {
-      "qty": 17,
-      "avg_price": 286.65
-    },
     "NESTLEIND.NS": {
       "qty": 6,
       "avg_price": 1473.7
@@ -20,10 +16,6 @@
     "ONGC.NS": {
       "qty": 41,
       "avg_price": 243.31
-    },
-    "INDUSINDBK.NS": {
-      "qty": 10,
-      "avg_price": 991.75
     },
     "BAJFINANCE.NS": {
       "qty": 8,
@@ -90,6 +82,12 @@
       "avg_price": 321.9,
       "target_price": 344.1,
       "sl_price": 307.1
+    },
+    "INDUSINDBK.NS": {
+      "qty": 9,
+      "avg_price": 1032.7,
+      "target_price": 1097.32,
+      "sl_price": 989.62
     }
   },
   "paper_trade_history": [
@@ -548,6 +546,28 @@
       "Charges": 21.86,
       "Net P&L": 507.14,
       "Net P&L %": 6.3
+    },
+    {
+      "Date": "2026-08-06",
+      "Stock": "POWERGRID.NS",
+      "Qty": 17,
+      "Buy Price": 286.65,
+      "Sell Price": 271.45,
+      "Gross P&L": -258.4,
+      "Charges": 12.5,
+      "Net P&L": -270.9,
+      "Net P&L %": -5.56
+    },
+    {
+      "Date": "2026-08-06",
+      "Stock": "INDUSINDBK.NS",
+      "Qty": 10,
+      "Buy Price": 991.75,
+      "Sell Price": 1032.6,
+      "Gross P&L": 408.5,
+      "Charges": 26.6,
+      "Net P&L": 381.9,
+      "Net P&L %": 3.85
     }
   ],
   "equity_curve": [
@@ -650,11 +670,15 @@
     {
       "Date": "2026-08-05",
       "Value": 1105622.45
+    },
+    {
+      "Date": "2026-08-06",
+      "Value": 1105947.22
     }
   ],
   "trade_journal": [],
-  "last_auto_trade_run": "2026-08-05 11:45:01.868500",
-  "circuit_breaker_date": "2026-08-05",
-  "circuit_breaker_start_value": 1105397.33,
+  "last_auto_trade_run": "2026-08-06 06:15:15.722349",
+  "circuit_breaker_date": "2026-08-06",
+  "circuit_breaker_start_value": 1105952.77,
   "circuit_breaker_triggered": false
 }
