@@ -1,15 +1,9 @@
 {
-  "paper_cash": 956265.0499999998,
+  "paper_cash": 945404.0499999998,
   "paper_portfolio": {
     "GRASIM.NS": {
       "qty": 3,
       "avg_price": 3149.5
-    },
-    "BAJFINANCE.NS": {
-      "qty": 8,
-      "avg_price": 1141.2,
-      "target_price": 1219.41,
-      "sl_price": 1089.06
     },
     "TITAN.NS": {
       "qty": 2,
@@ -100,6 +94,12 @@
       "avg_price": 1090.6,
       "target_price": 1143.58,
       "sl_price": 1055.28
+    },
+    "BAJFINANCE.NS": {
+      "qty": 18,
+      "avg_price": 1086.1,
+      "target_price": 1163.47,
+      "sl_price": 1034.52
     }
   },
   "paper_trade_history": [
@@ -624,6 +624,17 @@
       "Charges": 23.72,
       "Net P&L": 344.08,
       "Net P&L %": 3.89
+    },
+    {
+      "Date": "2026-08-07",
+      "Stock": "BAJFINANCE.NS",
+      "Qty": 8,
+      "Buy Price": 1141.2,
+      "Sell Price": 1086.1,
+      "Gross P&L": -440.8,
+      "Charges": 23.48,
+      "Net P&L": -464.28,
+      "Net P&L %": -5.09
     }
   ],
   "equity_curve": [
@@ -733,11 +744,11 @@
     },
     {
       "Date": "2026-08-07",
-      "Value": 1105367.05
+      "Value": 1104844.4
     }
   ],
   "trade_journal": [],
-  "last_auto_trade_run": "2026-08-07 05:48:42.654102",
+  "last_auto_trade_run": "2026-08-07 06:44:00.014826",
   "circuit_breaker_date": "2026-08-07",
   "circuit_breaker_start_value": 1105469.25,
   "circuit_breaker_triggered": false
