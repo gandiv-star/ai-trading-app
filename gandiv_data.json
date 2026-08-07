@@ -1,5 +1,5 @@
 {
-  "paper_cash": 975895.8499999999,
+  "paper_cash": 956265.0499999998,
   "paper_portfolio": {
     "GRASIM.NS": {
       "qty": 3,
@@ -94,6 +94,12 @@
       "avg_price": 1535.0,
       "target_price": 1653.62,
       "sl_price": 1455.92
+    },
+    "SBIN.NS": {
+      "qty": 18,
+      "avg_price": 1090.6,
+      "target_price": 1143.58,
+      "sl_price": 1055.28
     }
   },
   "paper_trade_history": [
@@ -727,11 +733,11 @@
     },
     {
       "Date": "2026-08-07",
-      "Value": 1105467.45
+      "Value": 1105367.05
     }
   ],
   "trade_journal": [],
-  "last_auto_trade_run": "2026-08-07 05:23:08.183601",
+  "last_auto_trade_run": "2026-08-07 05:48:42.654102",
   "circuit_breaker_date": "2026-08-07",
   "circuit_breaker_start_value": 1105469.25,
   "circuit_breaker_triggered": false
