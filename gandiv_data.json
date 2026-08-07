@@ -1,5 +1,5 @@
 {
-  "paper_cash": 951286.5499999998,
+  "paper_cash": 944611.1499999998,
   "paper_portfolio": {
     "TITAN.NS": {
       "qty": 2,
@@ -102,6 +102,12 @@
       "avg_price": 1990.6,
       "target_price": 2125.0,
       "sl_price": 1901.0
+    },
+    "GRASIM.NS": {
+      "qty": 2,
+      "avg_price": 3337.7,
+      "target_price": 3545.3,
+      "sl_price": 3199.3
     }
   },
   "paper_trade_history": [
@@ -757,11 +763,11 @@
     },
     {
       "Date": "2026-08-07",
-      "Value": 1104997.05
+      "Value": 1105217.85
     }
   ],
   "trade_journal": [],
-  "last_auto_trade_run": "2026-08-07 08:06:39.699363",
+  "last_auto_trade_run": "2026-08-07 09:31:30.936937",
   "circuit_breaker_date": "2026-08-07",
   "circuit_breaker_start_value": 1105469.25,
   "circuit_breaker_triggered": false
