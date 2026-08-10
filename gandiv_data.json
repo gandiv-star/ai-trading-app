@@ -1,12 +1,6 @@
 {
-  "paper_cash": 944611.1499999998,
+  "paper_cash": 941585.1499999998,
   "paper_portfolio": {
-    "TITAN.NS": {
-      "qty": 2,
-      "avg_price": 4875.2,
-      "target_price": 5061.08,
-      "sl_price": 4751.28
-    },
     "TECHM.NS": {
       "qty": 6,
       "avg_price": 1651.3,
@@ -108,6 +102,18 @@
       "avg_price": 3337.7,
       "target_price": 3545.3,
       "sl_price": 3199.3
+    },
+    "LT.NS": {
+      "qty": 2,
+      "avg_price": 4059.8,
+      "target_price": 4214.27,
+      "sl_price": 3956.82
+    },
+    "TITAN.NS": {
+      "qty": 1,
+      "avg_price": 5091.0,
+      "target_price": 5361.21,
+      "sl_price": 4910.86
     }
   },
   "paper_trade_history": [
@@ -654,6 +660,17 @@
       "Charges": 25.38,
       "Net P&L": 389.82,
       "Net P&L %": 4.13
+    },
+    {
+      "Date": "2026-08-10",
+      "Stock": "TITAN.NS",
+      "Qty": 2,
+      "Buy Price": 4875.2,
+      "Sell Price": 5092.3,
+      "Gross P&L": 434.2,
+      "Charges": 26.2,
+      "Net P&L": 408.0,
+      "Net P&L %": 4.18
     }
   ],
   "equity_curve": [
@@ -764,11 +781,15 @@
     {
       "Date": "2026-08-07",
       "Value": 1105224.05
+    },
+    {
+      "Date": "2026-08-10",
+      "Value": 1105601.2
     }
   ],
   "trade_journal": [],
-  "last_auto_trade_run": "2026-08-07 10:32:06.509383",
-  "circuit_breaker_date": "2026-08-07",
-  "circuit_breaker_start_value": 1105469.25,
+  "last_auto_trade_run": "2026-08-10 05:10:14.658871",
+  "circuit_breaker_date": "2026-08-10",
+  "circuit_breaker_start_value": 1105613.3,
   "circuit_breaker_triggered": false
 }
