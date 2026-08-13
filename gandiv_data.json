@@ -1,5 +1,5 @@
 {
-  "paper_cash": 938169.0499999998,
+  "paper_cash": 933222.6499999998,
   "paper_portfolio": {
     "TECHM.NS": {
       "qty": 6,
@@ -120,6 +120,12 @@
       "avg_price": 3416.1,
       "target_price": 3662.67,
       "sl_price": 3251.72
+    },
+    "WIPRO.NS": {
+      "qty": 27,
+      "avg_price": 183.2,
+      "target_price": 194.36,
+      "sl_price": 175.76
     }
   },
   "paper_trade_history": [
@@ -802,11 +808,11 @@
     },
     {
       "Date": "2026-08-13",
-      "Value": 1104267.4
+      "Value": 1104817.6
     }
   ],
   "trade_journal": [],
-  "last_auto_trade_run": "2026-08-13 05:47:21.577003",
+  "last_auto_trade_run": "2026-08-13 06:55:27.320469",
   "circuit_breaker_date": "2026-08-13",
   "circuit_breaker_start_value": 1104515.25,
   "circuit_breaker_triggered": false
