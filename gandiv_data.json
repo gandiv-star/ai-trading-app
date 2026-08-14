@@ -809,11 +809,15 @@
     {
       "Date": "2026-08-13",
       "Value": 1105080.3
+    },
+    {
+      "Date": "2026-08-14",
+      "Value": 1104540.15
     }
   ],
   "trade_journal": [],
-  "last_auto_trade_run": "2026-08-13 10:42:22.463111",
-  "circuit_breaker_date": "2026-08-13",
-  "circuit_breaker_start_value": 1104515.25,
+  "last_auto_trade_run": "2026-08-14 05:19:44.618208",
+  "circuit_breaker_date": "2026-08-14",
+  "circuit_breaker_start_value": 1104540.15,
   "circuit_breaker_triggered": false
 }
