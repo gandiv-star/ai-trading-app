@@ -1762,24 +1762,40 @@ with an_tab2:
         
         st.info("📌 આ એન્જિન backtester.py ફાઇલનો ઉપયોગ કરીને છેલ્લા ૫ વર્ષના ઐતિહાસિક ડેટા પર EMA + MACD + RSI સ્ટ્રેટેજી ચકાસશે.")
         
-        if st.button("🚀 Run 5-Year AI Backtest Engine", key="run_v5_backtest"):
-            with st.spinner("ઐતિહાસિક ડેટા પર બેકટેસ્ટ થઈ રહ્યું છે... મહેરબાની કરીને રાહ જુઓ..."):
-                try:
-                    report_text = backtester.run_backtest()
-                    st.success("🏆 AI Backtest Completed Successfully!")
-                    st.code(report_text, language="text")
-                    
-                    if os.path.exists("gandiv_backtest_report.csv"):
-                        with open("gandiv_backtest_report.csv", "rb") as file:
-                            st.download_button(
-                                label="📁 Download Detailed Trade Report (CSV)",
-                                data=file,
-                                file_name="gandiv_backtest_report.csv",
-                                mime="text/csv",
-                                key="download_csv_btn"
-                            )
-                except Exception as e:
-                    st.error(f"❌ Backtest Run Failed: {e}")
+        if st.button("🚀 Run 5-Year AI Backtest Engine", key="bt_run"):
+    try:
+        result = backtester.run_streamlit_backtest(
+            symbols=STOCK_UNIVERSE,
+            strategy_name="Combined",
+            target_pct=8.0,
+            sl_pct=4.0,
+            period="5y",
+            st=st
+        )
+        if result:
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("Total Trades", result["total_trades"])
+            c2.metric("Win Rate", f"{result['win_rate']}%")
+            c3.metric("CAGR", f"{result['cagr_pct']}%")
+            c4.metric("Max Drawdown", f"{result['max_drawdown']}%")
+            c5, c6 = st.columns(2)
+            c5.metric("Profit Factor", result["profit_factor"])
+            c6.metric("Stocks Tested", result["total_stocks"])
+            st.dataframe(
+                pd.DataFrame(result["stock_summary"]),
+                use_container_width=True
+            )
+            st.download_button(
+                "📥 Download CSV Report",
+                data=result["csv_data"],
+                file_name=f"backtest_{datetime.date.today()}.csv",
+                mime="text/csv"
+            )
+            if result.get("failed_stocks"):
+                st.caption(f"Failed: {', '.join(result['failed_stocks'])}")
+    except Exception as e:
+        st.error(f"❌ Backtest Run Failed: {e}")
+
 
     with an_tab4:
         st.markdown("#### 🛡️ Risk Manager")
