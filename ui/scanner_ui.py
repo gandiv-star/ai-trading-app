@@ -18,14 +18,30 @@ def render_scanners_tab():
         for idx, sym in enumerate(STOCK_UNIVERSE):
             try:
                 td = fetch_technical_data(sym)
-                if td:
-                    score = td.get("score", 0)
-                    regime = td.get("Regime", td.get("regime", "UNKNOWN"))
-                    trend = td.get("Trend", td.get("trend", "Neutral"))
-                    price = td.get("current_price", td.get("Price", 0.0))
-                    rsi = td.get("rsi", td.get("RSI", 0.0))
-                    atr = td.get("atr", td.get("ATR", 0.0))
-                    reason = td.get("Reason", "Technical Analysis Passed")
+                if td is not None:
+                    # Handle both dict and object/Series safely
+                    def get_val(data, keys, default=None):
+                        for k in keys:
+                            try:
+                                if isinstance(data, dict) and k in data:
+                                    return data[k]
+                                elif hasattr(data, k):
+                                    return getattr(data, k)
+                                elif hasattr(data, '__getitem__'):
+                                    val = data[k]
+                                    if val is not None:
+                                        return val
+                            except Exception:
+                                pass
+                        return default
+
+                    score = get_val(td, ["score", "Quant Score", "Score"], 0)
+                    regime = get_val(td, ["Regime", "regime", "Market Regime"], "UNKNOWN")
+                    trend = get_val(td, ["Trend", "trend"], "Neutral")
+                    price = get_val(td, ["current_price", "Price", "close", "Close"], 0.0)
+                    rsi = get_val(td, ["rsi", "RSI"], 0.0)
+                    atr = get_val(td, ["atr", "ATR"], 0.0)
+                    reason = get_val(td, ["Reason", "reason", "AI Analysis"], "Technical Analysis Complete")
 
                     if score >= 80 and regime != "SIDEWAYS":
                         signal = "🔥🔥 STRONG BUY"
@@ -37,15 +53,15 @@ def render_scanners_tab():
                         signal = "⚪ NEUTRAL"
 
                     results.append({
-                        "Symbol": td.get("Symbol", sym.replace(".NS", "")),
-                        "Price (₹)": price,
-                        "Trend": trend,
-                        "Market Regime": regime,
+                        "Symbol": sym.replace(".NS", ""),
+                        "Price (₹)": round(float(price), 2) if price else 0.0,
+                        "Trend": str(trend),
+                        "Market Regime": str(regime),
                         "Quant Score": f"{score}/100",
                         "Signal": signal,
-                        "RSI": rsi,
-                        "ATR (₹)": atr,
-                        "AI Analysis": reason
+                        "RSI": round(float(rsi), 1) if rsi else 0.0,
+                        "ATR (₹)": round(float(atr), 2) if atr else 0.0,
+                        "AI Analysis": str(reason)
                     })
             except Exception:
                 pass
