@@ -1773,14 +1773,18 @@ if st.button("🚀 Run 5-Year AI Backtest Engine", key="bt_run"):
             st=st
         )
         if result:
+            m = result["metrics"]
             c1, c2, c3, c4 = st.columns(4)
-            c1.metric("Total Trades", result["total_trades"])
-            c2.metric("Win Rate", f"{result['win_rate']}%")
-            c3.metric("CAGR", f"{result['cagr_pct']}%")
-            c4.metric("Max Drawdown", f"{result['max_drawdown']}%")
-            c5, c6 = st.columns(2)
-            c5.metric("Profit Factor", result["profit_factor"])
-            c6.metric("Stocks Tested", result["total_stocks"])
+            c1.metric("Total Trades", m["Total Trades"])
+            c2.metric("Win Rate", f"{m['Win Rate (%)']}%")
+            c3.metric("CAGR", f"{m['CAGR (%)']}%")
+            c4.metric("Max Drawdown", f"{m['Max Drawdown (%)']}%")
+            c5, c6, c7, c8 = st.columns(4)
+            c5.metric("Sharpe Ratio", m["Sharpe Ratio"])
+            c6.metric("Sortino Ratio", m["Sortino Ratio"])
+            c7.metric("Profit Factor", m["Profit Factor"])
+            c8.metric("Net PnL", f"₹{m['Total Net PnL (₹)']:,.2f}")
+            st.line_chart(result["equity_df"]["Equity"])
             st.dataframe(
                 pd.DataFrame(result["stock_summary"]),
                 use_container_width=True
@@ -1795,7 +1799,6 @@ if st.button("🚀 Run 5-Year AI Backtest Engine", key="bt_run"):
                 st.caption(f"Failed: {', '.join(result['failed_stocks'])}")
     except Exception as e:
         st.error(f"❌ Backtest Run Failed: {e}")
-
 
 
     with an_tab4:
