@@ -84,8 +84,15 @@ def run_streamlit_backtest(symbols, strategy_name="Combined", target_pct=8.0, sl
 
         daily_ret = equity_df["Equity"].pct_change().dropna()
         sharpe = round((daily_ret.mean() / (daily_ret.std() + 1e-9)) * np.sqrt(252), 2) if len(daily_ret) > 1 else 0.0
+
         downside = daily_ret[daily_ret < 0]
-        sortino = round((daily_ret.mean() / (downside.std() + 1e-9)) * np.sqrt(252), 2) if len(downside) > 1 else 0.0
+        downside_std = downside.std()
+        if len(downside) > 1 and downside_std and downside_std > 1e-6:
+            sortino = round((daily_ret.mean() / downside_std) * np.sqrt(252), 2)
+        else:
+            sortino = 0.0
+        sortino = max(min(sortino, 10.0), -10.0)
+
         running_max = equity_df["Equity"].cummax()
         drawdown = (equity_df["Equity"] - running_max) / running_max
         max_dd = round(abs(drawdown.min()) * 100, 2)
@@ -116,4 +123,4 @@ def run_streamlit_backtest(symbols, strategy_name="Combined", target_pct=8.0, sl
         "trades_df": trades_df, "metrics": metrics, "equity_df": equity_df,
         "stock_summary": stock_summary, "csv_data": csv_data,
         "failed_stocks": failed_stocks, "total_stocks": len(symbols) - len(failed_stocks)
-                        }
+    }
