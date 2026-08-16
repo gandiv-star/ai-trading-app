@@ -1762,7 +1762,7 @@ with an_tab2:
         
         st.info("📌 આ એન્જિન backtester.py ફાઇલનો ઉપયોગ કરીને છેલ્લા ૫ વર્ષના ઐતિહાસિક ડેટા પર EMA + MACD + RSI સ્ટ્રેટેજી ચકાસશે.")
         
-        if st.button("🚀 Run 5-Year AI Backtest Engine", key="bt_run"):
+if st.button("🚀 Run 5-Year AI Backtest Engine", key="bt_run"):
     try:
         result = backtester.run_streamlit_backtest(
             symbols=STOCK_UNIVERSE,
@@ -1795,6 +1795,7 @@ with an_tab2:
                 st.caption(f"Failed: {', '.join(result['failed_stocks'])}")
     except Exception as e:
         st.error(f"❌ Backtest Run Failed: {e}")
+
 
 
     with an_tab4:
