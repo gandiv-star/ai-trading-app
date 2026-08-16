@@ -1,45 +1,61 @@
 """
-Gandiv AI Trading Terminal - Stock Scanners UI Module (v6.0)
+Gandiv AI Trading Terminal - Scanners UI Tab (v5.0 Quant Safe)
 """
 
 import streamlit as st
 import pandas as pd
-from config import STOCK_UNIVERSE, SECTOR_MAP
+from config import STOCK_UNIVERSE
 from core.data_loader import fetch_technical_data
 
 def render_scanners_tab():
     st.markdown("### 🔍 Real-Time AI Stock Scanners")
-    
-    scan_btn = st.button("🔎 Scan Universe Now", key="v6_scan_universe_btn")
-    
-    if scan_btn:
+    st.caption("v5.0 Multi-Factor Confluence & Regime Engine")
+
+    if st.button("🔎 Scan Universe Now", key="scan_universe_main"):
         results = []
-        progress = st.progress(0)
-        
+        prog = st.progress(0)
+
         for idx, sym in enumerate(STOCK_UNIVERSE):
-            td = fetch_technical_data(sym)
-            if td:
-                score = 50
-                if td["trend"] == "Bullish": score += 20
-                if 45 <= td["rsi"] <= 65: score += 20
-                elif td["rsi"] < 30: score += 5
-                if td["current_price"] > td["ma50"]: score += 10
-                
-                results.append({
-                    "Stock": sym.replace(".NS", ""),
-                    "Sector": SECTOR_MAP.get(sym, "Other"),
-                    "Price (₹)": td["current_price"],
-                    "RSI": td["rsi"],
-                    "Trend": td["trend"],
-                    "AI Score": score
-                })
-            progress.progress((idx + 1) / len(STOCK_UNIVERSE))
-            
+            try:
+                td = fetch_technical_data(sym)
+                if td:
+                    score = td.get("score", 0)
+                    regime = td.get("Regime", td.get("regime", "UNKNOWN"))
+                    trend = td.get("Trend", td.get("trend", "Neutral"))
+                    price = td.get("current_price", td.get("Price", 0.0))
+                    rsi = td.get("rsi", td.get("RSI", 0.0))
+                    atr = td.get("atr", td.get("ATR", 0.0))
+                    reason = td.get("Reason", "Technical Analysis Passed")
+
+                    if score >= 80 and regime != "SIDEWAYS":
+                        signal = "🔥🔥 STRONG BUY"
+                    elif score >= 65 and regime != "SIDEWAYS":
+                        signal = "✅ BUY"
+                    elif score >= 50:
+                        signal = "👀 WATCHLIST"
+                    else:
+                        signal = "⚪ NEUTRAL"
+
+                    results.append({
+                        "Symbol": td.get("Symbol", sym.replace(".NS", "")),
+                        "Price (₹)": price,
+                        "Trend": trend,
+                        "Market Regime": regime,
+                        "Quant Score": f"{score}/100",
+                        "Signal": signal,
+                        "RSI": rsi,
+                        "ATR (₹)": atr,
+                        "AI Analysis": reason
+                    })
+            except Exception:
+                pass
+            prog.progress((idx + 1) / len(STOCK_UNIVERSE))
+
         if results:
-            df_res = pd.DataFrame(results)
-            df_res = df_res.sort_values(by="AI Score", ascending=False)
-            st.dataframe(df_res, use_container_width=True)
-            st.success(f"✅ કુલ {len(results)} સ્ટોક્સનું સ્કેનિંગ પૂર્ણ થયું.")
+            df = pd.DataFrame(results)
+            df = df.sort_values(by="Quant Score", ascending=False)
+            st.success(f"✅ {len(df)} સ્ટોક્સ સ્કેન પૂર્ણ!")
+            st.dataframe(df, use_container_width=True)
         else:
-            st.warning("સ્કેન દરમિયાન કોઈ સ્ટોકની વિગતો મળી નથી.")
-          
+            st.warning("⚠️ કોઈ ડેટા મળ્યો નથી. ફરી પ્રયાસ કરો.")
+            
