@@ -1,5 +1,5 @@
 {
-  "paper_cash": 961225.0499999998,
+  "paper_cash": 970522.4499999998,
   "paper_portfolio": {
     "TECHM.NS": {
       "qty": 6,
@@ -24,12 +24,6 @@
       "avg_price": 8585.0,
       "target_price": 9139.43,
       "sl_price": 8215.38
-    },
-    "NYKAA.NS": {
-      "qty": 29,
-      "avg_price": 335.25,
-      "target_price": 356.01,
-      "sl_price": 321.41
     },
     "ICICIBANK.NS": {
       "qty": 6,
@@ -698,6 +692,17 @@
       "Charges": 12.05,
       "Net P&L": -237.25,
       "Net P&L %": -5.06
+    },
+    {
+      "Date": "2026-08-18",
+      "Stock": "NYKAA.NS",
+      "Qty": 29,
+      "Buy Price": 335.25,
+      "Sell Price": 320.6,
+      "Gross P&L": -424.85,
+      "Charges": 25.06,
+      "Net P&L": -449.91,
+      "Net P&L %": -4.63
     }
   ],
   "equity_curve": [
@@ -835,11 +840,11 @@
     },
     {
       "Date": "2026-08-18",
-      "Value": 1103357.71
+      "Value": 1103142.37
     }
   ],
   "trade_journal": [],
-  "last_auto_trade_run": "2026-08-18 09:03:16.477131",
+  "last_auto_trade_run": "2026-08-18 10:02:47.172000",
   "circuit_breaker_date": "2026-08-18",
   "circuit_breaker_start_value": 1103572.55,
   "circuit_breaker_triggered": false
