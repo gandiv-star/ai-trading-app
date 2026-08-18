@@ -1,5 +1,5 @@
 {
-  "paper_cash": 952183.8499999997,
+  "paper_cash": 956764.2499999998,
   "paper_portfolio": {
     "TECHM.NS": {
       "qty": 6,
@@ -54,12 +54,6 @@
       "avg_price": 1032.7,
       "target_price": 1097.32,
       "sl_price": 989.62
-    },
-    "TCS.NS": {
-      "qty": 2,
-      "avg_price": 2401.0,
-      "target_price": 2565.97,
-      "sl_price": 2291.02
     },
     "INFY.NS": {
       "qty": 4,
@@ -688,6 +682,17 @@
       "Charges": 50.83,
       "Net P&L": -720.43,
       "Net P&L %": -3.67
+    },
+    {
+      "Date": "2026-08-18",
+      "Stock": "TCS.NS",
+      "Qty": 2,
+      "Buy Price": 2401.0,
+      "Sell Price": 2290.2,
+      "Gross P&L": -221.6,
+      "Charges": 12.36,
+      "Net P&L": -233.96,
+      "Net P&L %": -4.87
     }
   ],
   "equity_curve": [
@@ -822,11 +827,15 @@
     {
       "Date": "2026-08-17",
       "Value": 1103672.6
+    },
+    {
+      "Date": "2026-08-18",
+      "Value": 1103566.0
     }
   ],
   "trade_journal": [],
-  "last_auto_trade_run": "2026-08-17 10:14:22.409557",
-  "circuit_breaker_date": "2026-08-17",
-  "circuit_breaker_start_value": 1103900.56,
+  "last_auto_trade_run": "2026-08-18 04:20:27.275397",
+  "circuit_breaker_date": "2026-08-18",
+  "circuit_breaker_start_value": 1103572.55,
   "circuit_breaker_triggered": false
 }
