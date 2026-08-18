@@ -1759,51 +1759,50 @@ with tab5:
 
 # ✅ આ નવો સુધારેલો મોડ્યુલર કોડ છે:
 with an_tab2:
-    render_analytics_tab()
+        render_analytics_tab()
 
     with an_tab3:
         st.markdown("#### 🧪 Strategy Backtesting")
         
         st.info("📌 આ એન્જિન backtester.py ફાઇલનો ઉપયોગ કરીને છેલ્લા ૫ વર્ષના ઐતિહાસિક ડેટા પર EMA + MACD + RSI સ્ટ્રેટેજી ચકાસશે.")
-        
-if st.button("🚀 Run 5-Year AI Backtest Engine", key="bt_run"):
-    try:
-        result = backtester.run_streamlit_backtest(
-            symbols=STOCK_UNIVERSE,
-            strategy_name="Combined",
-            target_pct=8.0,
-            sl_pct=4.0,
-            period="5y",
-            st=st
-        )
-        if result:
-            m = result["metrics"]
-            c1, c2, c3, c4 = st.columns(4)
-            c1.metric("Total Trades", m["Total Trades"])
-            c2.metric("Win Rate", f"{m['Win Rate (%)']}%")
-            c3.metric("CAGR", f"{m['CAGR (%)']}%")
-            c4.metric("Max Drawdown", f"{m['Max Drawdown (%)']}%")
-            c5, c6, c7, c8 = st.columns(4)
-            c5.metric("Sharpe Ratio", m["Sharpe Ratio"])
-            c6.metric("Sortino Ratio", m["Sortino Ratio"])
-            c7.metric("Profit Factor", m["Profit Factor"])
-            c8.metric("Net PnL", f"₹{m['Total Net PnL (₹)']:,.2f}")
-            st.line_chart(result["equity_df"]["Equity"])
-            st.dataframe(
-                pd.DataFrame(result["stock_summary"]),
-                use_container_width=True
-            )
-            st.download_button(
-                "📥 Download CSV Report",
-                data=result["csv_data"],
-                file_name=f"backtest_{datetime.date.today()}.csv",
-                mime="text/csv"
-            )
-            if result.get("failed_stocks"):
-                st.caption(f"Failed: {', '.join(result['failed_stocks'])}")
-    except Exception as e:
-        st.error(f"❌ Backtest Run Failed: {e}")
 
+        if st.button("🚀 Run 5-Year AI Backtest Engine", key="bt_run"):
+            try:
+                result = backtester.run_streamlit_backtest(
+                    symbols=STOCK_UNIVERSE,
+                    strategy_name="Combined",
+                    target_pct=8.0,
+                    sl_pct=4.0,
+                    period="5y",
+                    st=st
+                )
+                if result:
+                    m = result["metrics"]
+                    c1, c2, c3, c4 = st.columns(4)
+                    c1.metric("Total Trades", m["Total Trades"])
+                    c2.metric("Win Rate", f"{m['Win Rate (%)']}%")
+                    c3.metric("CAGR", f"{m['CAGR (%)']}%")
+                    c4.metric("Max Drawdown", f"{m['Max Drawdown (%)']}%")
+                    c5, c6, c7, c8 = st.columns(4)
+                    c5.metric("Sharpe Ratio", m["Sharpe Ratio"])
+                    c6.metric("Sortino Ratio", m["Sortino Ratio"])
+                    c7.metric("Profit Factor", m["Profit Factor"])
+                    c8.metric("Net PnL", f"₹{m['Total Net PnL (₹)']:,.2f}")
+                    st.line_chart(result["equity_df"]["Equity"])
+                    st.dataframe(
+                        pd.DataFrame(result["stock_summary"]),
+                        use_container_width=True
+                    )
+                    st.download_button(
+                        "📥 Download CSV Report",
+                        data=result["csv_data"],
+                        file_name=f"backtest_{datetime.date.today()}.csv",
+                        mime="text/csv"
+                    )
+                    if result.get("failed_stocks"):
+                        st.caption(f"Failed: {', '.join(result['failed_stocks'])}")
+            except Exception as e:
+                st.error(f"❌ Backtest Run Failed: {e}")
 
     with an_tab4:
         st.markdown("#### 🛡️ Risk Manager")
