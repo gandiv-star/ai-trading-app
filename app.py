@@ -990,13 +990,14 @@ with tab3:
                     except:
                         pass
 
-smart_results.sort(key=lambda x: x["Vol Ratio"], reverse=True)
-            if smart_results:
-                st.dataframe(pd.DataFrame(smart_results), use_container_width=True)
-            else:
-                st.info("⚠️ કોઈ Unusual Volume Signal મળ્યો નથી.")
+    smart_results.sort(key=lambda x: x["Vol Ratio"], reverse=True)
+    if smart_results:
+        st.dataframe(pd.DataFrame(smart_results), use_container_width=True)
+    else:
+        st.info("⚠️ કોઈ Unusual Volume Signal મળ્યો નથી.")
 
     render_scanners_tab()
+
 
 # ==========================================
 # TAB 4: AI TOOLS
