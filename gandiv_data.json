@@ -1,5 +1,5 @@
 {
-  "paper_cash": 970522.4499999998,
+  "paper_cash": 979766.8499999999,
   "paper_portfolio": {
     "TECHM.NS": {
       "qty": 6,
@@ -12,12 +12,6 @@
       "avg_price": 7833.5,
       "target_price": 8270.48,
       "sl_price": 7542.18
-    },
-    "JIOFIN.NS": {
-      "qty": 19,
-      "avg_price": 256.46,
-      "target_price": 273.86,
-      "sl_price": 244.86
     },
     "DIVISLAB.NS": {
       "qty": 1,
@@ -36,12 +30,6 @@
       "avg_price": 1287.0,
       "target_price": 1357.59,
       "sl_price": 1239.94
-    },
-    "BPCL.NS": {
-      "qty": 15,
-      "avg_price": 321.9,
-      "target_price": 344.1,
-      "sl_price": 307.1
     },
     "INDUSINDBK.NS": {
       "qty": 9,
@@ -703,6 +691,28 @@
       "Charges": 25.06,
       "Net P&L": -449.91,
       "Net P&L %": -4.63
+    },
+    {
+      "Date": "2026-08-19",
+      "Stock": "JIOFIN.NS",
+      "Qty": 19,
+      "Buy Price": 256.46,
+      "Sell Price": 244.1,
+      "Gross P&L": -234.84,
+      "Charges": 12.53,
+      "Net P&L": -247.37,
+      "Net P&L %": -5.08
+    },
+    {
+      "Date": "2026-08-19",
+      "Stock": "BPCL.NS",
+      "Qty": 15,
+      "Buy Price": 321.9,
+      "Sell Price": 307.1,
+      "Gross P&L": -222.0,
+      "Charges": 12.43,
+      "Net P&L": -234.43,
+      "Net P&L %": -4.86
     }
   ],
   "equity_curve": [
@@ -844,11 +854,11 @@
     },
     {
       "Date": "2026-08-19",
-      "Value": 1102627.11
+      "Value": 1102418.49
     }
   ],
   "trade_journal": [],
-  "last_auto_trade_run": "2026-08-19 04:49:03.885524",
+  "last_auto_trade_run": "2026-08-19 05:54:56.385863",
   "circuit_breaker_date": "2026-08-19",
   "circuit_breaker_start_value": 1102681.39,
   "circuit_breaker_triggered": false
