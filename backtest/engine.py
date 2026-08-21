@@ -54,7 +54,9 @@ from typing import Dict, List, Optional
 
 import pandas as pd
 
-from config.trading_config import STARTING_CAPITAL, MAX_HOLDING_DAYS, STOP_LOSS_HIT_FIRST_ON_AMBIGUOUS_CANDLE
+from config.trading_config import (
+    STARTING_CAPITAL, MAX_HOLDING_DAYS, STOP_LOSS_HIT_FIRST_ON_AMBIGUOUS_CANDLE, INDEX_SYMBOL,
+)
 from config.universe import get_sector
 from core.data_loader import get_completed_ohlcv
 from core.portfolio import Portfolio, Trade
@@ -62,7 +64,7 @@ from core.risk_engine import evaluate_trade
 from strategy.unified_strategy import generate_signal
 
 
-NIFTY_INDEX_SYMBOL = "^NSEI"
+NIFTY_INDEX_SYMBOL = INDEX_SYMBOL  # kept as a module-level alias for readability in this file
 
 # How much trailing history to hand generate_signal() each day. Bounded
 # on purpose (rather than "everything since inception") so a multi-year
@@ -328,4 +330,5 @@ def run_backtest(config: BacktestConfig) -> BacktestResult:
         symbols_used=symbols_used,
         symbols_skipped=symbols_skipped,
         trading_days_simulated=len(calendar),
-    )
+                )
+    
