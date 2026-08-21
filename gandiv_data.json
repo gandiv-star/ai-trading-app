@@ -1,5 +1,5 @@
 {
-  "paper_cash": 988127.8499999999,
+  "paper_cash": 983266.0499999998,
   "paper_portfolio": {
     "TECHM.NS": {
       "qty": 6,
@@ -84,6 +84,12 @@
       "avg_price": 183.2,
       "target_price": 194.36,
       "sl_price": 175.76
+    },
+    "KOTAKBANK.NS": {
+      "qty": 12,
+      "avg_price": 405.15,
+      "target_price": 423.18,
+      "sl_price": 393.13
     }
   },
   "paper_trade_history": [
@@ -864,11 +870,15 @@
     {
       "Date": "2026-08-20",
       "Value": 1103090.15
+    },
+    {
+      "Date": "2026-08-21",
+      "Value": 1102939.84
     }
   ],
   "trade_journal": [],
-  "last_auto_trade_run": "2026-08-20 10:04:38.065580",
-  "circuit_breaker_date": "2026-08-20",
-  "circuit_breaker_start_value": 1102994.6,
+  "last_auto_trade_run": "2026-08-21 04:22:36.543777",
+  "circuit_breaker_date": "2026-08-21",
+  "circuit_breaker_start_value": 1102937.34,
   "circuit_breaker_triggered": false
 }
