@@ -115,6 +115,12 @@ MARKET_PRE_OPEN: dt.time = dt.time(9, 0)
 MARKET_OPEN: dt.time = dt.time(9, 15)
 MARKET_CLOSE: dt.time = dt.time(15, 30)
 
+# Market-index reference symbol for market-regime / relative-strength
+# scoring (see core/market_regime.py, strategy/unified_strategy.py).
+# Kept here — not hardcoded separately in the backtester and the
+# scanner — so both always use the same index.
+INDEX_SYMBOL: str = "^NSEI"  # NIFTY 50, Yahoo Finance ticker
+
 # ======================================================================
 # 6. NSE TRADING HOLIDAYS — 2022 through 2026
 # ======================================================================
