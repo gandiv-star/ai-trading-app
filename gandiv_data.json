@@ -1,5 +1,5 @@
 {
-  "paper_cash": 983266.0499999998,
+  "paper_cash": 991989.4499999998,
   "paper_portfolio": {
     "TECHM.NS": {
       "qty": 6,
@@ -36,12 +36,6 @@
       "avg_price": 4933.6,
       "target_price": 5210.53,
       "sl_price": 4748.98
-    },
-    "NESTLEIND.NS": {
-      "qty": 6,
-      "avg_price": 1535.0,
-      "target_price": 1653.62,
-      "sl_price": 1455.92
     },
     "BAJFINANCE.NS": {
       "qty": 18,
@@ -724,6 +718,17 @@
       "Charges": 22.4,
       "Net P&L": -312.2,
       "Net P&L %": -3.61
+    },
+    {
+      "Date": "2026-08-21",
+      "Stock": "NESTLEIND.NS",
+      "Qty": 6,
+      "Buy Price": 1535.0,
+      "Sell Price": 1453.9,
+      "Gross P&L": -486.6,
+      "Charges": 23.63,
+      "Net P&L": -510.23,
+      "Net P&L %": -5.54
     }
   ],
   "equity_curve": [
@@ -873,11 +878,11 @@
     },
     {
       "Date": "2026-08-21",
-      "Value": 1102939.84
+      "Value": 1103023.1
     }
   ],
   "trade_journal": [],
-  "last_auto_trade_run": "2026-08-21 04:22:36.543777",
+  "last_auto_trade_run": "2026-08-21 04:51:23.041057",
   "circuit_breaker_date": "2026-08-21",
   "circuit_breaker_start_value": 1102937.34,
   "circuit_breaker_triggered": false
