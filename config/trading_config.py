@@ -65,6 +65,14 @@ ATR_PERIOD: int = 14
 ATR_SL_MULTIPLIER: float = 1.5    # Stop-loss = entry - (1.5 x ATR)
 ATR_TARGET_MULTIPLIER: float = 3.0  # Target   = entry + (3.0 x ATR)  -> 1:2 risk:reward by default
 
+# Time-based exit: close a position after this many trading days even
+# if neither SL nor Target has been hit. The old code had NO exit
+# mechanism at all besides SL/Target — a position that just drifts
+# sideways forever would sit open indefinitely, tying up capital and
+# a slot in MAX_OPEN_POSITIONS for no purpose. This was flagged as a
+# critical gap in the original audit.
+MAX_HOLDING_DAYS: int = 20  # roughly one month of trading days
+
 # Fallback ONLY if ATR cannot be computed (e.g. insufficient history
 # for a newly listed stock). Matches the old TARGET_PCT/SL_PCT values
 # so behaviour is a safe superset, not a silent change.
