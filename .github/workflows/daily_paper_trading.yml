@@ -1,0 +1,107 @@
+name: Gandiv AI - Daily Paper Trading Cycle
+
+# Runs the paper-trading engine once per trading day, after NSE market
+# close, and commits the updated portfolio state back to the repo.
+#
+# Phase 14 requirements this addresses:
+#   - market holidays  -> handled INSIDE paper/engine.py via
+#                          config.trading_config.is_trading_day(), not
+#                          duplicated here in YAML/bash. The script
+#                          exits cleanly (exit 0) on a non-trading day.
+#   - stale data        -> core/data_loader.py's is_data_stale() /
+#                          retry logic; this workflow just runs the code.
+#   - cron delays        -> GitHub does not guarantee exact cron timing
+#                          (can slip by minutes, rarely more). This is a
+#                          platform limitation, not something a workflow
+#                          file can fix — see the honest note in the
+#                          Phase 1 audit.
+#   - duplicate execution -> concurrency group below (only one run at a
+#                          time) PLUS paper/engine.py's own
+#                          Portfolio.last_processed_date guard (belt and
+#                          suspenders: even a concurrent or re-triggered
+#                          run on the same day is refused at the code level).
+#   - retry               -> a 2-attempt shell retry around the script,
+#                          on top of data_loader's own per-symbol retries.
+#   - secrets              -> read from GitHub repo secrets, never
+#                          committed to the repo.
+#   - git conflicts        -> pull --rebase immediately before pushing.
+#   - state persistence    -> committing data/gandiv_data.json.
+#
+# IMPORTANT — single source of truth:
+# This workflow and the Streamlit app's "Run Paper Trading Cycle Now"
+# button (Risk Manager tab) both call the exact same engine, but they
+# run in DIFFERENT places with different local copies of
+# data/gandiv_data.json. If you use this workflow as your primary
+# automated trader, treat the Streamlit button as a manual backup for
+# days this workflow fails — not something to click routinely — until
+# a shared backend (not just a local JSON file) closes that gap.
+#
+# BEFORE ENABLING THIS: delete or disable any OLD workflow file that
+# also runs a trading bot (e.g. the original auto_trade.yml) — running
+# two different bots against the same repo will corrupt the state.
+
+on:
+  schedule:
+    # 10:15 UTC = 15:45 IST — 15 minutes after NSE's 15:30 IST close,
+    # to give end-of-day data time to actually be published upstream.
+    - cron: '15 10 * * 1-5'
+  workflow_dispatch: {}  # manual "Run workflow" button in the Actions tab
+
+concurrency:
+  group: gandiv-daily-cycle
+  cancel-in-progress: false  # let an in-flight run finish rather than killing it mid-write
+
+permissions:
+  contents: write  # needed to commit the updated portfolio state file
+
+jobs:
+  run-daily-cycle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run daily paper-trading cycle (up to 2 attempts)
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          set -e
+          for attempt in 1 2; do
+            if python scripts/run_daily_cycle.py; then
+              exit 0
+            fi
+            echo "Attempt $attempt failed."
+            if [ "$attempt" -lt 2 ]; then
+              echo "Retrying in 30s..."
+              sleep 30
+            fi
+          done
+          echo "Both attempts failed."
+          exit 1
+
+      - name: Commit updated portfolio state
+        run: |
+          git config user.name "gandiv-ai-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/gandiv_data.json data/gandiv_data.json.bak* 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "No state changes to commit today."
+          else
+            git commit -m "Daily paper trading cycle: $(date -u +'%Y-%m-%d %H:%M UTC')"
+            git pull --rebase origin main
+            git push
+          fi
